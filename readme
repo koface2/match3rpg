@@ -1,0 +1,7 @@
+echo "# match3rpg" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/koface2/match3rpg.git
+git push -u origin main
