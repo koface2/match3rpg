@@ -71,20 +71,22 @@ class Match3Scene extends Phaser.Scene {
         this.currentMonsterName = MONSTER_NAMES[monsterIndex];
 
         this.inventory = [
-            { id: 'iron-helm', name: 'Iron Helm', slot: 'helmet', type: 'Helmet', rarity: 'Common', description: 'Simple iron head protection.', stats: { armor: 4 } },
-            { id: 'hunter-coat', name: 'Hunter Coat', slot: 'chest', type: 'Chest', rarity: 'Uncommon', description: 'Leather coat favored by scouts.', stats: { armor: 5, ranged: 2 } },
-            { id: 'war-gloves', name: 'War Gloves', slot: 'gloves', type: 'Gloves', rarity: 'Common', description: 'Reinforced gloves for melee grip.', stats: { physical: 3 } },
-            { id: 'trail-boots', name: 'Trail Boots', slot: 'boots', type: 'Boots', rarity: 'Common', description: 'Light boots for quick movement.', stats: { ranged: 1, armor: 2 } },
-            { id: 'oak-belt', name: 'Oak Belt', slot: 'belt', type: 'Belt', rarity: 'Common', description: 'Sturdy belt with potion loops.', stats: { health: 10 } },
-            { id: 'knight-blade', name: 'Knight Blade', slot: 'mainhand', type: 'Weapon', rarity: 'Rare', description: 'A balanced one-handed sword.', stats: { physical: 6 } },
-            { id: 'tower-buckler', name: 'Tower Buckler', slot: 'offhand', type: 'Shield', rarity: 'Uncommon', description: 'Small shield with strong guard.', stats: { armor: 6 } },
-            { id: 'topaz-band', name: 'Topaz Band', slot: 'ring1', type: 'Ring', rarity: 'Uncommon', description: 'Warm stone that boosts vitality.', stats: { health: 15 } },
-            { id: 'moon-band', name: 'Moon Band', slot: 'ring2', type: 'Ring', rarity: 'Uncommon', description: 'Pale band for magical focus.', stats: { magic: 4 } },
-            { id: 'sage-amulet', name: 'Sage Amulet', slot: 'necklace', type: 'Necklace', rarity: 'Rare', description: 'Ancient charm that sharpens focus.', stats: { magic: 6, ranged: 2 } }
+            { id: 'iron-helm', name: 'Iron Helm', slot: 'helmet', type: 'Helmet', rarity: 'Common', icon: '🪖', frameColor: 0xa3a3a3, description: 'Simple iron head protection.', stats: { armor: 4 } },
+            { id: 'hunter-coat', name: 'Hunter Coat', slot: 'chest', type: 'Chest', rarity: 'Uncommon', icon: '🦺', frameColor: 0x66bb6a, description: 'Leather coat favored by scouts.', stats: { armor: 5, ranged: 2 } },
+            { id: 'war-gloves', name: 'War Gloves', slot: 'gloves', type: 'Gloves', rarity: 'Common', icon: '🧤', frameColor: 0xa3a3a3, description: 'Reinforced gloves for melee grip.', stats: { physical: 3 } },
+            { id: 'trail-boots', name: 'Trail Boots', slot: 'boots', type: 'Boots', rarity: 'Common', icon: '🥾', frameColor: 0xa3a3a3, description: 'Light boots for quick movement.', stats: { ranged: 1, armor: 2 } },
+            { id: 'oak-belt', name: 'Oak Belt', slot: 'belt', type: 'Belt', rarity: 'Common', icon: '🧷', frameColor: 0xa3a3a3, description: 'Sturdy belt with potion loops.', stats: { health: 10 } },
+            { id: 'knight-blade', name: 'Knight Blade', slot: 'mainhand', type: 'Weapon', rarity: 'Rare', icon: '🗡️', frameColor: 0x42a5f5, description: 'A balanced one-handed sword.', stats: { physical: 6 } },
+            { id: 'tower-buckler', name: 'Tower Buckler', slot: 'offhand', type: 'Shield', rarity: 'Uncommon', icon: '🛡️', frameColor: 0x66bb6a, description: 'Small shield with strong guard.', stats: { armor: 6 } },
+            { id: 'topaz-band', name: 'Topaz Band', slot: 'ring1', type: 'Ring', rarity: 'Uncommon', icon: '💍', frameColor: 0x66bb6a, description: 'Warm stone that boosts vitality.', stats: { health: 15 } },
+            { id: 'moon-band', name: 'Moon Band', slot: 'ring2', type: 'Ring', rarity: 'Uncommon', icon: '💍', frameColor: 0x66bb6a, description: 'Pale band for magical focus.', stats: { magic: 4 } },
+            { id: 'sage-amulet', name: 'Sage Amulet', slot: 'necklace', type: 'Necklace', rarity: 'Rare', icon: '📿', frameColor: 0x42a5f5, description: 'Ancient charm that sharpens focus.', stats: { magic: 6, ranged: 2 } }
         ];
-        this.inventoryRowTexts = [];
+        this.equippedItems = {};
+        this.inventoryTiles = [];
         this.selectedInventoryItem = null;
         this.inventoryModal = null;
+        this.inventoryModalIcon = null;
         this.inventoryModalName = null;
         this.inventoryModalType = null;
         this.inventoryModalDesc = null;
@@ -215,7 +217,7 @@ class Match3Scene extends Phaser.Scene {
         const slotsHeader = this.add.text(leftPanelCenterX, 95, 'Warrior Loadout', { fontSize: '18px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
         const inventoryHeader = this.add.text(rightPanelCenterX, 95, 'Inventory', { fontSize: '18px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
 
-        const inventoryHint = this.add.text(rightPanelCenterX, 125, 'Click an item to inspect, then equip it.', {
+        const inventoryHint = this.add.text(rightPanelCenterX, 125, 'Click a square item icon to inspect it, then equip it.', {
             fontSize: '13px',
             color: '#ffffff',
             wordWrap: { width: Math.floor(width * 0.30), useAdvancedWrap: true }
@@ -223,8 +225,8 @@ class Match3Scene extends Phaser.Scene {
 
         // Silhouette sits behind the slot markers to make each slot position readable.
         const silhouette = this.add.graphics();
-        silhouette.fillStyle(0xffffff, 0.12);
-        silhouette.lineStyle(2, 0xffffff, 0.28);
+        silhouette.fillStyle(0x6c7a89, 0.42);
+        silhouette.lineStyle(4, 0xd7c38a, 0.9);
         silhouette.fillCircle(leftPanelCenterX, silhouetteTopY + 36, 34); // head
         silhouette.strokeCircle(leftPanelCenterX, silhouetteTopY + 36, 34);
         silhouette.fillRoundedRect(leftPanelCenterX - 28, silhouetteTopY + 72, 56, 120, 10); // torso
@@ -237,7 +239,11 @@ class Match3Scene extends Phaser.Scene {
         silhouette.strokeRoundedRect(leftPanelCenterX - 22, silhouetteTopY + 194, 18, 88, 8);
         silhouette.fillRoundedRect(leftPanelCenterX + 4, silhouetteTopY + 194, 18, 88, 8); // right leg
         silhouette.strokeRoundedRect(leftPanelCenterX + 4, silhouetteTopY + 194, 18, 88, 8);
-        const warriorGlyph = this.add.text(leftPanelCenterX, silhouetteTopY + 140, '⚔', { fontSize: '54px', color: '#ffffff' }).setOrigin(0.5).setAlpha(0.25);
+        silhouette.fillStyle(0x4a5560, 0.35);
+        silhouette.fillTriangle(leftPanelCenterX - 38, silhouetteTopY + 190, leftPanelCenterX + 38, silhouetteTopY + 190, leftPanelCenterX, silhouetteTopY + 248);
+        silhouette.lineStyle(2, 0xd7c38a, 0.55);
+        silhouette.strokeTriangle(leftPanelCenterX - 38, silhouetteTopY + 190, leftPanelCenterX + 38, silhouetteTopY + 190, leftPanelCenterX, silhouetteTopY + 248);
+        const warriorGlyph = this.add.text(leftPanelCenterX, silhouetteTopY + 140, '⚔', { fontSize: '54px', color: '#f4e4b8' }).setOrigin(0.5).setAlpha(0.35);
 
         this.equipmentScreenGroup.add([
             bg,
@@ -282,6 +288,7 @@ class Match3Scene extends Phaser.Scene {
 
         this.equipmentText = {};
         this.equipmentIconText = {};
+        this.equipmentSlotFrames = {};
 
         slotConfig.forEach(slot => {
             // Square slot for equipment
@@ -289,35 +296,53 @@ class Match3Scene extends Phaser.Scene {
 
             // Inner tile area for item image/icon
             const slotImageBg = this.add.rectangle(slot.x, slot.y, slotSize * 0.7, slotSize * 0.7, 0x000000, 0.45).setStrokeStyle(1, 0xffffff, 0.66).setOrigin(0.5);
-            const slotIcon = this.add.text(slot.x, slot.y, this.player.equipment[slot.key] === 'None' ? '' : equipmentIcons[slot.key], { fontSize: '34px', color: '#ffffff' }).setOrigin(0.5);
+            const slotIcon = this.add.text(slot.x, slot.y, '', { fontSize: '34px', color: '#ffffff' }).setOrigin(0.5);
             const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 - 14, slot.label, { fontSize: '14px', color: '#ffff00' }).setOrigin(0.5, 0.5);
-            const slotValue = this.add.text(slot.x, slot.y + slotSize / 2 + 14, this.player.equipment[slot.key] === 'None' ? 'Empty' : this.player.equipment[slot.key], { fontSize: '14px', color: '#ffffff' }).setOrigin(0.5, 0.5);
+            const slotValue = this.add.text(slot.x, slot.y + slotSize / 2 + 14, 'Empty', { fontSize: '14px', color: '#ffffff' }).setOrigin(0.5, 0.5);
 
             this.equipmentText[slot.key] = slotValue;
             this.equipmentIconText[slot.key] = slotIcon;
+            this.equipmentSlotFrames[slot.key] = slotImageBg;
 
             this.equipmentScreenGroup.add([slotBg, slotImageBg, slotIcon, slotLabel, slotValue]);
         });
 
-        this.inventoryRowTexts = [];
-        const inventoryStartY = 165;
-        this.inventory.forEach((item, index) => {
-            const rowY = inventoryStartY + index * 30;
-            const rowBg = this.add.rectangle(rightPanelCenterX, rowY, width * 0.29, 24, 0x343434, 1)
-                .setStrokeStyle(1, 0x6a6a6a)
+        this.inventoryTiles = [];
+        const inventoryGridLeft = rightPanelCenterX - 120;
+        const inventoryGridTop = 165;
+        const inventoryColumns = 3;
+        const inventoryCellSize = 78;
+        const inventoryCellGap = 18;
+
+        for (let index = 0; index < 12; index++) {
+            const column = index % inventoryColumns;
+            const row = Math.floor(index / inventoryColumns);
+            const cellX = inventoryGridLeft + column * (inventoryCellSize + inventoryCellGap);
+            const cellY = inventoryGridTop + row * (inventoryCellSize + inventoryCellGap);
+
+            const tileBg = this.add.rectangle(cellX, cellY, inventoryCellSize, inventoryCellSize, 0x2d2d2d, 1)
+                .setOrigin(0, 0)
+                .setStrokeStyle(2, 0x666666)
                 .setInteractive({ useHandCursor: true });
-            const rowText = this.add.text(rightPanelCenterX - Math.floor(width * 0.13), rowY, '', {
-                fontSize: '13px',
-                color: '#ffffff'
-            }).setOrigin(0, 0.5);
+            const tileInner = this.add.rectangle(cellX + 7, cellY + 7, inventoryCellSize - 14, inventoryCellSize - 14, 0x111111, 1)
+                .setOrigin(0, 0)
+                .setStrokeStyle(1, 0x444444);
+            const tileIcon = this.add.text(cellX + inventoryCellSize / 2, cellY + 28, '', { fontSize: '28px' }).setOrigin(0.5);
+            const tileName = this.add.text(cellX + inventoryCellSize / 2, cellY + 61, '', {
+                fontSize: '9px',
+                color: '#ffffff',
+                align: 'center',
+                wordWrap: { width: inventoryCellSize - 8, useAdvancedWrap: true }
+            }).setOrigin(0.5);
 
-            rowBg.on('pointerup', () => this.openInventoryItemPopup(item));
-            rowText.setInteractive({ useHandCursor: true });
-            rowText.on('pointerup', () => this.openInventoryItemPopup(item));
+            tileBg.on('pointerup', () => {
+                const item = this.inventory[index];
+                if (item) this.openInventoryItemPopup(item);
+            });
 
-            this.inventoryRowTexts.push({ item, rowBg, rowText });
-            this.equipmentScreenGroup.add([rowBg, rowText]);
-        });
+            this.inventoryTiles.push({ tileBg, tileInner, tileIcon, tileName, index });
+            this.equipmentScreenGroup.add([tileBg, tileInner, tileIcon, tileName]);
+        }
 
         const modalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
             .setInteractive({ useHandCursor: true });
@@ -328,15 +353,18 @@ class Match3Scene extends Phaser.Scene {
             color: '#ffff00',
             fontStyle: 'bold'
         }).setOrigin(0.5);
-        this.inventoryModalName = this.add.text(width / 2, height / 2 - 65, '', { fontSize: '20px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
-        this.inventoryModalType = this.add.text(width / 2, height / 2 - 30, '', { fontSize: '14px', color: '#00ffcc' }).setOrigin(0.5);
+        this.inventoryModalFrame = this.add.rectangle(width / 2, height / 2 - 62, 58, 58, 0x1f1f1f, 1).setStrokeStyle(2, 0x888888);
+        this.inventoryModalIcon = this.add.text(width / 2, height / 2 - 62, '', { fontSize: '30px' }).setOrigin(0.5);
+        this.inventoryModalName = this.add.text(width / 2, height / 2 - 14, '', { fontSize: '20px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.inventoryModalType = this.add.text(width / 2, height / 2 + 18, '', { fontSize: '14px', color: '#00ffcc' }).setOrigin(0.5);
         this.inventoryModalDesc = this.add.text(width / 2, height / 2 + 10, '', {
             fontSize: '14px',
             color: '#ffffff',
             align: 'center',
             wordWrap: { width: 380, useAdvancedWrap: true }
         }).setOrigin(0.5);
-        this.inventoryModalStats = this.add.text(width / 2, height / 2 + 70, '', { fontSize: '14px', color: '#ffd966' }).setOrigin(0.5);
+        this.inventoryModalDesc.y = height / 2 + 55;
+        this.inventoryModalStats = this.add.text(width / 2, height / 2 + 108, '', { fontSize: '14px', color: '#ffd966' }).setOrigin(0.5);
 
         const closeModalBtn = this.add.text(width / 2 - 80, height / 2 + 120, 'Close', {
             fontSize: '18px',
@@ -359,6 +387,8 @@ class Match3Scene extends Phaser.Scene {
             modalOverlay,
             modalCard,
             modalTitle,
+            this.inventoryModalFrame,
+            this.inventoryModalIcon,
             this.inventoryModalName,
             this.inventoryModalType,
             this.inventoryModalDesc,
@@ -369,7 +399,7 @@ class Match3Scene extends Phaser.Scene {
 
         this.equipmentScreenGroup.add(this.inventoryModal);
 
-        this.updateInventoryListUI();
+        this.updateInventoryGridUI();
 
         const backBtn = this.add.text(width / 2, height - 60, 'Back to Game', { fontSize: '20px', color: '#00ff00', backgroundColor: '#333333', padding: { left: 10, right: 10, top: 6, bottom: 6 } }).setOrigin(0.5).setInteractive({ useHandCursor: true });
         backBtn.on('pointerup', () => this.showGameScreen());
@@ -399,39 +429,45 @@ class Match3Scene extends Phaser.Scene {
     updateEquipmentScreen() {
         if (!this.equipmentText || !this.equipmentIconText) return;
 
-        const equipmentIcons = {
-            helmet: '🪖',
-            chest: '🛡️',
-            gloves: '🧤',
-            boots: '🥾',
-            belt: '🎒',
-            mainhand: '🗡️',
-            offhand: '🛡️',
-            ring1: '💍',
-            ring2: '💍',
-            necklace: '📿'
-        };
-
         Object.entries(this.player.equipment).forEach(([key, value]) => {
+            const equippedItem = this.equippedItems[key] || null;
             if (this.equipmentText[key]) {
                 this.equipmentText[key].setText(value === 'None' ? 'Empty' : value);
             }
             if (this.equipmentIconText[key]) {
-                this.equipmentIconText[key].setText(value === 'None' ? '' : equipmentIcons[key] || '❓');
+                this.equipmentIconText[key].setText(equippedItem ? equippedItem.icon : '');
+            }
+            if (this.equipmentSlotFrames[key]) {
+                this.equipmentSlotFrames[key].setStrokeStyle(2, equippedItem ? equippedItem.frameColor : 0xffffff, 1);
             }
         });
 
-        this.updateInventoryListUI();
+        this.updateInventoryGridUI();
     }
 
-    updateInventoryListUI() {
-        if (!this.inventoryRowTexts) return;
+    updateInventoryGridUI() {
+        if (!this.inventoryTiles) return;
 
-        this.inventoryRowTexts.forEach(({ item, rowBg, rowText }) => {
-            const equippedName = this.player.equipment[item.slot];
-            const isEquipped = equippedName === item.name;
-            rowBg.fillColor = isEquipped ? 0x2f5f3b : 0x343434;
-            rowText.setText(`${item.name} (${item.type})${isEquipped ? ' [Equipped]' : ''}`);
+        this.inventoryTiles.forEach(({ tileBg, tileInner, tileIcon, tileName, index }) => {
+            const item = this.inventory[index];
+            if (!item) {
+                tileBg.setVisible(false);
+                tileInner.setVisible(false);
+                tileIcon.setVisible(false);
+                tileName.setVisible(false);
+                return;
+            }
+
+            tileBg.setVisible(true);
+            tileInner.setVisible(true);
+            tileIcon.setVisible(true);
+            tileName.setVisible(true);
+
+            tileBg.fillColor = 0x2d2d2d;
+            tileBg.setStrokeStyle(2, item.frameColor, 1);
+            tileInner.setStrokeStyle(1, item.frameColor, 0.8);
+            tileIcon.setText(item.icon);
+            tileName.setText(item.name);
         });
     }
 
@@ -443,6 +479,8 @@ class Match3Scene extends Phaser.Scene {
             .map(([key, value]) => `${key.toUpperCase()}: +${value}`)
             .join('   ');
 
+        this.inventoryModalFrame.setStrokeStyle(2, item.frameColor, 1);
+        this.inventoryModalIcon.setText(item.icon);
         this.inventoryModalName.setText(item.name);
         this.inventoryModalType.setText(`Type: ${item.type}  |  Slot: ${item.slot}  |  Rarity: ${item.rarity}`);
         this.inventoryModalDesc.setText(item.description);
@@ -461,7 +499,21 @@ class Match3Scene extends Phaser.Scene {
         if (!this.selectedInventoryItem) return;
 
         const item = this.selectedInventoryItem;
+        const previousEquippedItem = this.equippedItems[item.slot] || null;
+        const inventoryIndex = this.inventory.findIndex(inventoryItem => inventoryItem.id === item.id);
+
+        if (inventoryIndex === -1) {
+            this.closeInventoryItemPopup();
+            return;
+        }
+
+        this.inventory.splice(inventoryIndex, 1);
+        if (previousEquippedItem) {
+            this.inventory.push(previousEquippedItem);
+        }
+
         this.player.equipment[item.slot] = item.name;
+        this.equippedItems[item.slot] = item;
         this.updateEquipmentScreen();
         this.addCombatLog(`Equipped ${item.name} in ${item.slot}`, '#99ff99');
         this.closeInventoryItemPopup();
