@@ -32,5 +32,111 @@
     <h1>Match-3 Game</h1>
     <div id="score">Score: 0</div>
     <script src="game.js"></script>
+  <div id="inventory-panel" style="border:1px solid #ccc; background:#fafafa; padding:12px; margin:12px; max-width:760px;">
+    <h2>Inventory</h2>
+    <p>Click an item to view details and equip it.</p>
+    <div id="inventory-items" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:10px;">
+      <!-- inventory entries inserted by script -->
+    </div>
+  </div>
+
+  <div id="item-detail-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:9999;">
+    <div style="background:#fff; border-radius:8px; padding:16px; width:min(420px,90%); box-shadow:0 4px 14px rgba(0,0,0,.25);">
+      <h3 id="modal-item-name"></h3>
+      <p id="modal-item-type"></p>
+      <p id="modal-item-description"></p>
+      <p id="modal-item-stats"></p>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <button id="modal-close-btn" type="button">Close</button>
+        <button id="modal-equip-btn" type="button">Equip</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const sampleInventory = [
+        { id: 'sword-01', name: 'Bronze Sword', type: 'Weapon', description: 'A basic sword that increases attack.', stats: {atk: 3}, slot: 'weapon' },
+        { id: 'shield-01', name: 'Wooden Shield', type: 'Shield', description: 'Basic protection.', stats: {def: 2}, slot: 'shield' },
+        { id: 'helm-01', name: 'Leather Cap', type: 'Armor', description: 'Light head protection.', stats: {def:1}, slot: 'head' },
+        { id: 'amulet-01', name: 'Amulet of Health', type: 'Accessory', description: 'Increases health by a small amount.', stats: {hp: 5}, slot: 'accessory' }
+      ];
+
+      let currentInventory = sampleInventory;
+      let selectedItem = null;
+
+      const inventoryContainer = document.getElementById('inventory-items');
+      if (!inventoryContainer) return;
+
+      const modal = document.getElementById('item-detail-modal');
+      const modalName = document.getElementById('modal-item-name');
+      const modalType = document.getElementById('modal-item-type');
+      const modalDescription = document.getElementById('modal-item-description');
+      const modalStats = document.getElementById('modal-item-stats');
+      const modalClose = document.getElementById('modal-close-btn');
+      const modalEquip = document.getElementById('modal-equip-btn');
+
+      const equipped = {
+        weapon: null,
+        shield: null,
+        head: null,
+        accessory: null
+      };
+
+      function renderEquipmentSlots() {
+        Object.keys(equipped).forEach(slot => {
+          const display = document.querySelector(`[data-eq-slot="${slot}"]`) || document.getElementById(`${slot}-slot`);
+          if (display) {
+            display.textContent = equipped[slot] ? `${equipped[slot].name} (${equipped[slot].type})` : 'Empty';
+          }
+        });
+      }
+
+      function openModal(item) {
+        selectedItem = item;
+        modalName.textContent = item.name;
+        modalType.textContent = 'Type: ' + item.type;
+        modalDescription.textContent = item.description;
+        modalStats.textContent = 'Stats: ' + Object.entries(item.stats).map(([k,v]) => `${k.toUpperCase()}: ${v}`).join(', ');
+        modal.style.display = 'flex';
+      }
+
+      function closeModal() {
+        selectedItem = null;
+        modal.style.display = 'none';
+      }
+
+      function equipSelectedItem() {
+        if (!selectedItem) return;
+        equipped[selectedItem.slot] = selectedItem;
+        renderEquipmentSlots();
+        closeModal();
+      }
+
+      modalClose.addEventListener('click', closeModal);
+      modal.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
+      modalEquip.addEventListener('click', equipSelectedItem);
+
+      function renderInventory() {
+        inventoryContainer.innerHTML = '';
+        currentInventory.forEach(item => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.style.padding = '8px';
+          btn.style.textAlign = 'left';
+          btn.style.width = '100%';
+          btn.style.border = '1px solid #aaa';
+          btn.style.borderRadius = '5px';
+          btn.style.background = '#fff';
+          btn.innerHTML = `<strong>${item.name}</strong><br><small>${item.type}</small>`;
+          btn.addEventListener('click', () => openModal(item));
+          inventoryContainer.appendChild(btn);
+        });
+      }
+
+      renderInventory();
+      renderEquipmentSlots();
+    })();
+  </script>
 </body>
 </html>
