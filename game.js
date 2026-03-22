@@ -196,42 +196,75 @@ class Match3Scene extends Phaser.Scene {
 
         this.equipmentScreenGroup = this.add.container(0, 0).setVisible(false);
 
-        const slotsAreaCenterX = Math.floor(width * 0.34);
-        const inventoryAreaX = Math.floor(width * 0.63);
-        const slotSize = 80;
-        const slotYStart = 120;
+        const leftPanelCenterX = Math.floor(width * 0.30);
+        const rightPanelCenterX = Math.floor(width * 0.75);
+        const silhouetteTopY = 120;
+        const slotSize = 72;
 
         const bg = this.add.rectangle(width / 2, height / 2, width - 40, height - 40, 0x1a1a1a, 1).setStrokeStyle(2, 0xffffff);
-        const divider = this.add.rectangle(Math.floor(width * 0.54), height / 2, 2, height - 80, 0x555555, 1);
+        const divider = this.add.rectangle(Math.floor(width * 0.56), height / 2, 2, height - 80, 0x555555, 1);
+
+        const leftPanelBg = this.add.rectangle(leftPanelCenterX, height / 2 + 10, width * 0.47, height - 130, 0x222222, 0.95).setStrokeStyle(1, 0x666666);
+        const rightPanelBg = this.add.rectangle(rightPanelCenterX, height / 2 + 10, width * 0.34, height - 130, 0x232323, 0.95).setStrokeStyle(1, 0x666666);
 
         const title = this.add.text(width / 2, 60, 'Equipment Tab', { fontSize: '28px', color: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5);
-        const tabInfo = this.add.text(20, 20, 'Game Tab: ', { fontSize: '18px', color: '#ffffff' }).setOrigin(0,0);
-        const switchButton = this.add.text(120, 18, 'Back to Game', { fontSize: '18px', color: '#00ffcc', backgroundColor: '#333333', padding: { left: 6, right: 6, top: 4, bottom: 4 } }).setOrigin(0,0).setInteractive({ useHandCursor: true });
+        const tabInfo = this.add.text(20, 20, 'Game Tab: ', { fontSize: '18px', color: '#ffffff' }).setOrigin(0, 0);
+        const switchButton = this.add.text(120, 18, 'Back to Game', { fontSize: '18px', color: '#00ffcc', backgroundColor: '#333333', padding: { left: 6, right: 6, top: 4, bottom: 4 } }).setOrigin(0, 0).setInteractive({ useHandCursor: true });
         switchButton.on('pointerup', () => this.showGameScreen());
 
-        const slotsHeader = this.add.text(slotsAreaCenterX, 95, 'Equipped Slots', { fontSize: '18px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
-        const inventoryHeader = this.add.text(inventoryAreaX, 95, 'Inventory', { fontSize: '18px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
+        const slotsHeader = this.add.text(leftPanelCenterX, 95, 'Warrior Loadout', { fontSize: '18px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
+        const inventoryHeader = this.add.text(rightPanelCenterX, 95, 'Inventory', { fontSize: '18px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
 
-        const inventoryPanel = this.add.rectangle(inventoryAreaX, 290, width * 0.32, 370, 0x262626, 0.95).setStrokeStyle(2, 0x888888);
-        const inventoryHint = this.add.text(inventoryAreaX, 125, 'Click an item to view details and equip it', {
+        const inventoryHint = this.add.text(rightPanelCenterX, 125, 'Click an item to inspect, then equip it.', {
             fontSize: '13px',
             color: '#ffffff',
             wordWrap: { width: Math.floor(width * 0.30), useAdvancedWrap: true }
         }).setOrigin(0.5, 0);
 
-        this.equipmentScreenGroup.add([bg, divider, title, tabInfo, switchButton, slotsHeader, inventoryHeader, inventoryPanel, inventoryHint]);
+        // Silhouette sits behind the slot markers to make each slot position readable.
+        const silhouette = this.add.graphics();
+        silhouette.fillStyle(0xffffff, 0.12);
+        silhouette.lineStyle(2, 0xffffff, 0.28);
+        silhouette.fillCircle(leftPanelCenterX, silhouetteTopY + 36, 34); // head
+        silhouette.strokeCircle(leftPanelCenterX, silhouetteTopY + 36, 34);
+        silhouette.fillRoundedRect(leftPanelCenterX - 28, silhouetteTopY + 72, 56, 120, 10); // torso
+        silhouette.strokeRoundedRect(leftPanelCenterX - 28, silhouetteTopY + 72, 56, 120, 10);
+        silhouette.fillRoundedRect(leftPanelCenterX - 64, silhouetteTopY + 84, 22, 94, 8); // left arm
+        silhouette.strokeRoundedRect(leftPanelCenterX - 64, silhouetteTopY + 84, 22, 94, 8);
+        silhouette.fillRoundedRect(leftPanelCenterX + 42, silhouetteTopY + 84, 22, 94, 8); // right arm
+        silhouette.strokeRoundedRect(leftPanelCenterX + 42, silhouetteTopY + 84, 22, 94, 8);
+        silhouette.fillRoundedRect(leftPanelCenterX - 22, silhouetteTopY + 194, 18, 88, 8); // left leg
+        silhouette.strokeRoundedRect(leftPanelCenterX - 22, silhouetteTopY + 194, 18, 88, 8);
+        silhouette.fillRoundedRect(leftPanelCenterX + 4, silhouetteTopY + 194, 18, 88, 8); // right leg
+        silhouette.strokeRoundedRect(leftPanelCenterX + 4, silhouetteTopY + 194, 18, 88, 8);
+        const warriorGlyph = this.add.text(leftPanelCenterX, silhouetteTopY + 140, '⚔', { fontSize: '54px', color: '#ffffff' }).setOrigin(0.5).setAlpha(0.25);
+
+        this.equipmentScreenGroup.add([
+            bg,
+            divider,
+            leftPanelBg,
+            rightPanelBg,
+            title,
+            tabInfo,
+            switchButton,
+            slotsHeader,
+            inventoryHeader,
+            inventoryHint,
+            silhouette,
+            warriorGlyph
+        ]);
 
         const slotConfig = [
-            { key: 'helmet', label: 'Helmet', x: slotsAreaCenterX, y: slotYStart + 40 },
-            { key: 'necklace', label: 'Necklace', x: slotsAreaCenterX, y: slotYStart + 130 },
-            { key: 'chest', label: 'Chest', x: slotsAreaCenterX, y: slotYStart + 220 },
-            { key: 'belt', label: 'Belt', x: slotsAreaCenterX, y: slotYStart + 310 },
-            { key: 'gloves', label: 'Gloves', x: slotsAreaCenterX - 130, y: slotYStart + 220 },
-            { key: 'boots', label: 'Boots', x: slotsAreaCenterX - 130, y: slotYStart + 310 },
-            { key: 'mainhand', label: 'Main Hand', x: slotsAreaCenterX + 130, y: slotYStart + 220 },
-            { key: 'offhand', label: 'Off Hand', x: slotsAreaCenterX + 130, y: slotYStart + 310 },
-            { key: 'ring1', label: 'Ring 1', x: slotsAreaCenterX - 70, y: slotYStart + 380 },
-            { key: 'ring2', label: 'Ring 2', x: slotsAreaCenterX + 70, y: slotYStart + 380 }
+            { key: 'helmet', label: 'Helmet', x: leftPanelCenterX, y: silhouetteTopY + 32 },
+            { key: 'necklace', label: 'Necklace', x: leftPanelCenterX, y: silhouetteTopY + 95 },
+            { key: 'chest', label: 'Chest', x: leftPanelCenterX, y: silhouetteTopY + 150 },
+            { key: 'belt', label: 'Belt', x: leftPanelCenterX, y: silhouetteTopY + 220 },
+            { key: 'offhand', label: 'Off Hand', x: leftPanelCenterX - 145, y: silhouetteTopY + 150 },
+            { key: 'mainhand', label: 'Main Hand', x: leftPanelCenterX + 145, y: silhouetteTopY + 150 },
+            { key: 'gloves', label: 'Gloves', x: leftPanelCenterX + 145, y: silhouetteTopY + 220 },
+            { key: 'boots', label: 'Boots', x: leftPanelCenterX, y: silhouetteTopY + 300 },
+            { key: 'ring1', label: 'Ring 1', x: leftPanelCenterX - 105, y: silhouetteTopY + 300 },
+            { key: 'ring2', label: 'Ring 2', x: leftPanelCenterX + 105, y: silhouetteTopY + 300 }
         ];
 
         const equipmentIcons = {
@@ -267,13 +300,13 @@ class Match3Scene extends Phaser.Scene {
         });
 
         this.inventoryRowTexts = [];
-        const inventoryStartY = 160;
+        const inventoryStartY = 165;
         this.inventory.forEach((item, index) => {
             const rowY = inventoryStartY + index * 30;
-            const rowBg = this.add.rectangle(inventoryAreaX, rowY, width * 0.29, 24, 0x343434, 1)
+            const rowBg = this.add.rectangle(rightPanelCenterX, rowY, width * 0.29, 24, 0x343434, 1)
                 .setStrokeStyle(1, 0x6a6a6a)
                 .setInteractive({ useHandCursor: true });
-            const rowText = this.add.text(inventoryAreaX - Math.floor(width * 0.13), rowY, '', {
+            const rowText = this.add.text(rightPanelCenterX - Math.floor(width * 0.13), rowY, '', {
                 fontSize: '13px',
                 color: '#ffffff'
             }).setOrigin(0, 0.5);
