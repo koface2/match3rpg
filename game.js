@@ -69,6 +69,26 @@ class Match3Scene extends Phaser.Scene {
         const monsterIndex = Phaser.Math.Between(0, MONSTER_AVATARS.length - 1);
         this.currentMonsterAvatar = MONSTER_AVATARS[monsterIndex];
         this.currentMonsterName = MONSTER_NAMES[monsterIndex];
+
+        this.inventory = [
+            { id: 'iron-helm', name: 'Iron Helm', slot: 'helmet', type: 'Helmet', rarity: 'Common', description: 'Simple iron head protection.', stats: { armor: 4 } },
+            { id: 'hunter-coat', name: 'Hunter Coat', slot: 'chest', type: 'Chest', rarity: 'Uncommon', description: 'Leather coat favored by scouts.', stats: { armor: 5, ranged: 2 } },
+            { id: 'war-gloves', name: 'War Gloves', slot: 'gloves', type: 'Gloves', rarity: 'Common', description: 'Reinforced gloves for melee grip.', stats: { physical: 3 } },
+            { id: 'trail-boots', name: 'Trail Boots', slot: 'boots', type: 'Boots', rarity: 'Common', description: 'Light boots for quick movement.', stats: { ranged: 1, armor: 2 } },
+            { id: 'oak-belt', name: 'Oak Belt', slot: 'belt', type: 'Belt', rarity: 'Common', description: 'Sturdy belt with potion loops.', stats: { health: 10 } },
+            { id: 'knight-blade', name: 'Knight Blade', slot: 'mainhand', type: 'Weapon', rarity: 'Rare', description: 'A balanced one-handed sword.', stats: { physical: 6 } },
+            { id: 'tower-buckler', name: 'Tower Buckler', slot: 'offhand', type: 'Shield', rarity: 'Uncommon', description: 'Small shield with strong guard.', stats: { armor: 6 } },
+            { id: 'topaz-band', name: 'Topaz Band', slot: 'ring1', type: 'Ring', rarity: 'Uncommon', description: 'Warm stone that boosts vitality.', stats: { health: 15 } },
+            { id: 'moon-band', name: 'Moon Band', slot: 'ring2', type: 'Ring', rarity: 'Uncommon', description: 'Pale band for magical focus.', stats: { magic: 4 } },
+            { id: 'sage-amulet', name: 'Sage Amulet', slot: 'necklace', type: 'Necklace', rarity: 'Rare', description: 'Ancient charm that sharpens focus.', stats: { magic: 6, ranged: 2 } }
+        ];
+        this.inventoryRowTexts = [];
+        this.selectedInventoryItem = null;
+        this.inventoryModal = null;
+        this.inventoryModalName = null;
+        this.inventoryModalType = null;
+        this.inventoryModalDesc = null;
+        this.inventoryModalStats = null;
     }
 
     create() {
@@ -176,46 +196,42 @@ class Match3Scene extends Phaser.Scene {
 
         this.equipmentScreenGroup = this.add.container(0, 0).setVisible(false);
 
-        const centerX = width / 2;
+        const slotsAreaCenterX = Math.floor(width * 0.34);
+        const inventoryAreaX = Math.floor(width * 0.63);
         const slotSize = 80;
         const slotYStart = 120;
 
         const bg = this.add.rectangle(width / 2, height / 2, width - 40, height - 40, 0x1a1a1a, 1).setStrokeStyle(2, 0xffffff);
-
-        const silhouette = this.add.graphics();
-        silhouette.fillStyle(0xffffff, 0.18);
-        silhouette.lineStyle(2, 0xffffff, 0.30);
-        silhouette.fillCircle(centerX, slotYStart + 50, 36); // head
-        silhouette.strokeCircle(centerX, slotYStart + 50, 36);
-        silhouette.fillRect(centerX - 24, slotYStart + 80, 48, 110); // torso
-        silhouette.strokeRect(centerX - 24, slotYStart + 80, 48, 110);
-        silhouette.fillRect(centerX - 56, slotYStart + 78, 16, 90); // left arm
-        silhouette.strokeRect(centerX - 56, slotYStart + 78, 16, 90);
-        silhouette.fillRect(centerX + 40, slotYStart + 78, 16, 90); // right arm
-        silhouette.strokeRect(centerX + 40, slotYStart + 78, 16, 90);
-        silhouette.fillRect(centerX - 20, slotYStart + 186, 16, 80); // left leg
-        silhouette.strokeRect(centerX - 20, slotYStart + 186, 16, 80);
-        silhouette.fillRect(centerX + 4, slotYStart + 186, 16, 80); // right leg
-        silhouette.strokeRect(centerX + 4, slotYStart + 186, 16, 80);
+        const divider = this.add.rectangle(Math.floor(width * 0.54), height / 2, 2, height - 80, 0x555555, 1);
 
         const title = this.add.text(width / 2, 60, 'Equipment Tab', { fontSize: '28px', color: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5);
         const tabInfo = this.add.text(20, 20, 'Game Tab: ', { fontSize: '18px', color: '#ffffff' }).setOrigin(0,0);
         const switchButton = this.add.text(120, 18, 'Back to Game', { fontSize: '18px', color: '#00ffcc', backgroundColor: '#333333', padding: { left: 6, right: 6, top: 4, bottom: 4 } }).setOrigin(0,0).setInteractive({ useHandCursor: true });
         switchButton.on('pointerup', () => this.showGameScreen());
 
-        this.equipmentScreenGroup.add([bg, silhouette, title, tabInfo, switchButton]);
+        const slotsHeader = this.add.text(slotsAreaCenterX, 95, 'Equipped Slots', { fontSize: '18px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
+        const inventoryHeader = this.add.text(inventoryAreaX, 95, 'Inventory', { fontSize: '18px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
+
+        const inventoryPanel = this.add.rectangle(inventoryAreaX, 290, width * 0.32, 370, 0x262626, 0.95).setStrokeStyle(2, 0x888888);
+        const inventoryHint = this.add.text(inventoryAreaX, 125, 'Click an item to view details and equip it', {
+            fontSize: '13px',
+            color: '#ffffff',
+            wordWrap: { width: Math.floor(width * 0.30), useAdvancedWrap: true }
+        }).setOrigin(0.5, 0);
+
+        this.equipmentScreenGroup.add([bg, divider, title, tabInfo, switchButton, slotsHeader, inventoryHeader, inventoryPanel, inventoryHint]);
 
         const slotConfig = [
-            { key: 'helmet', label: 'Helmet', x: centerX, y: slotYStart + 40 },
-            { key: 'necklace', label: 'Necklace', x: centerX, y: slotYStart + 130 },
-            { key: 'chest', label: 'Chest', x: centerX, y: slotYStart + 220 },
-            { key: 'belt', label: 'Belt', x: centerX, y: slotYStart + 310 },
-            { key: 'gloves', label: 'Gloves', x: centerX - 160, y: slotYStart + 220 },
-            { key: 'boots', label: 'Boots', x: centerX - 160, y: slotYStart + 310 },
-            { key: 'mainhand', label: 'Main Hand', x: centerX + 160, y: slotYStart + 220 },
-            { key: 'offhand', label: 'Off Hand', x: centerX + 160, y: slotYStart + 310 },
-            { key: 'ring1', label: 'Ring 1', x: centerX - 80, y: slotYStart + 380 },
-            { key: 'ring2', label: 'Ring 2', x: centerX + 80, y: slotYStart + 380 }
+            { key: 'helmet', label: 'Helmet', x: slotsAreaCenterX, y: slotYStart + 40 },
+            { key: 'necklace', label: 'Necklace', x: slotsAreaCenterX, y: slotYStart + 130 },
+            { key: 'chest', label: 'Chest', x: slotsAreaCenterX, y: slotYStart + 220 },
+            { key: 'belt', label: 'Belt', x: slotsAreaCenterX, y: slotYStart + 310 },
+            { key: 'gloves', label: 'Gloves', x: slotsAreaCenterX - 130, y: slotYStart + 220 },
+            { key: 'boots', label: 'Boots', x: slotsAreaCenterX - 130, y: slotYStart + 310 },
+            { key: 'mainhand', label: 'Main Hand', x: slotsAreaCenterX + 130, y: slotYStart + 220 },
+            { key: 'offhand', label: 'Off Hand', x: slotsAreaCenterX + 130, y: slotYStart + 310 },
+            { key: 'ring1', label: 'Ring 1', x: slotsAreaCenterX - 70, y: slotYStart + 380 },
+            { key: 'ring2', label: 'Ring 2', x: slotsAreaCenterX + 70, y: slotYStart + 380 }
         ];
 
         const equipmentIcons = {
@@ -250,6 +266,78 @@ class Match3Scene extends Phaser.Scene {
             this.equipmentScreenGroup.add([slotBg, slotImageBg, slotIcon, slotLabel, slotValue]);
         });
 
+        this.inventoryRowTexts = [];
+        const inventoryStartY = 160;
+        this.inventory.forEach((item, index) => {
+            const rowY = inventoryStartY + index * 30;
+            const rowBg = this.add.rectangle(inventoryAreaX, rowY, width * 0.29, 24, 0x343434, 1)
+                .setStrokeStyle(1, 0x6a6a6a)
+                .setInteractive({ useHandCursor: true });
+            const rowText = this.add.text(inventoryAreaX - Math.floor(width * 0.13), rowY, '', {
+                fontSize: '13px',
+                color: '#ffffff'
+            }).setOrigin(0, 0.5);
+
+            rowBg.on('pointerup', () => this.openInventoryItemPopup(item));
+            rowText.setInteractive({ useHandCursor: true });
+            rowText.on('pointerup', () => this.openInventoryItemPopup(item));
+
+            this.inventoryRowTexts.push({ item, rowBg, rowText });
+            this.equipmentScreenGroup.add([rowBg, rowText]);
+        });
+
+        const modalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
+            .setInteractive({ useHandCursor: true });
+        const modalCard = this.add.rectangle(width / 2, height / 2, 430, 300, 0x111111, 1)
+            .setStrokeStyle(2, 0xffffff);
+        const modalTitle = this.add.text(width / 2, height / 2 - 110, 'Item Details', {
+            fontSize: '24px',
+            color: '#ffff00',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.inventoryModalName = this.add.text(width / 2, height / 2 - 65, '', { fontSize: '20px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.inventoryModalType = this.add.text(width / 2, height / 2 - 30, '', { fontSize: '14px', color: '#00ffcc' }).setOrigin(0.5);
+        this.inventoryModalDesc = this.add.text(width / 2, height / 2 + 10, '', {
+            fontSize: '14px',
+            color: '#ffffff',
+            align: 'center',
+            wordWrap: { width: 380, useAdvancedWrap: true }
+        }).setOrigin(0.5);
+        this.inventoryModalStats = this.add.text(width / 2, height / 2 + 70, '', { fontSize: '14px', color: '#ffd966' }).setOrigin(0.5);
+
+        const closeModalBtn = this.add.text(width / 2 - 80, height / 2 + 120, 'Close', {
+            fontSize: '18px',
+            color: '#ffffff',
+            backgroundColor: '#444444',
+            padding: { left: 10, right: 10, top: 5, bottom: 5 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        const equipBtn = this.add.text(width / 2 + 80, height / 2 + 120, 'Equip', {
+            fontSize: '18px',
+            color: '#111111',
+            backgroundColor: '#00ff99',
+            padding: { left: 12, right: 12, top: 5, bottom: 5 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        modalOverlay.on('pointerup', () => this.closeInventoryItemPopup());
+        closeModalBtn.on('pointerup', () => this.closeInventoryItemPopup());
+        equipBtn.on('pointerup', () => this.equipSelectedInventoryItem());
+
+        this.inventoryModal = this.add.container(0, 0, [
+            modalOverlay,
+            modalCard,
+            modalTitle,
+            this.inventoryModalName,
+            this.inventoryModalType,
+            this.inventoryModalDesc,
+            this.inventoryModalStats,
+            closeModalBtn,
+            equipBtn
+        ]).setVisible(false);
+
+        this.equipmentScreenGroup.add(this.inventoryModal);
+
+        this.updateInventoryListUI();
+
         const backBtn = this.add.text(width / 2, height - 60, 'Back to Game', { fontSize: '20px', color: '#00ff00', backgroundColor: '#333333', padding: { left: 10, right: 10, top: 6, bottom: 6 } }).setOrigin(0.5).setInteractive({ useHandCursor: true });
         backBtn.on('pointerup', () => this.showGameScreen());
         this.equipmentScreenGroup.add(backBtn);
@@ -268,6 +356,7 @@ class Match3Scene extends Phaser.Scene {
     showGameScreen() {
         this.currentScreen = 'game';
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
+        this.closeInventoryItemPopup();
         this.boardContainer.setVisible(true);
         this.hudContainer.setVisible(true);
         this.setGameBoardActive(true);
@@ -298,6 +387,51 @@ class Match3Scene extends Phaser.Scene {
                 this.equipmentIconText[key].setText(value === 'None' ? '' : equipmentIcons[key] || '❓');
             }
         });
+
+        this.updateInventoryListUI();
+    }
+
+    updateInventoryListUI() {
+        if (!this.inventoryRowTexts) return;
+
+        this.inventoryRowTexts.forEach(({ item, rowBg, rowText }) => {
+            const equippedName = this.player.equipment[item.slot];
+            const isEquipped = equippedName === item.name;
+            rowBg.fillColor = isEquipped ? 0x2f5f3b : 0x343434;
+            rowText.setText(`${item.name} (${item.type})${isEquipped ? ' [Equipped]' : ''}`);
+        });
+    }
+
+    openInventoryItemPopup(item) {
+        if (!this.inventoryModal) return;
+        this.selectedInventoryItem = item;
+
+        const statText = Object.entries(item.stats)
+            .map(([key, value]) => `${key.toUpperCase()}: +${value}`)
+            .join('   ');
+
+        this.inventoryModalName.setText(item.name);
+        this.inventoryModalType.setText(`Type: ${item.type}  |  Slot: ${item.slot}  |  Rarity: ${item.rarity}`);
+        this.inventoryModalDesc.setText(item.description);
+        this.inventoryModalStats.setText(statText || 'No bonus stats');
+        this.inventoryModal.setVisible(true);
+    }
+
+    closeInventoryItemPopup() {
+        this.selectedInventoryItem = null;
+        if (this.inventoryModal) {
+            this.inventoryModal.setVisible(false);
+        }
+    }
+
+    equipSelectedInventoryItem() {
+        if (!this.selectedInventoryItem) return;
+
+        const item = this.selectedInventoryItem;
+        this.player.equipment[item.slot] = item.name;
+        this.updateEquipmentScreen();
+        this.addCombatLog(`Equipped ${item.name} in ${item.slot}`, '#99ff99');
+        this.closeInventoryItemPopup();
     }
 
     setGameBoardActive(active) {
