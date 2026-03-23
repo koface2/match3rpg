@@ -61,6 +61,20 @@ match3rpg/
 - **Grid Management**: 2D array with tile type indices
 - **Rendering**: Phaser Graphics API
 
+## Git Setup Note
+
+This repository has a Git LFS `pre-push` hook enabled. If pushes fail with a message about `git-lfs` not being found:
+
+1. Install Git LFS and initialize it:
+   - `git lfs install`
+2. Retry your push.
+
+If you are in a restricted dev container and cannot install packages, you can temporarily bypass hooks for that push:
+
+- `git push --no-verify`
+
+Use `--no-verify` only as a temporary workaround.
+
 ## Key Classes and Methods
 
 ### Match3Scene

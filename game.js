@@ -114,12 +114,16 @@ class Match3Scene extends Phaser.Scene {
         this.equippedItems = {};
         this.inventoryTiles = [];
         this.selectedInventoryItem = null;
+        this.selectedItemSource = null;
+        this.selectedEquippedSlot = null;
         this.inventoryModal = null;
         this.inventoryModalIcon = null;
         this.inventoryModalName = null;
         this.inventoryModalType = null;
         this.inventoryModalDesc = null;
         this.inventoryModalStats = null;
+        this.inventoryModalEquipBtn = null;
+        this.inventoryModalRemoveBtn = null;
         this.rewardScreenGroup = null;
         this.rewardLootInfoText = null;
         this.rewardCards = [];
@@ -797,13 +801,28 @@ class Match3Scene extends Phaser.Scene {
 
         slotConfig.forEach(slot => {
             // Square slot for equipment
-            const slotBg = this.add.rectangle(slot.x, slot.y, slotSize, slotSize, 0x333333, 0.95).setStrokeStyle(2, 0xffffff).setOrigin(0.5);
+            const slotBg = this.add.rectangle(slot.x, slot.y, slotSize, slotSize, 0x333333, 0.95)
+                .setStrokeStyle(2, 0xffffff)
+                .setOrigin(0.5)
+                .setInteractive({ useHandCursor: true });
 
             // Inner tile area for item image/icon
-            const slotImageBg = this.add.rectangle(slot.x, slot.y, slotSize * 0.7, slotSize * 0.7, 0x000000, 0.45).setStrokeStyle(1, 0xffffff, 0.66).setOrigin(0.5);
+            const slotImageBg = this.add.rectangle(slot.x, slot.y, slotSize * 0.7, slotSize * 0.7, 0x000000, 0.45)
+                .setStrokeStyle(1, 0xffffff, 0.66)
+                .setOrigin(0.5)
+                .setInteractive({ useHandCursor: true });
             const slotIcon = this.add.text(slot.x, slot.y, '', { fontSize: '34px', color: '#ffffff' }).setOrigin(0.5);
             const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 - 14, slot.label, { fontSize: '14px', color: '#ffff00' }).setOrigin(0.5, 0.5);
             const slotValue = this.add.text(slot.x, slot.y + slotSize / 2 + 14, 'Empty', { fontSize: '14px', color: '#ffffff' }).setOrigin(0.5, 0.5);
+
+            const inspectEquippedItem = () => {
+                const equippedItem = this.equippedItems[slot.key];
+                if (equippedItem) {
+                    this.openInventoryItemPopup(equippedItem, 'equipped', slot.key);
+                }
+            };
+            slotBg.on('pointerup', inspectEquippedItem);
+            slotImageBg.on('pointerup', inspectEquippedItem);
 
             this.equipmentText[slot.key] = slotValue;
             this.equipmentIconText[slot.key] = slotIcon;
@@ -851,7 +870,7 @@ class Match3Scene extends Phaser.Scene {
 
         const modalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
             .setInteractive({ useHandCursor: true });
-        const modalCard = this.add.rectangle(width / 2, height / 2, 430, 300, 0x111111, 1)
+        const modalCard = this.add.rectangle(width / 2, height / 2, 430, 360, 0x111111, 1)
             .setStrokeStyle(2, 0xffffff);
         const modalTitle = this.add.text(width / 2, height / 2 - 110, 'Item Details', {
             fontSize: '24px',
@@ -861,23 +880,39 @@ class Match3Scene extends Phaser.Scene {
         this.inventoryModalFrame = this.add.rectangle(width / 2, height / 2 - 62, 58, 58, 0x1f1f1f, 1).setStrokeStyle(2, 0x888888);
         this.inventoryModalIcon = this.add.text(width / 2, height / 2 - 62, '', { fontSize: '30px' }).setOrigin(0.5);
         this.inventoryModalName = this.add.text(width / 2, height / 2 - 14, '', { fontSize: '20px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
-        this.inventoryModalType = this.add.text(width / 2, height / 2 + 18, '', { fontSize: '14px', color: '#00ffcc' }).setOrigin(0.5);
+        this.inventoryModalType = this.add.text(width / 2, height / 2 + 16, '', {
+            fontSize: '14px',
+            color: '#00ffcc',
+            align: 'center',
+            wordWrap: { width: 390, useAdvancedWrap: true }
+        }).setOrigin(0.5);
         this.inventoryModalDesc = this.add.text(width / 2, height / 2 + 10, '', {
             fontSize: '14px',
             color: '#ffffff',
             align: 'center',
             wordWrap: { width: 380, useAdvancedWrap: true }
         }).setOrigin(0.5);
-        this.inventoryModalDesc.y = height / 2 + 55;
-        this.inventoryModalStats = this.add.text(width / 2, height / 2 + 108, '', { fontSize: '14px', color: '#ffd966' }).setOrigin(0.5);
+        this.inventoryModalDesc.y = height / 2 + 72;
+        this.inventoryModalStats = this.add.text(width / 2, height / 2 + 122, '', {
+            fontSize: '14px',
+            color: '#ffd966',
+            align: 'center',
+            wordWrap: { width: 380, useAdvancedWrap: true }
+        }).setOrigin(0.5);
 
-        const closeModalBtn = this.add.text(width / 2 - 80, height / 2 + 120, 'Close', {
+        const closeModalBtn = this.add.text(width / 2 - 120, height / 2 + 156, 'Close', {
             fontSize: '18px',
             color: '#ffffff',
             backgroundColor: '#444444',
             padding: { left: 10, right: 10, top: 5, bottom: 5 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        const equipBtn = this.add.text(width / 2 + 80, height / 2 + 120, 'Equip', {
+        const removeBtn = this.add.text(width / 2, height / 2 + 156, 'Remove', {
+            fontSize: '18px',
+            color: '#ffffff',
+            backgroundColor: '#a33d3d',
+            padding: { left: 12, right: 12, top: 5, bottom: 5 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        const equipBtn = this.add.text(width / 2 + 120, height / 2 + 156, 'Equip', {
             fontSize: '18px',
             color: '#111111',
             backgroundColor: '#00ff99',
@@ -887,6 +922,10 @@ class Match3Scene extends Phaser.Scene {
         modalOverlay.on('pointerup', () => this.closeInventoryItemPopup());
         closeModalBtn.on('pointerup', () => this.closeInventoryItemPopup());
         equipBtn.on('pointerup', () => this.equipSelectedInventoryItem());
+        removeBtn.on('pointerup', () => this.removeSelectedEquippedItem());
+
+        this.inventoryModalEquipBtn = equipBtn;
+        this.inventoryModalRemoveBtn = removeBtn;
 
         this.inventoryModal = this.add.container(0, 0, [
             modalOverlay,
@@ -899,6 +938,7 @@ class Match3Scene extends Phaser.Scene {
             this.inventoryModalDesc,
             this.inventoryModalStats,
             closeModalBtn,
+            removeBtn,
             equipBtn
         ]).setVisible(false);
 
@@ -979,13 +1019,15 @@ class Match3Scene extends Phaser.Scene {
         });
     }
 
-    openInventoryItemPopup(item) {
+    openInventoryItemPopup(item, source = 'inventory', equippedSlot = null) {
         if (!this.inventoryModal) return;
         this.selectedInventoryItem = item;
+        this.selectedItemSource = source;
+        this.selectedEquippedSlot = equippedSlot;
 
         const statText = Object.entries(item.stats)
             .map(([key, value]) => `${this.getStatLabel(key)}: +${value}`)
-            .join('   ');
+            .join('   |   ');
 
         this.inventoryModalFrame.setStrokeStyle(2, item.frameColor, 1);
         this.inventoryModalIcon.setText(item.icon);
@@ -994,18 +1036,26 @@ class Match3Scene extends Phaser.Scene {
         this.inventoryModalType.setText(`Type: ${item.type}  |  Slot: ${this.getSlotLabel(item.slotGroup)}  |  Rarity: ${item.rarity}`);
         this.inventoryModalDesc.setText(item.description);
         this.inventoryModalStats.setText(statText || 'No bonus stats');
+        if (this.inventoryModalEquipBtn) {
+            this.inventoryModalEquipBtn.setVisible(source === 'inventory');
+        }
+        if (this.inventoryModalRemoveBtn) {
+            this.inventoryModalRemoveBtn.setVisible(source === 'equipped');
+        }
         this.inventoryModal.setVisible(true);
     }
 
     closeInventoryItemPopup() {
         this.selectedInventoryItem = null;
+        this.selectedItemSource = null;
+        this.selectedEquippedSlot = null;
         if (this.inventoryModal) {
             this.inventoryModal.setVisible(false);
         }
     }
 
     equipSelectedInventoryItem() {
-        if (!this.selectedInventoryItem) return;
+        if (!this.selectedInventoryItem || this.selectedItemSource !== 'inventory') return;
 
         const item = this.selectedInventoryItem;
         const targetSlot = this.resolveEquipSlot(item.slotGroup);
@@ -1026,6 +1076,30 @@ class Match3Scene extends Phaser.Scene {
         this.equippedItems[targetSlot] = item;
         this.updateEquipmentScreen();
         this.addCombatLog(`Equipped ${item.name} in ${targetSlot}`, '#99ff99');
+        this.closeInventoryItemPopup();
+    }
+
+    removeSelectedEquippedItem() {
+        if (!this.selectedInventoryItem || this.selectedItemSource !== 'equipped' || !this.selectedEquippedSlot) return;
+
+        if (this.inventory.length >= this.maxInventorySlots) {
+            this.addCombatLog('Inventory full. Cannot remove equipped item.', '#ff8888');
+            return;
+        }
+
+        const slotKey = this.selectedEquippedSlot;
+        const equippedItem = this.equippedItems[slotKey];
+        if (!equippedItem) {
+            this.closeInventoryItemPopup();
+            return;
+        }
+
+        this.inventory.push(equippedItem);
+        this.equippedItems[slotKey] = null;
+        this.player.equipment[slotKey] = 'None';
+
+        this.updateEquipmentScreen();
+        this.addCombatLog(`Removed ${equippedItem.name} from ${slotKey}`, '#ffcc88');
         this.closeInventoryItemPopup();
     }
 
