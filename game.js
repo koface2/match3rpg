@@ -2,7 +2,7 @@ const GRID_WIDTH = 6;
 const GRID_HEIGHT = 6;
 const TILE_SIZE = 52;
 const GRID_OFFSET_X = 39;
-const GRID_OFFSET_Y = 420;
+const GRID_OFFSET_Y = 282;
 
 const TILE_TYPES = [
     { name: 'health', color: 0xff1493, icon: '♥', effect: 'health' },
@@ -419,16 +419,16 @@ class Match3Scene extends Phaser.Scene {
         const width = this.sys.game.config.width;
         this.skillBarContainer = this.add.container(0, 0);
 
-        const skillBarBg = this.add.rectangle(width / 2, 756, width - 4, 44, 0x0e0e0e, 0.95)
+        const skillBarBg = this.add.rectangle(width / 2, 724, width - 4, 62, 0x0e0e0e, 0.95)
             .setStrokeStyle(1, 0x3b3b3b, 1)
             .setOrigin(0.5);
         this.skillBarContainer.add(skillBarBg);
 
         const cardWidth = 122;
-        const cardHeight = 38;
+        const cardHeight = 50;
         const spacing = 8;
         const startX = (width - (cardWidth * 3 + spacing * 2)) / 2 + cardWidth / 2;
-        const cardY = 756;
+        const cardY = 724;
 
         this.skillSlotUI = [];
         for (let i = 0; i < 3; i++) {
@@ -438,24 +438,24 @@ class Match3Scene extends Phaser.Scene {
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
             const name = this.add.text(centerX, cardY - 11, '', {
-                fontSize: '10px',
+                fontSize: '11px',
                 color: '#ffffff',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
             const threshold = this.add.text(centerX, cardY, '', {
-                fontSize: '9px',
+                fontSize: '10px',
                 color: '#d5d5d5'
             }).setOrigin(0.5);
 
             const supportSockets = [];
             for (let socketIndex = 0; socketIndex < 3; socketIndex++) {
                 const socketX = centerX - 34 + socketIndex * 34;
-                const socketY = cardY + 11;
-                const socketBg = this.add.rectangle(socketX, socketY, 30, 11, 0x292929, 1)
+                const socketY = cardY + 16;
+                const socketBg = this.add.rectangle(socketX, socketY, 32, 13, 0x292929, 1)
                     .setStrokeStyle(1, 0x737373, 1)
                     .setOrigin(0.5);
                 const socketText = this.add.text(socketX, socketY, '-', {
-                    fontSize: '8px',
+                    fontSize: '9px',
                     color: '#cccccc'
                 }).setOrigin(0.5);
                 supportSockets.push({ socketBg, socketText });
@@ -798,7 +798,7 @@ class Match3Scene extends Phaser.Scene {
 
     createCombatLog() {
         // Positioned between HUD panels and the grid
-        const bg = this.add.rectangle(195, 391, 386, 46, 0x111111, 0.9).setOrigin(0.5);
+        const bg = this.add.rectangle(195, 255, 386, 46, 0x111111, 0.9).setOrigin(0.5);
         this.hudContainer.add(bg);
     }
 
@@ -815,7 +815,7 @@ class Match3Scene extends Phaser.Scene {
         this.combatLogTexts.forEach(t => t.destroy());
         this.combatLogTexts = [];
 
-        const logTopY = 370;
+        const logTopY = 238;
         const lineHeight = 14;
 
         this.combatLog.forEach((entry, index) => {
@@ -1123,7 +1123,7 @@ class Match3Scene extends Phaser.Scene {
         const leftCX = 97;
         const rightCX = 293;
         const panelW = 188;
-        const panelH = 406;
+        const panelH = 250;
         const barW = 166;
 
         // Divider line between panels
@@ -1139,9 +1139,6 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.add(this.playerHealthBarBg);
         this.playerHealthBar = this.add.rectangle(14, 131, barW, 12, 0x00cc00).setOrigin(0, 0.5);
         this.hudContainer.add(this.playerHealthBar);
-        this.playerStatsText = this.add.text(8, 146, '', { fontSize: '12px', color: '#fff', lineSpacing: 2 });
-        this.hudContainer.add(this.playerStatsText);
-
         // --- Enemy panel (right) ---
         this.hudContainer.add(this.add.rectangle(rightCX, panelH / 2 + 4, panelW, panelH, 0x111111, 0.9).setOrigin(0.5));
         this.enemyNameText = this.add.text(rightCX, 14, this.currentMonsterName, { fontSize: '15px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
@@ -1153,13 +1150,10 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.add(this.enemyHealthBarBg);
         this.enemyHealthBar = this.add.rectangle(210, 131, barW, 12, 0xff0000).setOrigin(0, 0.5);
         this.hudContainer.add(this.enemyHealthBar);
-        this.enemyStatsText = this.add.text(205, 146, '', { fontSize: '12px', color: '#fff', lineSpacing: 2 });
-        this.hudContainer.add(this.enemyStatsText);
-
         this.createEquipmentScreen();
         this.createSkillsScreen();
-        this.createEquipmentButton(leftCX - 46, 358);
-        this.createSkillsButton(leftCX + 46, 358);
+        this.createEquipmentButton(leftCX - 46, 210);
+        this.createSkillsButton(leftCX + 46, 210);
 
         this.updatePlayerUI();
         this.updateEnemyUI();
@@ -2043,18 +2037,7 @@ class Match3Scene extends Phaser.Scene {
     }
 
     updatePlayerUI() {
-        if (!this.playerStatsText) return;
-
         const gear = this.getEquippedStatTotals();
-        this.playerStatsText.setText([
-            `Health: ${this.player.health}`,
-            `Physical: ${this.player.physical} (+${gear.physical})`,
-            `Magic: ${this.player.magic} (+${gear.magic})`,
-            `Ranged: ${this.player.ranged} (+${gear.ranged})`,
-            `Loot: ${this.player.loot}`,
-            `Armor: +${gear.armor}`,
-            `Score: ${this.score}`
-        ].join('\n'));
 
         if (this.playerHealthBar) {
             const fraction = Phaser.Math.Clamp(this.player.health / 100, 0, 1);
@@ -2072,12 +2055,6 @@ class Match3Scene extends Phaser.Scene {
     }
 
     updateEnemyUI() {
-        if (!this.enemyStatsText) return;
-        this.enemyStatsText.setText([
-            `Enemy HP: ${this.enemy.health}/${this.enemy.maxHealth}`,
-            `Attack: ${this.enemy.attack}`
-        ].join('\n'));
-
         if (this.enemyHealthBar) {
             const fraction = Phaser.Math.Clamp(this.enemy.health / this.enemy.maxHealth, 0, 1);
             const targetWidth = 166 * fraction;
