@@ -53,6 +53,19 @@ const ITEM_SUFFIXES = [
     { name: 'of Fortune', stats: { loot: [5, 16] } }
 ];
 
+const EQUIPMENT_SLOT_GROUP_BY_KEY = {
+    helmet: 'helmet',
+    chest: 'chest',
+    gloves: 'gloves',
+    boots: 'boots',
+    belt: 'belt',
+    mainhand: 'mainhand',
+    offhand: 'offhand',
+    ring1: 'ring',
+    ring2: 'ring',
+    necklace: 'necklace'
+};
+
 class Match3Scene extends Phaser.Scene {
     constructor() {
         super('Match3Scene');
@@ -394,16 +407,25 @@ class Match3Scene extends Phaser.Scene {
     }
 
     getEquipTargetSlot(item) {
-        if (!item || item.slotGroup !== 'ring') {
-            return item ? item.slotGroup : null;
+        if (!item || !item.slotGroup) return null;
+
+        const slotGroup = item.slotGroup;
+        const standardSlots = ['helmet', 'necklace', 'chest', 'belt', 'gloves', 'boots', 'mainhand', 'offhand'];
+
+        if (slotGroup === 'ring') {
+            if (!this.equippedItems.ring1) return 'ring1';
+            if (!this.equippedItems.ring2) return 'ring2';
+
+            const ring1Score = this.getItemPowerScore(this.equippedItems.ring1);
+            const ring2Score = this.getItemPowerScore(this.equippedItems.ring2);
+            return ring1Score <= ring2Score ? 'ring1' : 'ring2';
         }
 
-        if (!this.equippedItems.ring1) return 'ring1';
-        if (!this.equippedItems.ring2) return 'ring2';
+        if (standardSlots.includes(slotGroup)) {
+            return slotGroup;
+        }
 
-        const ring1Score = this.getItemPowerScore(this.equippedItems.ring1);
-        const ring2Score = this.getItemPowerScore(this.equippedItems.ring2);
-        return ring1Score <= ring2Score ? 'ring1' : 'ring2';
+        return null;
     }
 
     formatSignedValue(value) {
@@ -453,6 +475,12 @@ class Match3Scene extends Phaser.Scene {
 
     resolveEquipSlot(slotGroup) {
         return this.getEquipTargetSlot({ slotGroup });
+    }
+
+    canEquipItemInSlot(item, targetSlot) {
+        if (!item || !targetSlot) return false;
+        const requiredGroup = EQUIPMENT_SLOT_GROUP_BY_KEY[targetSlot];
+        return requiredGroup === item.slotGroup;
     }
 
     createPlayerUI() {
@@ -625,6 +653,10 @@ class Match3Scene extends Phaser.Scene {
 
     equipItemDirectly(item) {
         const targetSlot = this.resolveEquipSlot(item.slotGroup);
+        if (!targetSlot || !this.canEquipItemInSlot(item, targetSlot)) {
+            this.addCombatLog(`Cannot equip ${item.name}: invalid slot`, '#ff8888');
+            return;
+        }
         const previousEquippedItem = this.equippedItems[targetSlot] || null;
 
         if (previousEquippedItem) {
@@ -709,7 +741,7 @@ class Match3Scene extends Phaser.Scene {
 
         const leftPanelCenterX = Math.floor(width * 0.30);
         const rightPanelCenterX = Math.floor(width * 0.75);
-        const silhouetteTopY = 120;
+        const silhouetteTopY = 118;
         const slotSize = 72;
 
         const bg = this.add.rectangle(width / 2, height / 2, width - 40, height - 40, 0x1a1a1a, 1).setStrokeStyle(2, 0xffffff);
@@ -732,27 +764,25 @@ class Match3Scene extends Phaser.Scene {
             wordWrap: { width: Math.floor(width * 0.30), useAdvancedWrap: true }
         }).setOrigin(0.5, 0);
 
-        // Silhouette sits behind the slot markers to make each slot position readable.
+        // Draw a high-contrast translucent warrior body so slot placement is easy to parse.
         const silhouette = this.add.graphics();
-        silhouette.fillStyle(0x6c7a89, 0.42);
-        silhouette.lineStyle(4, 0xd7c38a, 0.9);
-        silhouette.fillCircle(leftPanelCenterX, silhouetteTopY + 36, 34); // head
-        silhouette.strokeCircle(leftPanelCenterX, silhouetteTopY + 36, 34);
-        silhouette.fillRoundedRect(leftPanelCenterX - 28, silhouetteTopY + 72, 56, 120, 10); // torso
-        silhouette.strokeRoundedRect(leftPanelCenterX - 28, silhouetteTopY + 72, 56, 120, 10);
-        silhouette.fillRoundedRect(leftPanelCenterX - 64, silhouetteTopY + 84, 22, 94, 8); // left arm
-        silhouette.strokeRoundedRect(leftPanelCenterX - 64, silhouetteTopY + 84, 22, 94, 8);
-        silhouette.fillRoundedRect(leftPanelCenterX + 42, silhouetteTopY + 84, 22, 94, 8); // right arm
-        silhouette.strokeRoundedRect(leftPanelCenterX + 42, silhouetteTopY + 84, 22, 94, 8);
-        silhouette.fillRoundedRect(leftPanelCenterX - 22, silhouetteTopY + 194, 18, 88, 8); // left leg
-        silhouette.strokeRoundedRect(leftPanelCenterX - 22, silhouetteTopY + 194, 18, 88, 8);
-        silhouette.fillRoundedRect(leftPanelCenterX + 4, silhouetteTopY + 194, 18, 88, 8); // right leg
-        silhouette.strokeRoundedRect(leftPanelCenterX + 4, silhouetteTopY + 194, 18, 88, 8);
-        silhouette.fillStyle(0x4a5560, 0.35);
-        silhouette.fillTriangle(leftPanelCenterX - 38, silhouetteTopY + 190, leftPanelCenterX + 38, silhouetteTopY + 190, leftPanelCenterX, silhouetteTopY + 248);
-        silhouette.lineStyle(2, 0xd7c38a, 0.55);
-        silhouette.strokeTriangle(leftPanelCenterX - 38, silhouetteTopY + 190, leftPanelCenterX + 38, silhouetteTopY + 190, leftPanelCenterX, silhouetteTopY + 248);
-        const warriorGlyph = this.add.text(leftPanelCenterX, silhouetteTopY + 140, '⚔', { fontSize: '54px', color: '#f4e4b8' }).setOrigin(0.5).setAlpha(0.35);
+        silhouette.fillStyle(0x88a3b8, 0.28);
+        silhouette.lineStyle(3, 0xdde8f3, 0.82);
+        silhouette.fillCircle(leftPanelCenterX, silhouetteTopY + 40, 36); // head
+        silhouette.strokeCircle(leftPanelCenterX, silhouetteTopY + 40, 36);
+        silhouette.fillRoundedRect(leftPanelCenterX - 36, silhouetteTopY + 78, 72, 122, 12); // torso
+        silhouette.strokeRoundedRect(leftPanelCenterX - 36, silhouetteTopY + 78, 72, 122, 12);
+        silhouette.fillRoundedRect(leftPanelCenterX - 78, silhouetteTopY + 102, 28, 88, 10); // left arm
+        silhouette.strokeRoundedRect(leftPanelCenterX - 78, silhouetteTopY + 102, 28, 88, 10);
+        silhouette.fillRoundedRect(leftPanelCenterX + 50, silhouetteTopY + 102, 28, 88, 10); // right arm
+        silhouette.strokeRoundedRect(leftPanelCenterX + 50, silhouetteTopY + 102, 28, 88, 10);
+        silhouette.fillRoundedRect(leftPanelCenterX - 28, silhouetteTopY + 208, 22, 106, 9); // left leg
+        silhouette.strokeRoundedRect(leftPanelCenterX - 28, silhouetteTopY + 208, 22, 106, 9);
+        silhouette.fillRoundedRect(leftPanelCenterX + 6, silhouetteTopY + 208, 22, 106, 9); // right leg
+        silhouette.strokeRoundedRect(leftPanelCenterX + 6, silhouetteTopY + 208, 22, 106, 9);
+        silhouette.fillStyle(0xffffff, 0.14);
+        silhouette.fillEllipse(leftPanelCenterX, silhouetteTopY + 166, 48, 26);
+        const warriorGlyph = this.add.text(leftPanelCenterX, silhouetteTopY + 146, '⚔', { fontSize: '66px', color: '#eaf4ff' }).setOrigin(0.5).setAlpha(0.32);
 
         this.equipmentScreenGroup.add([
             bg,
@@ -770,16 +800,16 @@ class Match3Scene extends Phaser.Scene {
         ]);
 
         const slotConfig = [
-            { key: 'helmet', label: 'Helmet', x: leftPanelCenterX, y: silhouetteTopY + 32 },
-            { key: 'necklace', label: 'Necklace', x: leftPanelCenterX, y: silhouetteTopY + 95 },
-            { key: 'chest', label: 'Chest', x: leftPanelCenterX, y: silhouetteTopY + 150 },
-            { key: 'belt', label: 'Belt', x: leftPanelCenterX, y: silhouetteTopY + 220 },
-            { key: 'offhand', label: 'Off Hand', x: leftPanelCenterX - 145, y: silhouetteTopY + 150 },
-            { key: 'mainhand', label: 'Main Hand', x: leftPanelCenterX + 145, y: silhouetteTopY + 150 },
-            { key: 'gloves', label: 'Gloves', x: leftPanelCenterX + 145, y: silhouetteTopY + 220 },
-            { key: 'boots', label: 'Boots', x: leftPanelCenterX, y: silhouetteTopY + 300 },
-            { key: 'ring1', label: 'Ring 1', x: leftPanelCenterX - 105, y: silhouetteTopY + 300 },
-            { key: 'ring2', label: 'Ring 2', x: leftPanelCenterX + 105, y: silhouetteTopY + 300 }
+            { key: 'helmet', label: 'Helmet', x: leftPanelCenterX, y: silhouetteTopY + 38 },
+            { key: 'necklace', label: 'Necklace', x: leftPanelCenterX, y: silhouetteTopY + 102 },
+            { key: 'chest', label: 'Chest', x: leftPanelCenterX, y: silhouetteTopY + 156 },
+            { key: 'belt', label: 'Belt', x: leftPanelCenterX, y: silhouetteTopY + 222 },
+            { key: 'offhand', label: 'Off Hand', x: leftPanelCenterX - 110, y: silhouetteTopY + 160 },
+            { key: 'mainhand', label: 'Main Hand', x: leftPanelCenterX + 110, y: silhouetteTopY + 160 },
+            { key: 'gloves', label: 'Gloves', x: leftPanelCenterX + 110, y: silhouetteTopY + 226 },
+            { key: 'boots', label: 'Boots', x: leftPanelCenterX, y: silhouetteTopY + 304 },
+            { key: 'ring1', label: 'Ring 1', x: leftPanelCenterX - 82, y: silhouetteTopY + 286 },
+            { key: 'ring2', label: 'Ring 2', x: leftPanelCenterX + 82, y: silhouetteTopY + 286 }
         ];
 
         const equipmentIcons = {
@@ -801,13 +831,13 @@ class Match3Scene extends Phaser.Scene {
 
         slotConfig.forEach(slot => {
             // Square slot for equipment
-            const slotBg = this.add.rectangle(slot.x, slot.y, slotSize, slotSize, 0x333333, 0.95)
+            const slotBg = this.add.rectangle(slot.x, slot.y, slotSize, slotSize, 0x2e2e2e, 0.78)
                 .setStrokeStyle(2, 0xffffff)
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
 
             // Inner tile area for item image/icon
-            const slotImageBg = this.add.rectangle(slot.x, slot.y, slotSize * 0.7, slotSize * 0.7, 0x000000, 0.45)
+            const slotImageBg = this.add.rectangle(slot.x, slot.y, slotSize * 0.7, slotSize * 0.7, 0x000000, 0.28)
                 .setStrokeStyle(1, 0xffffff, 0.66)
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
@@ -1059,6 +1089,11 @@ class Match3Scene extends Phaser.Scene {
 
         const item = this.selectedInventoryItem;
         const targetSlot = this.resolveEquipSlot(item.slotGroup);
+        if (!targetSlot || !this.canEquipItemInSlot(item, targetSlot)) {
+            this.addCombatLog(`Cannot equip ${item.name}: invalid slot`, '#ff8888');
+            this.closeInventoryItemPopup();
+            return;
+        }
         const previousEquippedItem = this.equippedItems[targetSlot] || null;
         const inventoryIndex = this.inventory.findIndex(inventoryItem => inventoryItem.id === item.id);
 
