@@ -255,6 +255,15 @@ class Match3Scene extends Phaser.Scene {
         this.skillsInventoryGems = this.createSkillGemInventoryPool();
         this.skillsInventoryTiles = [];
         this.selectedSkillGem = null;
+        this.selectedGemInventoryIndex = -1;
+        this.skillsGemModal = null;
+        this.skillsGemModalTitle = null;
+        this.skillsGemModalIcon = null;
+        this.skillsGemModalName = null;
+        this.skillsGemModalType = null;
+        this.skillsGemModalDesc = null;
+        this.skillsGemModalEquipBtn = null;
+        this.skillsGemModalDiscardBtn = null;
     }
 
     create() {
@@ -530,6 +539,94 @@ class Match3Scene extends Phaser.Scene {
         };
     }
 
+    getSkillGemDescription(gem) {
+        if (!gem) return 'Unknown gem.';
+
+        if (gem.type === 'active') {
+            const activeSkill = this.getActiveSkillById(gem.id);
+            if (!activeSkill) return 'Unknown active gem.';
+            const tileData = this.getTileDataForEffect(activeSkill.tileEffect);
+            const modeLabel = activeSkill.mode === 'damage' ? 'Deals damage' : (activeSkill.mode === 'heal' ? 'Restores health' : 'Generates loot');
+            return `${modeLabel}. Charges from ${tileData ? tileData.name : activeSkill.tileEffect} matches. Base trigger threshold: ${activeSkill.baseThreshold}. Base power: ${activeSkill.basePower}.`;
+        }
+
+        const support = this.getSupportGemById(gem.id);
+        if (!support) return 'Unknown support gem.';
+
+        const thresholdText = support.thresholdDelta === 0
+            ? 'No threshold change'
+            : `${support.thresholdDelta > 0 ? '+' : ''}${support.thresholdDelta} trigger threshold`;
+        const powerText = support.powerMultiplier
+            ? `+${Math.round(support.powerMultiplier * 100)}% power`
+            : 'No power bonus';
+        const healText = support.healFlat ? `+${support.healFlat} flat healing` : null;
+        const lootText = support.lootFlat ? `+${support.lootFlat} flat loot` : null;
+        const echoText = support.extraHitChance ? `${Math.round(support.extraHitChance * 100)}% chance for echo hit` : null;
+        return [thresholdText, powerText, healText, lootText, echoText].filter(Boolean).join('. ') + '.';
+    }
+
+    openSkillGemPopup(gem, inventoryIndex) {
+        if (!this.skillsGemModal || !gem) return;
+        this.selectedSkillGem = gem;
+        this.selectedGemInventoryIndex = inventoryIndex;
+
+        const display = this.getSkillGemDisplay(gem);
+        const description = this.getSkillGemDescription(gem);
+
+        this.skillsGemModalIcon.setText(display.icon);
+        this.skillsGemModalName.setText(display.name);
+        this.skillsGemModalType.setText(`${display.typeLabel} Gem`);
+        this.skillsGemModalDesc.setText(description);
+        this.skillsGemModal.setVisible(true);
+        this.refreshSkillsScreenUI();
+    }
+
+    closeSkillGemPopup() {
+        this.selectedGemInventoryIndex = -1;
+        if (this.skillsGemModal) {
+            this.skillsGemModal.setVisible(false);
+        }
+    }
+
+    equipSelectedGemFromPopup() {
+        if (!this.selectedSkillGem) return;
+        const display = this.getSkillGemDisplay(this.selectedSkillGem);
+        this.addCombatLog(`${display.name} selected. Tap a slot to equip.`, '#ffd56b');
+        this.closeSkillGemPopup();
+        this.refreshSkillsScreenUI();
+    }
+
+    discardSelectedGemFromPopup() {
+        if (!this.selectedSkillGem || this.selectedGemInventoryIndex < 0) return;
+
+        const gem = this.selectedSkillGem;
+        const display = this.getSkillGemDisplay(gem);
+        this.skillsInventoryGems.splice(this.selectedGemInventoryIndex, 1);
+
+        if (gem.type === 'active') {
+            const availableActive = this.skillsInventoryGems.filter(entry => entry.type === 'active');
+            const fallbackActiveId = availableActive.length > 0 ? availableActive[0].id : ACTIVE_SKILL_GEMS[0].id;
+            this.playerSkills.forEach(slot => {
+                if (slot.activeId === gem.id) {
+                    slot.activeId = fallbackActiveId;
+                }
+            });
+        } else {
+            this.playerSkills.forEach(slot => {
+                slot.supportIds = slot.supportIds.map(id => (id === gem.id ? null : id));
+            });
+        }
+
+        if (this.selectedSkillGem && this.selectedSkillGem.id === gem.id && this.selectedSkillGem.type === gem.type) {
+            this.selectedSkillGem = null;
+        }
+
+        this.addCombatLog(`Discarded ${display.name}`, '#ff9d9d');
+        this.closeSkillGemPopup();
+        this.updateSkillBarUI();
+        this.refreshSkillsScreenUI();
+    }
+
     equipSelectedGemToActiveSlot(slotIndex) {
         if (!this.selectedSkillGem || this.selectedSkillGem.type !== 'active') return;
         if (!this.playerSkills[slotIndex]) return;
@@ -598,15 +695,28 @@ class Match3Scene extends Phaser.Scene {
 
         if (this.skillsInventoryTiles && this.skillsInventoryTiles.length > 0) {
             this.skillsInventoryTiles.forEach(tile => {
-                const display = this.getSkillGemDisplay(tile.gem);
+                const gem = this.skillsInventoryGems[tile.index] || null;
+                if (!gem) {
+                    tile.tileBg.setVisible(false);
+                    tile.iconText.setVisible(false);
+                    tile.nameText.setVisible(false);
+                    tile.typeText.setVisible(false);
+                    return;
+                }
+
+                tile.tileBg.setVisible(true);
+                tile.iconText.setVisible(true);
+                tile.nameText.setVisible(true);
+                tile.typeText.setVisible(true);
+
+                const display = this.getSkillGemDisplay(gem);
                 tile.iconText.setText(display.icon);
                 tile.nameText.setText(display.name);
                 tile.typeText.setText(display.typeLabel);
 
                 const isSelected = this.selectedSkillGem
-                    && tile.gem
-                    && this.selectedSkillGem.type === tile.gem.type
-                    && this.selectedSkillGem.id === tile.gem.id;
+                    && this.selectedSkillGem.type === gem.type
+                    && this.selectedSkillGem.id === gem.id;
                 tile.tileBg.setStrokeStyle(2, isSelected ? 0xfff07a : 0x666666, 1);
                 tile.tileBg.setFillStyle(isSelected ? 0x383220 : 0x292929, 1);
             });
@@ -1139,6 +1249,7 @@ class Match3Scene extends Phaser.Scene {
     showRewardScreen() {
         if (!this.rewardScreenGroup) return;
         this.currentScreen = 'reward';
+        this.closeSkillGemPopup();
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
@@ -1393,7 +1504,8 @@ class Match3Scene extends Phaser.Scene {
         let gemIndex = 0;
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
-                const gem = this.skillsInventoryGems[gemIndex];
+                const tileIndex = gemIndex;
+                const gem = this.skillsInventoryGems[tileIndex];
                 const x = gridStartX + col * (cellW + gapX);
                 const y = gridStartY + row * (cellH + gapY);
 
@@ -1415,18 +1527,86 @@ class Match3Scene extends Phaser.Scene {
                     color: '#aaaaaa'
                 }).setOrigin(0.5);
 
-                if (gem) {
-                    tileBg.on('pointerup', () => {
-                        this.selectedSkillGem = gem;
-                        this.refreshSkillsScreenUI();
-                    });
-                }
+                tileBg.on('pointerup', () => {
+                    const selectedGem = this.skillsInventoryGems[tileIndex];
+                    if (!selectedGem) return;
+                    this.openSkillGemPopup(selectedGem, tileIndex);
+                });
 
-                this.skillsInventoryTiles.push({ tileBg, iconText, nameText, typeText, gem });
+                this.skillsInventoryTiles.push({ tileBg, iconText, nameText, typeText, index: tileIndex, gem });
                 this.skillsScreenGroup.add([tileBg, iconText, nameText, typeText]);
                 gemIndex += 1;
             }
         }
+
+        const gemModalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
+            .setInteractive({ useHandCursor: true });
+        const gemModalCard = this.add.rectangle(width / 2, height / 2, 350, 340, 0x111111, 1)
+            .setStrokeStyle(2, 0xffffff, 1);
+        this.skillsGemModalTitle = this.add.text(width / 2, height / 2 - 118, 'Gem Details', {
+            fontSize: '20px',
+            color: '#ffd56b',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.skillsGemModalIcon = this.add.text(width / 2, height / 2 - 70, '', {
+            fontSize: '28px'
+        }).setOrigin(0.5);
+        this.skillsGemModalName = this.add.text(width / 2, height / 2 - 30, '', {
+            fontSize: '16px',
+            color: '#ffffff',
+            fontStyle: 'bold',
+            align: 'center',
+            wordWrap: { width: 320, useAdvancedWrap: true }
+        }).setOrigin(0.5);
+        this.skillsGemModalType = this.add.text(width / 2, height / 2 - 4, '', {
+            fontSize: '12px',
+            color: '#9de9ff'
+        }).setOrigin(0.5);
+        this.skillsGemModalDesc = this.add.text(width / 2, height / 2 + 55, '', {
+            fontSize: '12px',
+            color: '#d8d8d8',
+            align: 'center',
+            wordWrap: { width: 320, useAdvancedWrap: true }
+        }).setOrigin(0.5);
+
+        const gemCloseBtn = this.add.text(width / 2 - 90, height / 2 + 130, 'Close', {
+            fontSize: '14px',
+            color: '#ffffff',
+            backgroundColor: '#444444',
+            padding: { left: 8, right: 8, top: 4, bottom: 4 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        this.skillsGemModalDiscardBtn = this.add.text(width / 2, height / 2 + 130, 'Discard', {
+            fontSize: '14px',
+            color: '#ffffff',
+            backgroundColor: '#aa3f3f',
+            padding: { left: 8, right: 8, top: 4, bottom: 4 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        this.skillsGemModalEquipBtn = this.add.text(width / 2 + 92, height / 2 + 130, 'Equip', {
+            fontSize: '14px',
+            color: '#111111',
+            backgroundColor: '#86ff9e',
+            padding: { left: 8, right: 8, top: 4, bottom: 4 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        gemModalOverlay.on('pointerup', () => this.closeSkillGemPopup());
+        gemCloseBtn.on('pointerup', () => this.closeSkillGemPopup());
+        this.skillsGemModalDiscardBtn.on('pointerup', () => this.discardSelectedGemFromPopup());
+        this.skillsGemModalEquipBtn.on('pointerup', () => this.equipSelectedGemFromPopup());
+
+        this.skillsGemModal = this.add.container(0, 0, [
+            gemModalOverlay,
+            gemModalCard,
+            this.skillsGemModalTitle,
+            this.skillsGemModalIcon,
+            this.skillsGemModalName,
+            this.skillsGemModalType,
+            this.skillsGemModalDesc,
+            gemCloseBtn,
+            this.skillsGemModalDiscardBtn,
+            this.skillsGemModalEquipBtn
+        ]).setVisible(false);
+
+        this.skillsScreenGroup.add(this.skillsGemModal);
 
         this.refreshSkillsScreenUI();
     }
@@ -1437,56 +1617,56 @@ class Match3Scene extends Phaser.Scene {
 
         this.equipmentScreenGroup = this.add.container(0, 0).setVisible(false);
 
-        const leftPanelCenterX = Math.floor(width * 0.30);
-        const rightPanelCenterX = Math.floor(width * 0.75);
-        const silhouetteTopY = 108;
+        const topCenterX = Math.floor(width * 0.5);
+        const topPanelTopY = 86;
         const slotSize = 56;
 
         const bg = this.add.rectangle(width / 2, height / 2, width - 40, height - 40, 0x1a1a1a, 1).setStrokeStyle(2, 0xffffff);
-        const divider = this.add.rectangle(Math.floor(width * 0.56), height / 2, 2, height - 80, 0x555555, 1);
+        const splitY = 396;
+        const divider = this.add.rectangle(width / 2, splitY, width - 52, 2, 0x555555, 1);
 
-        const leftPanelBg = this.add.rectangle(leftPanelCenterX, height / 2 + 10, width * 0.47, height - 130, 0x222222, 0.95).setStrokeStyle(1, 0x666666);
-        const rightPanelBg = this.add.rectangle(rightPanelCenterX, height / 2 + 10, width * 0.34, height - 130, 0x232323, 0.95).setStrokeStyle(1, 0x666666);
+        const topPanelBg = this.add.rectangle(width / 2, 236, width - 56, 300, 0x222222, 0.95).setStrokeStyle(1, 0x666666);
+        const bottomPanelBg = this.add.rectangle(width / 2, 592, width - 56, 332, 0x232323, 0.95).setStrokeStyle(1, 0x666666);
 
         const title = this.add.text(width / 2, 50, 'Equipment', { fontSize: '22px', color: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5);
         const tabInfo = this.add.text(10, 14, '', { fontSize: '12px', color: '#ffffff' }).setOrigin(0, 0);
         const switchButton = this.add.text(10, 12, 'Back to Game', { fontSize: '14px', color: '#00ffcc', backgroundColor: '#333333', padding: { left: 5, right: 5, top: 3, bottom: 3 } }).setOrigin(0, 0).setInteractive({ useHandCursor: true });
         switchButton.on('pointerup', () => this.showGameScreen());
 
-        const slotsHeader = this.add.text(leftPanelCenterX, 78, 'Loadout', { fontSize: '15px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
-        const inventoryHeader = this.add.text(rightPanelCenterX, 78, 'Inventory', { fontSize: '15px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
+        const slotsHeader = this.add.text(topCenterX, 84, 'Loadout', { fontSize: '15px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
+        const inventoryHeader = this.add.text(topCenterX, 422, 'Inventory', { fontSize: '15px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
 
-        const inventoryHint = this.add.text(rightPanelCenterX, 98, 'Tap item to inspect & equip.', {
+        const inventoryHint = this.add.text(topCenterX, 444, 'Tap item to inspect & equip.', {
             fontSize: '10px',
             color: '#aaaaaa',
-            wordWrap: { width: Math.floor(width * 0.40), useAdvancedWrap: true }
+            wordWrap: { width: Math.floor(width * 0.72), useAdvancedWrap: true }
         }).setOrigin(0.5, 0);
 
         // Draw a high-contrast translucent warrior body so slot placement is easy to parse.
         const silhouette = this.add.graphics();
         silhouette.fillStyle(0x88a3b8, 0.28);
         silhouette.lineStyle(3, 0xdde8f3, 0.82);
-        silhouette.fillCircle(leftPanelCenterX, silhouetteTopY + 40, 36); // head
-        silhouette.strokeCircle(leftPanelCenterX, silhouetteTopY + 40, 36);
-        silhouette.fillRoundedRect(leftPanelCenterX - 36, silhouetteTopY + 78, 72, 122, 12); // torso
-        silhouette.strokeRoundedRect(leftPanelCenterX - 36, silhouetteTopY + 78, 72, 122, 12);
-        silhouette.fillRoundedRect(leftPanelCenterX - 78, silhouetteTopY + 102, 28, 88, 10); // left arm
-        silhouette.strokeRoundedRect(leftPanelCenterX - 78, silhouetteTopY + 102, 28, 88, 10);
-        silhouette.fillRoundedRect(leftPanelCenterX + 50, silhouetteTopY + 102, 28, 88, 10); // right arm
-        silhouette.strokeRoundedRect(leftPanelCenterX + 50, silhouetteTopY + 102, 28, 88, 10);
-        silhouette.fillRoundedRect(leftPanelCenterX - 28, silhouetteTopY + 208, 22, 106, 9); // left leg
-        silhouette.strokeRoundedRect(leftPanelCenterX - 28, silhouetteTopY + 208, 22, 106, 9);
-        silhouette.fillRoundedRect(leftPanelCenterX + 6, silhouetteTopY + 208, 22, 106, 9); // right leg
-        silhouette.strokeRoundedRect(leftPanelCenterX + 6, silhouetteTopY + 208, 22, 106, 9);
+        silhouette.fillCircle(topCenterX, topPanelTopY + 34, 28); // head
+        silhouette.strokeCircle(topCenterX, topPanelTopY + 34, 28);
+        silhouette.fillRoundedRect(topCenterX - 30, topPanelTopY + 64, 60, 96, 12); // torso
+        silhouette.strokeRoundedRect(topCenterX - 30, topPanelTopY + 64, 60, 96, 12);
+        silhouette.fillRoundedRect(topCenterX - 66, topPanelTopY + 84, 24, 72, 10); // left arm
+        silhouette.strokeRoundedRect(topCenterX - 66, topPanelTopY + 84, 24, 72, 10);
+        silhouette.fillRoundedRect(topCenterX + 42, topPanelTopY + 84, 24, 72, 10); // right arm
+        silhouette.strokeRoundedRect(topCenterX + 42, topPanelTopY + 84, 24, 72, 10);
+        silhouette.fillRoundedRect(topCenterX - 24, topPanelTopY + 164, 20, 76, 9); // left leg
+        silhouette.strokeRoundedRect(topCenterX - 24, topPanelTopY + 164, 20, 76, 9);
+        silhouette.fillRoundedRect(topCenterX + 4, topPanelTopY + 164, 20, 76, 9); // right leg
+        silhouette.strokeRoundedRect(topCenterX + 4, topPanelTopY + 164, 20, 76, 9);
         silhouette.fillStyle(0xffffff, 0.14);
-        silhouette.fillEllipse(leftPanelCenterX, silhouetteTopY + 166, 48, 26);
-        const warriorGlyph = this.add.text(leftPanelCenterX, silhouetteTopY + 146, '⚔', { fontSize: '66px', color: '#eaf4ff' }).setOrigin(0.5).setAlpha(0.32);
+        silhouette.fillEllipse(topCenterX, topPanelTopY + 136, 48, 26);
+        const warriorGlyph = this.add.text(topCenterX, topPanelTopY + 116, '⚔', { fontSize: '54px', color: '#eaf4ff' }).setOrigin(0.5).setAlpha(0.32);
 
         this.equipmentScreenGroup.add([
             bg,
             divider,
-            leftPanelBg,
-            rightPanelBg,
+            topPanelBg,
+            bottomPanelBg,
             title,
             tabInfo,
             switchButton,
@@ -1498,30 +1678,17 @@ class Match3Scene extends Phaser.Scene {
         ]);
 
         const slotConfig = [
-            { key: 'helmet', label: 'Helmet', x: leftPanelCenterX, y: silhouetteTopY + 38 },
-            { key: 'necklace', label: 'Necklace', x: leftPanelCenterX, y: silhouetteTopY + 102 },
-            { key: 'chest', label: 'Chest', x: leftPanelCenterX, y: silhouetteTopY + 156 },
-            { key: 'belt', label: 'Belt', x: leftPanelCenterX, y: silhouetteTopY + 222 },
-            { key: 'mainhand', label: 'Main Hand', x: leftPanelCenterX - 82, y: silhouetteTopY + 160 },
-            { key: 'offhand', label: 'Off Hand', x: leftPanelCenterX + 82, y: silhouetteTopY + 160 },
-            { key: 'gloves', label: 'Gloves', x: leftPanelCenterX - 82, y: silhouetteTopY + 226 },
-            { key: 'boots', label: 'Boots', x: leftPanelCenterX, y: silhouetteTopY + 304 },
-            { key: 'ring1', label: 'Ring 1', x: leftPanelCenterX - 62, y: silhouetteTopY + 286 },
-            { key: 'ring2', label: 'Ring 2', x: leftPanelCenterX + 62, y: silhouetteTopY + 286 }
+            { key: 'helmet', label: 'Helmet', x: topCenterX, y: topPanelTopY + 28 },
+            { key: 'necklace', label: 'Necklace', x: topCenterX, y: topPanelTopY + 82 },
+            { key: 'chest', label: 'Chest', x: topCenterX, y: topPanelTopY + 136 },
+            { key: 'belt', label: 'Belt', x: topCenterX, y: topPanelTopY + 192 },
+            { key: 'mainhand', label: 'Main Hand', x: topCenterX - 92, y: topPanelTopY + 136 },
+            { key: 'offhand', label: 'Off Hand', x: topCenterX + 92, y: topPanelTopY + 136 },
+            { key: 'gloves', label: 'Gloves', x: topCenterX - 92, y: topPanelTopY + 192 },
+            { key: 'boots', label: 'Boots', x: topCenterX, y: topPanelTopY + 250 },
+            { key: 'ring1', label: 'Ring 1', x: topCenterX - 64, y: topPanelTopY + 250 },
+            { key: 'ring2', label: 'Ring 2', x: topCenterX + 64, y: topPanelTopY + 250 }
         ];
-
-        const equipmentIcons = {
-            helmet: '🪖',
-            chest: '🛡️',
-            gloves: '🧤',
-            boots: '🥾',
-            belt: '🎒',
-            mainhand: '🗡️',
-            offhand: '🛡️',
-            ring1: '💍',
-            ring2: '💍',
-            necklace: '📿'
-        };
 
         this.equipmentText = {};
         this.equipmentIconText = {};
@@ -1561,11 +1728,11 @@ class Match3Scene extends Phaser.Scene {
         });
 
         this.inventoryTiles = [];
-        const inventoryGridLeft = rightPanelCenterX - 66;
-        const inventoryGridTop = 165;
-        const inventoryColumns = 2;
-        const inventoryCellSize = 62;
+        const inventoryColumns = 4;
+        const inventoryCellSize = 70;
         const inventoryCellGap = 8;
+        const inventoryGridTop = 462;
+        const inventoryGridLeft = (width - (inventoryColumns * inventoryCellSize + (inventoryColumns - 1) * inventoryCellGap)) / 2;
 
         for (let index = 0; index < 12; index++) {
             const column = index % inventoryColumns;
@@ -1682,6 +1849,7 @@ class Match3Scene extends Phaser.Scene {
 
     showEquipmentScreen() {
         this.currentScreen = 'equipment';
+        this.closeSkillGemPopup();
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(true);
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
         if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
@@ -1695,6 +1863,7 @@ class Match3Scene extends Phaser.Scene {
 
     showSkillsScreen() {
         this.currentScreen = 'skills';
+        this.closeInventoryItemPopup();
         if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(true);
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
@@ -1708,6 +1877,7 @@ class Match3Scene extends Phaser.Scene {
 
     showGameScreen() {
         this.currentScreen = 'game';
+        this.closeSkillGemPopup();
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
         if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
