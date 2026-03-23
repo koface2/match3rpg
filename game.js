@@ -264,6 +264,8 @@ class Match3Scene extends Phaser.Scene {
         this.skillsGemModalDesc = null;
         this.skillsGemModalEquipBtn = null;
         this.skillsGemModalDiscardBtn = null;
+        this.draggingSkillGemTile = null;
+        this.skillGemWasDragged = false;
     }
 
     create() {
@@ -628,27 +630,83 @@ class Match3Scene extends Phaser.Scene {
     }
 
     equipSelectedGemToActiveSlot(slotIndex) {
-        if (!this.selectedSkillGem || this.selectedSkillGem.type !== 'active') return;
-        if (!this.playerSkills[slotIndex]) return;
-
-        this.playerSkills[slotIndex].activeId = this.selectedSkillGem.id;
-        this.updateSkillBarUI();
-        const activeSkill = this.getActiveSkillById(this.selectedSkillGem.id);
-        if (activeSkill) {
-            this.addCombatLog(`Skill ${slotIndex + 1} set to ${activeSkill.name}`, '#7cdcff');
-        }
+        this.equipGemToActiveSlot(slotIndex, this.selectedSkillGem);
     }
 
     equipSelectedGemToSupportSlot(slotIndex, socketIndex) {
-        if (!this.selectedSkillGem || this.selectedSkillGem.type !== 'support') return;
-        if (!this.playerSkills[slotIndex]) return;
-        if (socketIndex < 0 || socketIndex > 2) return;
+        this.equipGemToSupportSlot(slotIndex, socketIndex, this.selectedSkillGem);
+    }
 
-        this.playerSkills[slotIndex].supportIds[socketIndex] = this.selectedSkillGem.id;
+    equipGemToActiveSlot(slotIndex, gem) {
+        if (!gem || gem.type !== 'active') return false;
+        if (!this.playerSkills[slotIndex]) return false;
+
+        this.playerSkills[slotIndex].activeId = gem.id;
         this.updateSkillBarUI();
-        const support = this.getSupportGemById(this.selectedSkillGem.id);
+        const activeSkill = this.getActiveSkillById(gem.id);
+        if (activeSkill) {
+            this.addCombatLog(`Skill ${slotIndex + 1} set to ${activeSkill.name}`, '#7cdcff');
+        }
+        return true;
+    }
+
+    equipGemToSupportSlot(slotIndex, socketIndex, gem) {
+        if (!gem || gem.type !== 'support') return false;
+        if (!this.playerSkills[slotIndex]) return false;
+        if (socketIndex < 0 || socketIndex > 2) return false;
+
+        this.playerSkills[slotIndex].supportIds[socketIndex] = gem.id;
+        this.updateSkillBarUI();
+        const support = this.getSupportGemById(gem.id);
         if (support) {
             this.addCombatLog(`Skill ${slotIndex + 1} support ${socketIndex + 1}: ${support.name}`, '#a8ffa8');
+        }
+        return true;
+    }
+
+    resolveSkillGemDropTarget(worldX, worldY, gem) {
+        if (!gem || !this.skillsActiveSlotUI || this.skillsActiveSlotUI.length === 0) return null;
+
+        if (gem.type === 'active') {
+            for (let slotIndex = 0; slotIndex < this.skillsActiveSlotUI.length; slotIndex++) {
+                const slotUI = this.skillsActiveSlotUI[slotIndex];
+                const dx = worldX - slotUI.mainCenter.x;
+                const dy = worldY - slotUI.mainCenter.y;
+                const radius = slotUI.mainRadius + 8;
+                if (dx * dx + dy * dy <= radius * radius) {
+                    return { kind: 'active', slotIndex };
+                }
+            }
+            return null;
+        }
+
+        for (let slotIndex = 0; slotIndex < this.skillsActiveSlotUI.length; slotIndex++) {
+            const slotUI = this.skillsActiveSlotUI[slotIndex];
+            for (let socketIndex = 0; socketIndex < slotUI.supportSockets.length; socketIndex++) {
+                const socket = slotUI.supportSockets[socketIndex];
+                const dx = worldX - socket.center.x;
+                const dy = worldY - socket.center.y;
+                const radius = socket.radius + 8;
+                if (dx * dx + dy * dy <= radius * radius) {
+                    return { kind: 'support', slotIndex, socketIndex };
+                }
+            }
+        }
+
+        return null;
+    }
+
+    handleSkillGemDrop(tile, worldX, worldY) {
+        const gem = this.skillsInventoryGems[tile.index];
+        if (!gem) return;
+
+        const target = this.resolveSkillGemDropTarget(worldX, worldY, gem);
+        if (!target) return;
+
+        if (target.kind === 'active') {
+            this.equipGemToActiveSlot(target.slotIndex, gem);
+        } else if (target.kind === 'support') {
+            this.equipGemToSupportSlot(target.slotIndex, target.socketIndex, gem);
         }
     }
 
@@ -679,6 +737,7 @@ class Match3Scene extends Phaser.Scene {
                 const supportGem = this.getSupportGemById(supportId);
                 socketUI.socketText.setText(supportGem ? supportGem.short : '---');
                 socketUI.socketBg.setStrokeStyle(1, supportGem ? borderColor : 0x808080, 1);
+                socketUI.connector.setStrokeStyle(1, isReady ? borderColor : 0x8b8b8b, isReady ? 0.95 : 0.65);
             });
         });
 
@@ -708,6 +767,15 @@ class Match3Scene extends Phaser.Scene {
                 tile.iconText.setVisible(true);
                 tile.nameText.setVisible(true);
                 tile.typeText.setVisible(true);
+
+                tile.tileBg.x = tile.homeX;
+                tile.tileBg.y = tile.homeY;
+                tile.iconText.x = tile.homeX;
+                tile.iconText.y = tile.homeY;
+                tile.nameText.x = tile.homeX;
+                tile.nameText.y = tile.homeY + 33;
+                tile.typeText.x = tile.homeX;
+                tile.typeText.y = tile.homeY + 55;
 
                 const display = this.getSkillGemDisplay(gem);
                 tile.iconText.setText(display.icon);
@@ -1404,7 +1472,7 @@ class Match3Scene extends Phaser.Scene {
             color: '#ffd56b',
             fontStyle: 'bold'
         }).setOrigin(0.5);
-        const subtitle = this.add.text(width / 2, 72, 'Select a gem below, then tap a top slot to equip.', {
+        const subtitle = this.add.text(width / 2, 72, 'Drag gems into matching sockets or tap gem for details.', {
             fontSize: '12px',
             color: '#bfbfbf'
         }).setOrigin(0.5);
@@ -1418,42 +1486,45 @@ class Match3Scene extends Phaser.Scene {
 
         this.skillsScreenGroup.add([bg, title, subtitle, backBtn]);
 
-        const topSlotsY = 180;
-        const slotWidth = 114;
-        const slotHeight = 124;
-        const slotSpacing = 12;
-        const slotStartX = (width - (slotWidth * 3 + slotSpacing * 2)) / 2 + slotWidth / 2;
+        const topSlotsY = 188;
+        const slotSpacing = 124;
+        const slotStartX = width / 2 - slotSpacing;
         this.skillsActiveSlotUI = [];
 
         for (let slotIndex = 0; slotIndex < 3; slotIndex++) {
-            const centerX = slotStartX + slotIndex * (slotWidth + slotSpacing);
-            const cardBg = this.add.rectangle(centerX, topSlotsY, slotWidth, slotHeight, 0x202020, 1)
+            const centerX = slotStartX + slotIndex * slotSpacing;
+            const mainRadius = 36;
+
+            const cardBg = this.add.circle(centerX, topSlotsY, mainRadius, 0x202020, 1)
                 .setStrokeStyle(2, 0xffffff, 1)
                 .setInteractive({ useHandCursor: true });
-            const cardLabel = this.add.text(centerX, topSlotsY - 52, `Skill ${slotIndex + 1}`, {
+            const cardLabel = this.add.text(centerX, topSlotsY - 56, `Skill ${slotIndex + 1}`, {
                 fontSize: '11px',
                 color: '#d9d9d9'
             }).setOrigin(0.5);
-            const iconText = this.add.text(centerX, topSlotsY - 26, '', {
+            const iconText = this.add.text(centerX, topSlotsY - 10, '', {
                 fontSize: '24px'
             }).setOrigin(0.5);
-            const nameText = this.add.text(centerX, topSlotsY + 2, '', {
-                fontSize: '11px',
+            const nameText = this.add.text(centerX, topSlotsY + 21, '', {
+                fontSize: '9px',
                 color: '#ffffff',
                 fontStyle: 'bold',
-                wordWrap: { width: 106, useAdvancedWrap: true },
+                wordWrap: { width: 74, useAdvancedWrap: true },
                 align: 'center'
             }).setOrigin(0.5);
-            const chargeText = this.add.text(centerX, topSlotsY + 24, '', {
+            const chargeText = this.add.text(centerX, topSlotsY + 56, '', {
                 fontSize: '10px',
                 color: '#cccccc'
             }).setOrigin(0.5);
 
             const supportSockets = [];
             for (let socketIndex = 0; socketIndex < 3; socketIndex++) {
-                const socketX = centerX - 32 + socketIndex * 32;
-                const socketY = topSlotsY + 46;
-                const socketBg = this.add.rectangle(socketX, socketY, 28, 16, 0x2f2f2f, 1)
+                const socketX = centerX - 28 + socketIndex * 28;
+                const socketY = topSlotsY + 94;
+                const connector = this.add.line(centerX, topSlotsY, 0, 0, socketX - centerX, socketY - topSlotsY, 0x8b8b8b, 0.75)
+                    .setLineWidth(1, 1);
+                const socketRadius = 12;
+                const socketBg = this.add.circle(socketX, socketY, socketRadius, 0x2f2f2f, 1)
                     .setStrokeStyle(1, 0x808080, 1)
                     .setInteractive({ useHandCursor: true });
                 const socketText = this.add.text(socketX, socketY, '-', {
@@ -1461,13 +1532,22 @@ class Match3Scene extends Phaser.Scene {
                     color: '#d0d0d0'
                 }).setOrigin(0.5);
                 socketBg.on('pointerup', () => this.equipSelectedGemToSupportSlot(slotIndex, socketIndex));
-                supportSockets.push({ socketBg, socketText });
-                this.skillsScreenGroup.add([socketBg, socketText]);
+                supportSockets.push({ socketBg, socketText, connector, center: { x: socketX, y: socketY }, radius: socketRadius });
+                this.skillsScreenGroup.add([connector, socketBg, socketText]);
             }
 
             cardBg.on('pointerup', () => this.equipSelectedGemToActiveSlot(slotIndex));
 
-            this.skillsActiveSlotUI.push({ cardBg, cardLabel, iconText, nameText, chargeText, supportSockets });
+            this.skillsActiveSlotUI.push({
+                cardBg,
+                cardLabel,
+                iconText,
+                nameText,
+                chargeText,
+                supportSockets,
+                mainCenter: { x: centerX, y: topSlotsY },
+                mainRadius
+            });
             this.skillsScreenGroup.add([cardBg, cardLabel, iconText, nameText, chargeText]);
         }
 
@@ -1489,7 +1569,7 @@ class Match3Scene extends Phaser.Scene {
         const cols = 5;
         const rows = 2;
         const cellW = 68;
-        const cellH = 86;
+        const cellH = 92;
         const gapX = 6;
         const gapY = 8;
         const gridStartX = (width - (cols * cellW + (cols - 1) * gapX)) / 2;
@@ -1502,32 +1582,79 @@ class Match3Scene extends Phaser.Scene {
                 const gem = this.skillsInventoryGems[tileIndex];
                 const x = gridStartX + col * (cellW + gapX);
                 const y = gridStartY + row * (cellH + gapY);
+                const centerX = x + cellW / 2;
+                const centerY = y + 27;
 
-                const tileBg = this.add.rectangle(x, y, cellW, cellH, 0x292929, 1)
-                    .setOrigin(0, 0)
+                const tileBg = this.add.circle(centerX, centerY, 25, 0x292929, 1)
                     .setStrokeStyle(2, 0x666666, 1)
                     .setInteractive({ useHandCursor: true });
-                const iconText = this.add.text(x + cellW / 2, y + 24, '', {
+                const iconText = this.add.text(centerX, centerY, '', {
                     fontSize: '24px'
                 }).setOrigin(0.5);
-                const nameText = this.add.text(x + cellW / 2, y + 50, '', {
+                const nameText = this.add.text(centerX, y + 60, '', {
                     fontSize: '9px',
                     color: '#ffffff',
                     align: 'center',
                     wordWrap: { width: cellW - 8, useAdvancedWrap: true }
                 }).setOrigin(0.5);
-                const typeText = this.add.text(x + cellW / 2, y + 74, '', {
+                const typeText = this.add.text(centerX, y + 82, '', {
                     fontSize: '8px',
                     color: '#aaaaaa'
                 }).setOrigin(0.5);
 
                 tileBg.on('pointerup', () => {
+                    if (this.skillGemWasDragged) {
+                        this.skillGemWasDragged = false;
+                        return;
+                    }
                     const selectedGem = this.skillsInventoryGems[tileIndex];
                     if (!selectedGem) return;
                     this.openSkillGemPopup(selectedGem, tileIndex);
                 });
 
-                this.skillsInventoryTiles.push({ tileBg, iconText, nameText, typeText, index: tileIndex, gem });
+                tileBg.on('dragstart', () => {
+                    this.draggingSkillGemTile = tileBg;
+                    this.skillGemWasDragged = false;
+                    tileBg.setDepth(1200);
+                    iconText.setDepth(1201);
+                    nameText.setDepth(1201);
+                    typeText.setDepth(1201);
+                });
+
+                tileBg.on('drag', (pointer, dragX, dragY) => {
+                    this.skillGemWasDragged = true;
+                    tileBg.x = dragX;
+                    tileBg.y = dragY;
+                    iconText.x = dragX;
+                    iconText.y = dragY;
+                    nameText.x = dragX;
+                    nameText.y = dragY + 33;
+                    typeText.x = dragX;
+                    typeText.y = dragY + 55;
+                });
+
+                tileBg.on('dragend', (pointer) => {
+                    this.handleSkillGemDrop({ index: tileIndex }, pointer.worldX, pointer.worldY);
+                    tileBg.setDepth(0);
+                    iconText.setDepth(0);
+                    nameText.setDepth(0);
+                    typeText.setDepth(0);
+                    this.draggingSkillGemTile = null;
+                    this.refreshSkillsScreenUI();
+                });
+
+                this.input.setDraggable(tileBg);
+
+                this.skillsInventoryTiles.push({
+                    tileBg,
+                    iconText,
+                    nameText,
+                    typeText,
+                    index: tileIndex,
+                    homeX: centerX,
+                    homeY: centerY,
+                    gem
+                });
                 this.skillsScreenGroup.add([tileBg, iconText, nameText, typeText]);
                 gemIndex += 1;
             }
