@@ -1,8 +1,8 @@
 const GRID_WIDTH = 6;
 const GRID_HEIGHT = 6;
-const TILE_SIZE = 60;
-const GRID_OFFSET_X = 15;
-const GRID_OFFSET_Y = 418;
+const TILE_SIZE = 52;
+const GRID_OFFSET_X = 39;
+const GRID_OFFSET_Y = 420;
 
 const TILE_TYPES = [
     { name: 'health', color: 0xff1493, icon: '♥', effect: 'health' },
@@ -65,6 +65,107 @@ const EQUIPMENT_SLOT_GROUP_BY_KEY = {
     ring2: 'ring',
     necklace: 'necklace'
 };
+
+const ACTIVE_SKILL_GEMS = [
+    {
+        id: 'cleave',
+        name: 'Cleave',
+        tileEffect: 'physical',
+        baseThreshold: 4,
+        mode: 'damage',
+        basePower: 24,
+        scalingStat: 'physical'
+    },
+    {
+        id: 'arc-burst',
+        name: 'Arc Burst',
+        tileEffect: 'magic',
+        baseThreshold: 4,
+        mode: 'damage',
+        basePower: 26,
+        scalingStat: 'magic'
+    },
+    {
+        id: 'multishot',
+        name: 'Multishot',
+        tileEffect: 'ranged',
+        baseThreshold: 4,
+        mode: 'damage',
+        basePower: 22,
+        scalingStat: 'ranged'
+    },
+    {
+        id: 'rejuvenate',
+        name: 'Rejuvenate',
+        tileEffect: 'health',
+        baseThreshold: 4,
+        mode: 'heal',
+        basePower: 22,
+        scalingStat: 'health'
+    },
+    {
+        id: 'gold-rush',
+        name: 'Gold Rush',
+        tileEffect: 'loot',
+        baseThreshold: 4,
+        mode: 'loot',
+        basePower: 16,
+        scalingStat: 'loot'
+    }
+];
+
+const SUPPORT_SKILL_GEMS = [
+    {
+        id: 'focus',
+        name: 'Focus',
+        short: 'Fcs',
+        thresholdDelta: -1,
+        powerMultiplier: 0.14,
+        lootFlat: 0,
+        healFlat: 0,
+        extraHitChance: 0
+    },
+    {
+        id: 'brutality',
+        name: 'Brutality',
+        short: 'Brt',
+        thresholdDelta: 1,
+        powerMultiplier: 0.46,
+        lootFlat: 0,
+        healFlat: 0,
+        extraHitChance: 0
+    },
+    {
+        id: 'echo',
+        name: 'Echo',
+        short: 'Ech',
+        thresholdDelta: 0,
+        powerMultiplier: 0.08,
+        lootFlat: 0,
+        healFlat: 0,
+        extraHitChance: 0.3
+    },
+    {
+        id: 'vitality',
+        name: 'Vitality',
+        short: 'Vit',
+        thresholdDelta: 0,
+        powerMultiplier: 0.08,
+        lootFlat: 0,
+        healFlat: 8,
+        extraHitChance: 0
+    },
+    {
+        id: 'prosperity',
+        name: 'Prosperity',
+        short: 'Prs',
+        thresholdDelta: 0,
+        powerMultiplier: 0,
+        lootFlat: 12,
+        healFlat: 0,
+        extraHitChance: 0
+    }
+];
 
 class Match3Scene extends Phaser.Scene {
     constructor() {
@@ -143,6 +244,10 @@ class Match3Scene extends Phaser.Scene {
         this.rewardChoices = [];
         this.awaitingRewardChoice = false;
         this.battleNumber = 1;
+
+        this.skillBarContainer = null;
+        this.skillSlotUI = [];
+        this.playerSkills = this.createInitialSkillLoadout();
     }
 
     create() {
@@ -156,8 +261,238 @@ class Match3Scene extends Phaser.Scene {
         this.createPlayerUI();
         this.createCombatLog();
         this.createRewardScreen();
+        this.createSkillBar();
 
         this.showGameScreen();
+    }
+
+    createInitialSkillLoadout() {
+        return [
+            { activeId: 'cleave', supportIds: ['focus', 'brutality', null] },
+            { activeId: 'arc-burst', supportIds: ['echo', null, null] },
+            { activeId: 'rejuvenate', supportIds: ['vitality', null, null] }
+        ];
+    }
+
+    getActiveSkillById(skillId) {
+        return ACTIVE_SKILL_GEMS.find(skill => skill.id === skillId) || null;
+    }
+
+    getSupportGemById(gemId) {
+        return SUPPORT_SKILL_GEMS.find(gem => gem.id === gemId) || null;
+    }
+
+    getTileDataForEffect(effect) {
+        return TILE_TYPES.find(tile => tile.effect === effect) || null;
+    }
+
+    toHexColor(colorNumber) {
+        return `#${colorNumber.toString(16).padStart(6, '0')}`;
+    }
+
+    cycleActiveSkill(slotIndex) {
+        if (!this.playerSkills[slotIndex]) return;
+        const currentSkill = this.playerSkills[slotIndex].activeId;
+        const currentIndex = ACTIVE_SKILL_GEMS.findIndex(skill => skill.id === currentSkill);
+        const nextIndex = (currentIndex + 1) % ACTIVE_SKILL_GEMS.length;
+        this.playerSkills[slotIndex].activeId = ACTIVE_SKILL_GEMS[nextIndex].id;
+        this.updateSkillBarUI();
+        this.addCombatLog(`Skill ${slotIndex + 1}: ${ACTIVE_SKILL_GEMS[nextIndex].name}`, '#7cdcff');
+    }
+
+    cycleSupportGem(slotIndex, socketIndex) {
+        if (!this.playerSkills[slotIndex]) return;
+        if (socketIndex < 0 || socketIndex > 2) return;
+
+        const slot = this.playerSkills[slotIndex];
+        const currentId = slot.supportIds[socketIndex] || null;
+        const choices = [null, ...SUPPORT_SKILL_GEMS.map(gem => gem.id)];
+        const currentChoiceIndex = choices.indexOf(currentId);
+        const nextChoiceIndex = (currentChoiceIndex + 1) % choices.length;
+        slot.supportIds[socketIndex] = choices[nextChoiceIndex];
+
+        const supportName = choices[nextChoiceIndex]
+            ? this.getSupportGemById(choices[nextChoiceIndex]).name
+            : 'Empty';
+        this.updateSkillBarUI();
+        this.addCombatLog(`Skill ${slotIndex + 1} Support ${socketIndex + 1}: ${supportName}`, '#a8ffa8');
+    }
+
+    createSkillBar() {
+        const width = this.sys.game.config.width;
+        this.skillBarContainer = this.add.container(0, 0);
+
+        const skillBarBg = this.add.rectangle(width / 2, 756, width - 4, 44, 0x0e0e0e, 0.95)
+            .setStrokeStyle(1, 0x3b3b3b, 1)
+            .setOrigin(0.5);
+        this.skillBarContainer.add(skillBarBg);
+
+        const cardWidth = 122;
+        const cardHeight = 38;
+        const spacing = 8;
+        const startX = (width - (cardWidth * 3 + spacing * 2)) / 2 + cardWidth / 2;
+        const cardY = 756;
+
+        this.skillSlotUI = [];
+        for (let i = 0; i < 3; i++) {
+            const centerX = startX + i * (cardWidth + spacing);
+            const bg = this.add.rectangle(centerX, cardY, cardWidth, cardHeight, 0x1b1b1b, 1)
+                .setStrokeStyle(2, 0xffffff, 1)
+                .setOrigin(0.5)
+                .setInteractive({ useHandCursor: true });
+            const name = this.add.text(centerX, cardY - 11, '', {
+                fontSize: '10px',
+                color: '#ffffff',
+                fontStyle: 'bold'
+            }).setOrigin(0.5);
+            const threshold = this.add.text(centerX, cardY, '', {
+                fontSize: '9px',
+                color: '#d5d5d5'
+            }).setOrigin(0.5);
+
+            const supportSockets = [];
+            for (let socketIndex = 0; socketIndex < 3; socketIndex++) {
+                const socketX = centerX - 34 + socketIndex * 34;
+                const socketY = cardY + 11;
+                const socketBg = this.add.rectangle(socketX, socketY, 30, 11, 0x292929, 1)
+                    .setStrokeStyle(1, 0x737373, 1)
+                    .setOrigin(0.5)
+                    .setInteractive({ useHandCursor: true });
+                const socketText = this.add.text(socketX, socketY, '-', {
+                    fontSize: '8px',
+                    color: '#cccccc'
+                }).setOrigin(0.5);
+                socketBg.on('pointerup', () => this.cycleSupportGem(i, socketIndex));
+                supportSockets.push({ socketBg, socketText });
+                this.skillBarContainer.add([socketBg, socketText]);
+            }
+
+            bg.on('pointerup', () => this.cycleActiveSkill(i));
+
+            this.skillSlotUI.push({ bg, name, threshold, supportSockets });
+            this.skillBarContainer.add([bg, name, threshold]);
+        }
+
+        this.updateSkillBarUI();
+    }
+
+    updateSkillBarUI() {
+        if (!this.skillSlotUI || this.skillSlotUI.length === 0) return;
+
+        this.skillSlotUI.forEach((slotUI, index) => {
+            const loadout = this.playerSkills[index];
+            const activeSkill = this.getActiveSkillById(loadout.activeId);
+            if (!activeSkill) return;
+
+            const tileData = this.getTileDataForEffect(activeSkill.tileEffect);
+            const borderColor = tileData ? tileData.color : 0xffffff;
+            const threshold = this.getSkillTriggerThreshold(loadout);
+
+            slotUI.bg.setStrokeStyle(2, borderColor, 1);
+            slotUI.name.setText(`${index + 1}. ${activeSkill.name}`);
+            slotUI.name.setColor(this.toHexColor(borderColor));
+            slotUI.threshold.setText(`${tileData ? tileData.icon : ''} x${threshold} to trigger`);
+
+            slotUI.supportSockets.forEach((socketUI, socketIndex) => {
+                const supportId = loadout.supportIds[socketIndex];
+                const supportGem = this.getSupportGemById(supportId);
+                if (supportGem) {
+                    socketUI.socketText.setText(supportGem.short);
+                    socketUI.socketBg.setStrokeStyle(1, borderColor, 1);
+                } else {
+                    socketUI.socketText.setText('---');
+                    socketUI.socketBg.setStrokeStyle(1, 0x737373, 1);
+                }
+            });
+        });
+    }
+
+    getSkillTriggerThreshold(skillLoadout) {
+        const activeSkill = this.getActiveSkillById(skillLoadout.activeId);
+        if (!activeSkill) return 99;
+
+        const supportThresholdShift = (skillLoadout.supportIds || [])
+            .map(id => this.getSupportGemById(id))
+            .filter(Boolean)
+            .reduce((sum, gem) => sum + (gem.thresholdDelta || 0), 0);
+
+        return Phaser.Math.Clamp(activeSkill.baseThreshold + supportThresholdShift, 3, 8);
+    }
+
+    resolveSkillActivations(matchCounts, gear) {
+        const result = {
+            enemyDamage: 0,
+            healAmount: 0,
+            lootAmount: 0
+        };
+
+        this.playerSkills.forEach(skillLoadout => {
+            const activeSkill = this.getActiveSkillById(skillLoadout.activeId);
+            if (!activeSkill) return;
+
+            const matchedCount = matchCounts[activeSkill.tileEffect] || 0;
+            const threshold = this.getSkillTriggerThreshold(skillLoadout);
+            if (matchedCount < threshold) return;
+
+            const supports = (skillLoadout.supportIds || [])
+                .map(id => this.getSupportGemById(id))
+                .filter(Boolean);
+
+            const statScale = activeSkill.scalingStat === 'health'
+                ? Math.floor((gear.health || 0) / 10)
+                : Math.floor((gear[activeSkill.scalingStat] || 0) * 0.75);
+
+            const overMatchBonus = Math.max(0, matchedCount - threshold) * 0.18;
+            const supportMultiplier = supports.reduce((mult, gem) => mult + (gem.powerMultiplier || 0), 1);
+            const totalMultiplier = supportMultiplier + overMatchBonus;
+            const rolledPower = Math.max(1, Math.round((activeSkill.basePower + statScale) * totalMultiplier));
+
+            let finalPower = rolledPower;
+            let extraHitDamage = 0;
+            let bonusHeal = supports.reduce((sum, gem) => sum + (gem.healFlat || 0), 0);
+            let bonusLoot = supports.reduce((sum, gem) => sum + (gem.lootFlat || 0), 0);
+
+            supports.forEach(gem => {
+                if (gem.extraHitChance && Math.random() < gem.extraHitChance) {
+                    extraHitDamage += Math.max(1, Math.round(finalPower * 0.4));
+                }
+            });
+
+            const supportNames = supports.length > 0 ? ` [${supports.map(s => s.name).join(', ')}]` : '';
+
+            if (activeSkill.mode === 'damage') {
+                result.enemyDamage += finalPower + extraHitDamage;
+                this.addCombatLog(
+                    `${activeSkill.name} triggered (${matchedCount}/${threshold}) for ${finalPower + extraHitDamage} damage${supportNames}`,
+                    '#ffae57'
+                );
+            }
+
+            if (activeSkill.mode === 'heal') {
+                result.healAmount += finalPower + bonusHeal;
+                this.addCombatLog(
+                    `${activeSkill.name} triggered (${matchedCount}/${threshold}) healing +${finalPower + bonusHeal}${supportNames}`,
+                    '#8dff9b'
+                );
+            }
+
+            if (activeSkill.mode === 'loot') {
+                result.lootAmount += finalPower + bonusLoot;
+                this.addCombatLog(
+                    `${activeSkill.name} triggered (${matchedCount}/${threshold}) loot +${finalPower + bonusLoot}${supportNames}`,
+                    '#ffe88a'
+                );
+            }
+
+            // Any non-damage skill with Echo still uses the extra proc to chip enemy HP.
+            if (activeSkill.mode !== 'damage' && extraHitDamage > 0) {
+                result.enemyDamage += extraHitDamage;
+                this.addCombatLog(`${activeSkill.name} Echo hit for ${extraHitDamage} bonus damage`, '#ffae57');
+            }
+
+        });
+
+        return result;
     }
 
     createCombatLog() {
@@ -613,6 +948,7 @@ class Match3Scene extends Phaser.Scene {
         this.currentScreen = 'reward';
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
+        if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
         this.rewardScreenGroup.setVisible(true);
         this.setGameBoardActive(false);
@@ -995,6 +1331,7 @@ class Match3Scene extends Phaser.Scene {
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
+        if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
         this.setGameBoardActive(false);
         this.updateEquipmentScreen();
         this.addCombatLog('Switched to equipment screen', '#00ffff');
@@ -1007,6 +1344,7 @@ class Match3Scene extends Phaser.Scene {
         this.closeInventoryItemPopup();
         this.boardContainer.setVisible(true);
         this.hudContainer.setVisible(true);
+        if (this.skillBarContainer) this.skillBarContainer.setVisible(true);
         this.setGameBoardActive(true);
         this.addCombatLog('Back to game screen', '#00ffff');
     }
@@ -1503,12 +1841,22 @@ class Match3Scene extends Phaser.Scene {
         let rangedDamage = 0;
         let healAmount = 0;
         let lootAmount = 0;
+        const matchCounts = {
+            physical: 0,
+            magic: 0,
+            ranged: 0,
+            health: 0,
+            loot: 0
+        };
 
         matches.forEach(match => {
             const [x, y] = match.split(',').map(Number);
             const tileType = this.grid[y][x];
             if (tileType >= 0 && TILE_TYPES[tileType]) {
                 const effect = TILE_TYPES[tileType].effect;
+                if (matchCounts[effect] !== undefined) {
+                    matchCounts[effect] += 1;
+                }
                 switch (effect) {
                     case 'physical':
                         this.player.physical += 5;
@@ -1554,6 +1902,20 @@ class Match3Scene extends Phaser.Scene {
         if (lootAmount > 0) {
             this.addCombatLog(`Gold gained: +${lootAmount}`, '#ffff00');
             this.tryDropLootItem(lootAmount);
+        }
+
+        const skillResult = this.resolveSkillActivations(matchCounts, gear);
+        if (skillResult.enemyDamage > 0) {
+            totalEnemyDamage += skillResult.enemyDamage;
+        }
+        if (skillResult.healAmount > 0) {
+            totalPlayerHeal += skillResult.healAmount;
+        }
+        if (skillResult.lootAmount > 0) {
+            lootAmount += skillResult.lootAmount;
+            this.player.loot += skillResult.lootAmount;
+            this.addCombatLog(`Skill Loot Bonus: +${skillResult.lootAmount}`, '#ffee75');
+            this.tryDropLootItem(skillResult.lootAmount);
         }
 
         if (totalEnemyDamage > 0) {
