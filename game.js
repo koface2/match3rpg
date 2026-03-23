@@ -90,6 +90,7 @@ class Match3Scene extends Phaser.Scene {
         this.playerHealthBarBg = null;
         this.playerHealthBar = null;
         this.enemyStatsText = null;
+        this.enemyNameText = null;
         this.enemyAvatar = null;
         this.enemyHealthBarBg = null;
         this.enemyHealthBar = null;
@@ -119,6 +120,12 @@ class Match3Scene extends Phaser.Scene {
         this.inventoryModalType = null;
         this.inventoryModalDesc = null;
         this.inventoryModalStats = null;
+        this.rewardScreenGroup = null;
+        this.rewardLootInfoText = null;
+        this.rewardCards = [];
+        this.rewardChoices = [];
+        this.awaitingRewardChoice = false;
+        this.battleNumber = 1;
     }
 
     create() {
@@ -131,6 +138,7 @@ class Match3Scene extends Phaser.Scene {
         this.renderGrid();
         this.createPlayerUI();
         this.createCombatLog();
+        this.createRewardScreen();
 
         this.showGameScreen();
     }
@@ -334,11 +342,113 @@ class Match3Scene extends Phaser.Scene {
         }
     }
 
-    resolveEquipSlot(slotGroup) {
-        if (slotGroup !== 'ring') return slotGroup;
+    rollRarityWithLootBonus() {
+        const gear = this.getEquippedStatTotals();
+        const lootPower = this.player.loot + gear.loot;
+        const tierShift = Math.floor(lootPower / 120);
+
+        const weights = {
+            Common: Math.max(10, 60 - tierShift * 5),
+            Magic: Math.min(45, 25 + tierShift * 2),
+            Rare: Math.min(35, 12 + tierShift * 2),
+            Legendary: Math.min(20, 3 + tierShift)
+        };
+
+        const weightedTable = ITEM_RARITIES.map(rarity => ({
+            name: rarity.name,
+            weight: weights[rarity.name] || rarity.weight
+        }));
+
+        const totalWeight = weightedTable.reduce((sum, rarity) => sum + rarity.weight, 0);
+        let roll = Phaser.Math.Between(1, totalWeight);
+
+        for (let i = 0; i < weightedTable.length; i++) {
+            roll -= weightedTable[i].weight;
+            if (roll <= 0) {
+                return this.getRarityByName(weightedTable[i].name);
+            }
+        }
+
+        return ITEM_RARITIES[0];
+    }
+
+    getItemPowerScore(item) {
+        if (!item || !item.stats) return 0;
+        const weights = {
+            health: 0.1,
+            physical: 1.4,
+            magic: 1.4,
+            ranged: 1.3,
+            loot: 0.5,
+            armor: 1.0
+        };
+
+        return Object.entries(item.stats).reduce((score, [stat, value]) => {
+            const weight = weights[stat] || 1;
+            return score + value * weight;
+        }, 0);
+    }
+
+    getEquipTargetSlot(item) {
+        if (!item || item.slotGroup !== 'ring') {
+            return item ? item.slotGroup : null;
+        }
+
         if (!this.equippedItems.ring1) return 'ring1';
         if (!this.equippedItems.ring2) return 'ring2';
-        return 'ring1';
+
+        const ring1Score = this.getItemPowerScore(this.equippedItems.ring1);
+        const ring2Score = this.getItemPowerScore(this.equippedItems.ring2);
+        return ring1Score <= ring2Score ? 'ring1' : 'ring2';
+    }
+
+    formatSignedValue(value) {
+        if (value > 0) return `+${value}`;
+        if (value < 0) return `${value}`;
+        return '0';
+    }
+
+    getRewardCompareData(item) {
+        const targetSlot = this.getEquipTargetSlot(item);
+        const equippedItem = targetSlot ? (this.equippedItems[targetSlot] || null) : null;
+
+        if (!equippedItem) {
+            return {
+                targetSlot,
+                equippedName: 'None equipped',
+                compareLines: ['New slot item']
+            };
+        }
+
+        const statKeys = new Set([
+            ...Object.keys(item.stats || {}),
+            ...Object.keys(equippedItem.stats || {})
+        ]);
+
+        const compareLines = Array.from(statKeys)
+            .map(stat => {
+                const nextValue = (item.stats && item.stats[stat]) || 0;
+                const currentValue = (equippedItem.stats && equippedItem.stats[stat]) || 0;
+                const delta = nextValue - currentValue;
+                return {
+                    stat,
+                    delta,
+                    text: `${this.getStatLabel(stat)} ${this.formatSignedValue(delta)}`
+                };
+            })
+            .filter(entry => entry.delta !== 0)
+            .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+            .slice(0, 3);
+
+        return {
+            targetSlot,
+            equippedName: equippedItem.name,
+            compareLines: compareLines.length > 0 ? compareLines : [{ text: 'No stat change', delta: 0 }]
+        };
+    }
+
+    resolveEquipSlot(slotGroup) {
+        return this.getEquipTargetSlot({ slotGroup });
     }
 
     createPlayerUI() {
@@ -362,7 +472,8 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.add(this.add.rectangle(rightPanelX, 210, 140, 320, 0x111111, 0.9).setOrigin(0.5));
         this.enemyAvatar = this.add.text(rightPanelX, 110, this.currentMonsterAvatar, { fontSize: '64px' }).setOrigin(0.5);
         this.hudContainer.add(this.enemyAvatar);
-        this.hudContainer.add(this.add.text(rightPanelX, 60, this.currentMonsterName, { fontSize: '22px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
+        this.enemyNameText = this.add.text(rightPanelX, 60, this.currentMonsterName, { fontSize: '22px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.hudContainer.add(this.enemyNameText);
         this.enemyStatsText = this.add.text(rightPanelX - 60, 190, '', { fontSize: '16px', color: '#fff' });
         this.hudContainer.add(this.enemyStatsText);
         this.enemyHealthBarBg = this.add.rectangle(rightPanelX - 50, 165, 100, 12, 0x444444).setOrigin(0, 0.5);
@@ -375,6 +486,201 @@ class Match3Scene extends Phaser.Scene {
 
         this.updatePlayerUI();
         this.updateEnemyUI();
+    }
+
+    createRewardScreen() {
+        const width = this.sys.game.config.width;
+        const height = this.sys.game.config.height;
+
+        this.rewardScreenGroup = this.add.container(0, 0).setVisible(false);
+
+        const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x121212, 0.96);
+        const panel = this.add.rectangle(width / 2, height / 2, width - 70, height - 70, 0x1f1f1f, 1).setStrokeStyle(2, 0x666666);
+        const title = this.add.text(width / 2, 48, 'Victory Rewards', {
+            fontSize: '36px',
+            color: '#ffd166',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.rewardLootInfoText = this.add.text(width / 2, 86, '', {
+            fontSize: '16px',
+            color: '#9be7ff'
+        }).setOrigin(0.5);
+
+        this.rewardScreenGroup.add([bg, panel, title, this.rewardLootInfoText]);
+
+        this.rewardCards = [];
+        const cardWidth = 210;
+        const cardHeight = 300;
+        const spacing = 30;
+        const startX = (width - (cardWidth * 3 + spacing * 2)) / 2 + cardWidth / 2;
+
+        for (let i = 0; i < 3; i++) {
+            const centerX = startX + i * (cardWidth + spacing);
+            const centerY = height / 2 + 20;
+
+            const cardBg = this.add.rectangle(centerX, centerY, cardWidth, cardHeight, 0x2a2a2a, 1).setStrokeStyle(2, 0x999999);
+            const icon = this.add.text(centerX, centerY - 106, '', { fontSize: '42px' }).setOrigin(0.5);
+            const name = this.add.text(centerX, centerY - 64, '', {
+                fontSize: '18px',
+                color: '#ffffff',
+                fontStyle: 'bold',
+                align: 'center',
+                wordWrap: { width: cardWidth - 20, useAdvancedWrap: true }
+            }).setOrigin(0.5);
+            const rarity = this.add.text(centerX, centerY - 25, '', {
+                fontSize: '15px',
+                color: '#ffffff'
+            }).setOrigin(0.5);
+            const stats = this.add.text(centerX, centerY + 16, '', {
+                fontSize: '13px',
+                color: '#ffd966',
+                align: 'center',
+                wordWrap: { width: cardWidth - 24, useAdvancedWrap: true }
+            }).setOrigin(0.5);
+            const equippedLabel = this.add.text(centerX, centerY + 64, '', {
+                fontSize: '11px',
+                color: '#bbbbbb',
+                align: 'center',
+                wordWrap: { width: cardWidth - 16, useAdvancedWrap: true }
+            }).setOrigin(0.5);
+            const compare = this.add.text(centerX, centerY + 92, '', {
+                fontSize: '12px',
+                color: '#8aff8a',
+                align: 'center',
+                wordWrap: { width: cardWidth - 16, useAdvancedWrap: true }
+            }).setOrigin(0.5);
+
+            const equipBtn = this.add.text(centerX - 52, centerY + 118, 'Equip', {
+                fontSize: '16px',
+                color: '#111111',
+                backgroundColor: '#5aff9c',
+                padding: { left: 10, right: 10, top: 5, bottom: 5 }
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+            const stashBtn = this.add.text(centerX + 52, centerY + 118, 'Inventory', {
+                fontSize: '16px',
+                color: '#ffffff',
+                backgroundColor: '#3b5ccc',
+                padding: { left: 10, right: 10, top: 5, bottom: 5 }
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+            this.rewardScreenGroup.add([cardBg, icon, name, rarity, stats, equippedLabel, compare, equipBtn, stashBtn]);
+            this.rewardCards.push({ cardBg, icon, name, rarity, stats, equippedLabel, compare, equipBtn, stashBtn });
+        }
+    }
+
+    showRewardScreen() {
+        if (!this.rewardScreenGroup) return;
+        this.currentScreen = 'reward';
+        this.boardContainer.setVisible(false);
+        this.hudContainer.setVisible(false);
+        if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
+        this.rewardScreenGroup.setVisible(true);
+        this.setGameBoardActive(false);
+        this.closeInventoryItemPopup();
+
+        const gear = this.getEquippedStatTotals();
+        const lootPower = this.player.loot + gear.loot;
+        this.rewardLootInfoText.setText(`Loot influence: ${lootPower} (higher value improves rarity)`);
+
+        this.rewardChoices = [];
+        for (let i = 0; i < 3; i++) {
+            const rarity = this.rollRarityWithLootBonus();
+            this.rewardChoices.push(this.generateItem(rarity.name));
+        }
+
+        this.rewardCards.forEach((card, index) => {
+            const item = this.rewardChoices[index];
+            const statText = Object.entries(item.stats)
+                .map(([key, value]) => `${this.getStatLabel(key)} +${value}`)
+                .join('\n');
+            const compareData = this.getRewardCompareData(item);
+            const compareText = compareData.compareLines.map(line => line.text || line).join('\n');
+            const hasNegative = compareData.compareLines.some(line => typeof line === 'object' && line.delta < 0);
+            const hasPositive = compareData.compareLines.some(line => typeof line === 'object' && line.delta > 0);
+
+            card.cardBg.setStrokeStyle(3, item.frameColor, 1);
+            card.icon.setText(item.icon);
+            card.name.setText(item.name);
+            card.name.setColor(item.rarityTextColor || '#ffffff');
+            card.rarity.setText(`${item.rarity} ${item.type}`);
+            card.rarity.setColor(item.rarityTextColor || '#ffffff');
+            card.stats.setText(statText || 'No stats');
+            card.equippedLabel.setText(`Replacing ${compareData.targetSlot || item.slotGroup}: ${compareData.equippedName}`);
+            card.compare.setText(compareText);
+            card.compare.setColor(hasNegative ? '#ff9d9d' : (hasPositive ? '#8aff8a' : '#dddddd'));
+
+            card.equipBtn.removeAllListeners('pointerup');
+            card.stashBtn.removeAllListeners('pointerup');
+            card.equipBtn.on('pointerup', () => this.claimRewardItem(item, 'equip'));
+            card.stashBtn.on('pointerup', () => this.claimRewardItem(item, 'inventory'));
+        });
+
+        this.addCombatLog('Choose one reward before the next battle.', '#ffd966');
+    }
+
+    equipItemDirectly(item) {
+        const targetSlot = this.resolveEquipSlot(item.slotGroup);
+        const previousEquippedItem = this.equippedItems[targetSlot] || null;
+
+        if (previousEquippedItem) {
+            this.addItemToInventory(previousEquippedItem);
+        }
+
+        this.player.equipment[targetSlot] = item.name;
+        this.equippedItems[targetSlot] = item;
+        this.updateEquipmentScreen();
+        this.addCombatLog(`Equipped ${item.name} in ${targetSlot}`, '#99ff99');
+    }
+
+    claimRewardItem(item, destination) {
+        if (!this.awaitingRewardChoice) return;
+
+        if (destination === 'equip') {
+            this.equipItemDirectly(item);
+        } else {
+            const added = this.addItemToInventory(item);
+            if (added) {
+                this.addCombatLog(`Added ${item.name} to inventory`, '#99ddff');
+            } else {
+                this.addCombatLog('Inventory full, auto-equipping selected reward.', '#ffaaaa');
+                this.equipItemDirectly(item);
+            }
+        }
+
+        this.awaitingRewardChoice = false;
+        this.startNextBattle();
+    }
+
+    startNextBattle() {
+        this.battleNumber += 1;
+        const monsterIndex = Phaser.Math.Between(0, MONSTER_AVATARS.length - 1);
+        this.currentMonsterAvatar = MONSTER_AVATARS[monsterIndex];
+        this.currentMonsterName = MONSTER_NAMES[monsterIndex];
+
+        this.enemy.maxHealth = 200 + (this.battleNumber - 1) * 40;
+        this.enemy.health = this.enemy.maxHealth;
+        this.enemy.attack = 12 + (this.battleNumber - 1) * 3;
+
+        if (this.enemyAvatar) {
+            this.enemyAvatar.setText(this.currentMonsterAvatar);
+            this.enemyAvatar.setAlpha(1);
+            this.enemyAvatar.setAngle(0);
+            this.enemyAvatar.setY(110);
+        }
+
+        if (this.enemyNameText) {
+            this.enemyNameText.setText(`${this.currentMonsterName} Lv.${this.battleNumber}`);
+        }
+
+        this.createGrid();
+        this.renderGrid();
+        this.updatePlayerUI();
+        this.updateEnemyUI();
+
+        this.isSwapping = false;
+        this.showGameScreen();
+        this.addCombatLog(`A new enemy appears: ${this.currentMonsterName} (Battle ${this.battleNumber})`, '#ffcc66');
     }
 
     createEquipmentButton(x, y) {
@@ -608,6 +914,7 @@ class Match3Scene extends Phaser.Scene {
     showEquipmentScreen() {
         this.currentScreen = 'equipment';
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(true);
+        if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         this.setGameBoardActive(false);
@@ -618,6 +925,7 @@ class Match3Scene extends Phaser.Scene {
     showGameScreen() {
         this.currentScreen = 'game';
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
+        if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
         this.closeInventoryItemPopup();
         this.boardContainer.setVisible(true);
         this.hudContainer.setVisible(true);
@@ -1138,7 +1446,10 @@ class Match3Scene extends Phaser.Scene {
             if (this.enemy.health <= 0) {
                 this.enemy.health = 0;
                 this.handleEnemyDeath();
-                this.showVictoryPopup();
+                if (!this.awaitingRewardChoice) {
+                    this.awaitingRewardChoice = true;
+                    this.time.delayedCall(850, () => this.showRewardScreen());
+                }
                 this.isSwapping = true;
             }
         }
@@ -1269,7 +1580,7 @@ class Match3Scene extends Phaser.Scene {
     }
 
     enemyAttack() {
-        if (this.enemy.health <= 0) return;
+        if (this.enemy.health <= 0 || this.awaitingRewardChoice) return;
         const gear = this.getEquippedStatTotals();
         const damage = this.enemy.attack;
         const mitigatedDamage = Math.max(1, damage - Math.floor(gear.armor / 3));
