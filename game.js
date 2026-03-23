@@ -249,6 +249,12 @@ class Match3Scene extends Phaser.Scene {
         this.skillSlotUI = [];
         this.playerSkills = this.createInitialSkillLoadout();
         this.skillCharge = this.createInitialSkillCharge();
+
+        this.skillsScreenGroup = null;
+        this.skillsActiveSlotUI = [];
+        this.skillsInventoryGems = this.createSkillGemInventoryPool();
+        this.skillsInventoryTiles = [];
+        this.selectedSkillGem = null;
     }
 
     create() {
@@ -283,6 +289,20 @@ class Match3Scene extends Phaser.Scene {
             health: 0,
             loot: 0
         };
+    }
+
+    createSkillGemInventoryPool() {
+        const activeGems = ACTIVE_SKILL_GEMS.map(skill => ({
+            type: 'active',
+            id: skill.id
+        }));
+
+        const supportGems = SUPPORT_SKILL_GEMS.map(gem => ({
+            type: 'support',
+            id: gem.id
+        }));
+
+        return [...activeGems, ...supportGems];
     }
 
     getActiveSkillById(skillId) {
@@ -424,13 +444,11 @@ class Match3Scene extends Phaser.Scene {
                 const socketY = cardY + 11;
                 const socketBg = this.add.rectangle(socketX, socketY, 30, 11, 0x292929, 1)
                     .setStrokeStyle(1, 0x737373, 1)
-                    .setOrigin(0.5)
-                    .setInteractive({ useHandCursor: true });
+                    .setOrigin(0.5);
                 const socketText = this.add.text(socketX, socketY, '-', {
                     fontSize: '8px',
                     color: '#cccccc'
                 }).setOrigin(0.5);
-                socketBg.on('pointerup', () => this.cycleSupportGem(i, socketIndex));
                 supportSockets.push({ socketBg, socketText });
                 this.skillBarContainer.add([socketBg, socketText]);
             }
@@ -487,6 +505,112 @@ class Match3Scene extends Phaser.Scene {
                 }
             });
         });
+
+        this.refreshSkillsScreenUI();
+    }
+
+    getSkillGemDisplay(gem) {
+        if (!gem) return { icon: '?', name: 'Unknown', typeLabel: '' };
+
+        if (gem.type === 'active') {
+            const activeSkill = this.getActiveSkillById(gem.id);
+            const tileData = activeSkill ? this.getTileDataForEffect(activeSkill.tileEffect) : null;
+            return {
+                icon: tileData ? tileData.icon : '◆',
+                name: activeSkill ? activeSkill.name : 'Unknown Active',
+                typeLabel: 'Active'
+            };
+        }
+
+        const supportGem = this.getSupportGemById(gem.id);
+        return {
+            icon: supportGem ? supportGem.short : 'S',
+            name: supportGem ? supportGem.name : 'Unknown Support',
+            typeLabel: 'Support'
+        };
+    }
+
+    equipSelectedGemToActiveSlot(slotIndex) {
+        if (!this.selectedSkillGem || this.selectedSkillGem.type !== 'active') return;
+        if (!this.playerSkills[slotIndex]) return;
+
+        this.playerSkills[slotIndex].activeId = this.selectedSkillGem.id;
+        this.updateSkillBarUI();
+        const activeSkill = this.getActiveSkillById(this.selectedSkillGem.id);
+        if (activeSkill) {
+            this.addCombatLog(`Skill ${slotIndex + 1} set to ${activeSkill.name}`, '#7cdcff');
+        }
+    }
+
+    equipSelectedGemToSupportSlot(slotIndex, socketIndex) {
+        if (!this.selectedSkillGem || this.selectedSkillGem.type !== 'support') return;
+        if (!this.playerSkills[slotIndex]) return;
+        if (socketIndex < 0 || socketIndex > 2) return;
+
+        this.playerSkills[slotIndex].supportIds[socketIndex] = this.selectedSkillGem.id;
+        this.updateSkillBarUI();
+        const support = this.getSupportGemById(this.selectedSkillGem.id);
+        if (support) {
+            this.addCombatLog(`Skill ${slotIndex + 1} support ${socketIndex + 1}: ${support.name}`, '#a8ffa8');
+        }
+    }
+
+    refreshSkillsScreenUI() {
+        if (!this.skillsScreenGroup || !this.skillsActiveSlotUI || this.skillsActiveSlotUI.length === 0) return;
+
+        this.skillsActiveSlotUI.forEach((slotUI, slotIndex) => {
+            const loadout = this.playerSkills[slotIndex];
+            if (!loadout) return;
+
+            const activeSkill = this.getActiveSkillById(loadout.activeId);
+            const tileData = activeSkill ? this.getTileDataForEffect(activeSkill.tileEffect) : null;
+            const threshold = this.getSkillTriggerThreshold(loadout);
+            const charge = activeSkill ? (this.skillCharge[activeSkill.tileEffect] || 0) : 0;
+            const isReady = charge >= threshold;
+            const borderColor = tileData ? tileData.color : 0xffffff;
+
+            slotUI.cardBg.setStrokeStyle(2, borderColor, isReady ? 1 : 0.6);
+            slotUI.cardBg.setFillStyle(isReady ? 0x2a2a2a : 0x202020, isReady ? 1 : 0.86);
+            slotUI.iconText.setText(tileData ? tileData.icon : '◆');
+            slotUI.nameText.setText(activeSkill ? activeSkill.name : 'None');
+            slotUI.nameText.setColor(this.toHexColor(borderColor));
+            slotUI.chargeText.setText(`${charge}/${threshold}`);
+            slotUI.chargeText.setColor(isReady ? '#ffffff' : '#9a9a9a');
+
+            slotUI.supportSockets.forEach((socketUI, socketIndex) => {
+                const supportId = loadout.supportIds[socketIndex];
+                const supportGem = this.getSupportGemById(supportId);
+                socketUI.socketText.setText(supportGem ? supportGem.short : '---');
+                socketUI.socketBg.setStrokeStyle(1, supportGem ? borderColor : 0x808080, 1);
+            });
+        });
+
+        if (this.selectedGemLabel) {
+            if (!this.selectedSkillGem) {
+                this.selectedGemLabel.setText('Selected: none');
+                this.selectedGemLabel.setColor('#bbbbbb');
+            } else {
+                const display = this.getSkillGemDisplay(this.selectedSkillGem);
+                this.selectedGemLabel.setText(`Selected: ${display.name} (${display.typeLabel})`);
+                this.selectedGemLabel.setColor('#e9f18d');
+            }
+        }
+
+        if (this.skillsInventoryTiles && this.skillsInventoryTiles.length > 0) {
+            this.skillsInventoryTiles.forEach(tile => {
+                const display = this.getSkillGemDisplay(tile.gem);
+                tile.iconText.setText(display.icon);
+                tile.nameText.setText(display.name);
+                tile.typeText.setText(display.typeLabel);
+
+                const isSelected = this.selectedSkillGem
+                    && tile.gem
+                    && this.selectedSkillGem.type === tile.gem.type
+                    && this.selectedSkillGem.id === tile.gem.id;
+                tile.tileBg.setStrokeStyle(2, isSelected ? 0xfff07a : 0x666666, 1);
+                tile.tileBg.setFillStyle(isSelected ? 0x383220 : 0x292929, 1);
+            });
+        }
     }
 
     getSkillTriggerThreshold(skillLoadout) {
@@ -923,7 +1047,9 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.add(this.enemyStatsText);
 
         this.createEquipmentScreen();
-        this.createEquipmentButton(leftCX, 358);
+        this.createSkillsScreen();
+        this.createEquipmentButton(leftCX - 46, 358);
+        this.createSkillsButton(leftCX + 46, 358);
 
         this.updatePlayerUI();
         this.updateEnemyUI();
@@ -1017,6 +1143,7 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
+        if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
         this.rewardScreenGroup.setVisible(true);
         this.setGameBoardActive(false);
         this.closeInventoryItemPopup();
@@ -1133,7 +1260,7 @@ class Match3Scene extends Phaser.Scene {
 
     createEquipmentButton(x, y) {
         this.equipmentButton = this.add.text(x, y, 'Equipment', {
-            fontSize: '16px',
+            fontSize: '14px',
             color: '#00ffcc',
             backgroundColor: '#333333',
             padding: { left: 8, right: 8, top: 4, bottom: 4 }
@@ -1143,6 +1270,165 @@ class Match3Scene extends Phaser.Scene {
         this.equipmentButton.on('pointerup', () => {
             this.showEquipmentScreen();
         });
+    }
+
+    createSkillsButton(x, y) {
+        this.skillsButton = this.add.text(x, y, 'Skills', {
+            fontSize: '14px',
+            color: '#ffd56b',
+            backgroundColor: '#333333',
+            padding: { left: 10, right: 10, top: 4, bottom: 4 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        this.hudContainer.add(this.skillsButton);
+
+        this.skillsButton.on('pointerup', () => {
+            this.showSkillsScreen();
+        });
+    }
+
+    createSkillsScreen() {
+        const width = this.sys.game.config.width;
+        const height = this.sys.game.config.height;
+
+        this.skillsScreenGroup = this.add.container(0, 0).setVisible(false);
+
+        const bg = this.add.rectangle(width / 2, height / 2, width - 20, height - 20, 0x151515, 0.98)
+            .setStrokeStyle(2, 0xffffff, 1);
+        const title = this.add.text(width / 2, 44, 'Skill Gems', {
+            fontSize: '24px',
+            color: '#ffd56b',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        const subtitle = this.add.text(width / 2, 72, 'Select a gem below, then tap a top slot to equip.', {
+            fontSize: '12px',
+            color: '#bfbfbf'
+        }).setOrigin(0.5);
+        const backBtn = this.add.text(12, 12, 'Back to Game', {
+            fontSize: '14px',
+            color: '#00ffcc',
+            backgroundColor: '#333333',
+            padding: { left: 6, right: 6, top: 3, bottom: 3 }
+        }).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+        backBtn.on('pointerup', () => this.showGameScreen());
+
+        this.skillsScreenGroup.add([bg, title, subtitle, backBtn]);
+
+        const topSlotsY = 180;
+        const slotWidth = 114;
+        const slotHeight = 124;
+        const slotSpacing = 12;
+        const slotStartX = (width - (slotWidth * 3 + slotSpacing * 2)) / 2 + slotWidth / 2;
+        this.skillsActiveSlotUI = [];
+
+        for (let slotIndex = 0; slotIndex < 3; slotIndex++) {
+            const centerX = slotStartX + slotIndex * (slotWidth + slotSpacing);
+            const cardBg = this.add.rectangle(centerX, topSlotsY, slotWidth, slotHeight, 0x202020, 1)
+                .setStrokeStyle(2, 0xffffff, 1)
+                .setInteractive({ useHandCursor: true });
+            const cardLabel = this.add.text(centerX, topSlotsY - 52, `Skill ${slotIndex + 1}`, {
+                fontSize: '11px',
+                color: '#d9d9d9'
+            }).setOrigin(0.5);
+            const iconText = this.add.text(centerX, topSlotsY - 26, '', {
+                fontSize: '24px'
+            }).setOrigin(0.5);
+            const nameText = this.add.text(centerX, topSlotsY + 2, '', {
+                fontSize: '11px',
+                color: '#ffffff',
+                fontStyle: 'bold',
+                wordWrap: { width: 106, useAdvancedWrap: true },
+                align: 'center'
+            }).setOrigin(0.5);
+            const chargeText = this.add.text(centerX, topSlotsY + 24, '', {
+                fontSize: '10px',
+                color: '#cccccc'
+            }).setOrigin(0.5);
+
+            const supportSockets = [];
+            for (let socketIndex = 0; socketIndex < 3; socketIndex++) {
+                const socketX = centerX - 32 + socketIndex * 32;
+                const socketY = topSlotsY + 46;
+                const socketBg = this.add.rectangle(socketX, socketY, 28, 16, 0x2f2f2f, 1)
+                    .setStrokeStyle(1, 0x808080, 1)
+                    .setInteractive({ useHandCursor: true });
+                const socketText = this.add.text(socketX, socketY, '-', {
+                    fontSize: '8px',
+                    color: '#d0d0d0'
+                }).setOrigin(0.5);
+                socketBg.on('pointerup', () => this.equipSelectedGemToSupportSlot(slotIndex, socketIndex));
+                supportSockets.push({ socketBg, socketText });
+                this.skillsScreenGroup.add([socketBg, socketText]);
+            }
+
+            cardBg.on('pointerup', () => this.equipSelectedGemToActiveSlot(slotIndex));
+
+            this.skillsActiveSlotUI.push({ cardBg, cardLabel, iconText, nameText, chargeText, supportSockets });
+            this.skillsScreenGroup.add([cardBg, cardLabel, iconText, nameText, chargeText]);
+        }
+
+        const inventoryPanel = this.add.rectangle(width / 2, 632, width - 26, 250, 0x1c1c1c, 1)
+            .setStrokeStyle(1, 0x666666, 1);
+        const inventoryTitle = this.add.text(width / 2, 515, 'Gem Inventory', {
+            fontSize: '16px',
+            color: '#7ee8ff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.selectedGemLabel = this.add.text(width / 2, 536, 'Selected: none', {
+            fontSize: '11px',
+            color: '#bbbbbb'
+        }).setOrigin(0.5);
+
+        this.skillsScreenGroup.add([inventoryPanel, inventoryTitle, this.selectedGemLabel]);
+
+        this.skillsInventoryTiles = [];
+        const cols = 5;
+        const rows = 2;
+        const cellW = 68;
+        const cellH = 86;
+        const gapX = 6;
+        const gapY = 8;
+        const gridStartX = (width - (cols * cellW + (cols - 1) * gapX)) / 2;
+        const gridStartY = 554;
+
+        let gemIndex = 0;
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                const gem = this.skillsInventoryGems[gemIndex];
+                const x = gridStartX + col * (cellW + gapX);
+                const y = gridStartY + row * (cellH + gapY);
+
+                const tileBg = this.add.rectangle(x, y, cellW, cellH, 0x292929, 1)
+                    .setOrigin(0, 0)
+                    .setStrokeStyle(2, 0x666666, 1)
+                    .setInteractive({ useHandCursor: true });
+                const iconText = this.add.text(x + cellW / 2, y + 24, '', {
+                    fontSize: '24px'
+                }).setOrigin(0.5);
+                const nameText = this.add.text(x + cellW / 2, y + 50, '', {
+                    fontSize: '9px',
+                    color: '#ffffff',
+                    align: 'center',
+                    wordWrap: { width: cellW - 8, useAdvancedWrap: true }
+                }).setOrigin(0.5);
+                const typeText = this.add.text(x + cellW / 2, y + 74, '', {
+                    fontSize: '8px',
+                    color: '#aaaaaa'
+                }).setOrigin(0.5);
+
+                if (gem) {
+                    tileBg.on('pointerup', () => {
+                        this.selectedSkillGem = gem;
+                        this.refreshSkillsScreenUI();
+                    });
+                }
+
+                this.skillsInventoryTiles.push({ tileBg, iconText, nameText, typeText, gem });
+                this.skillsScreenGroup.add([tileBg, iconText, nameText, typeText]);
+                gemIndex += 1;
+            }
+        }
+
+        this.refreshSkillsScreenUI();
     }
 
     createEquipmentScreen() {
@@ -1398,6 +1684,7 @@ class Match3Scene extends Phaser.Scene {
         this.currentScreen = 'equipment';
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(true);
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
+        if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
@@ -1406,9 +1693,23 @@ class Match3Scene extends Phaser.Scene {
         this.addCombatLog('Switched to equipment screen', '#00ffff');
     }
 
+    showSkillsScreen() {
+        this.currentScreen = 'skills';
+        if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(true);
+        if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
+        if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
+        this.boardContainer.setVisible(false);
+        this.hudContainer.setVisible(false);
+        if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
+        this.setGameBoardActive(false);
+        this.refreshSkillsScreenUI();
+        this.addCombatLog('Switched to skills screen', '#ffd56b');
+    }
+
     showGameScreen() {
         this.currentScreen = 'game';
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
+        if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
         this.closeInventoryItemPopup();
         this.boardContainer.setVisible(true);
