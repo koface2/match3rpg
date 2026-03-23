@@ -1486,42 +1486,45 @@ class Match3Scene extends Phaser.Scene {
 
         this.skillsScreenGroup.add([bg, title, subtitle, backBtn]);
 
-        const topSlotsY = 188;
-        const slotSpacing = 124;
-        const slotStartX = width / 2 - slotSpacing;
+        const loadoutStartY = 140;
+        const rowSpacing = 112;
+        const activeX = 84;
+        const supportStartX = 184;
+        const supportGapX = 54;
         this.skillsActiveSlotUI = [];
 
         for (let slotIndex = 0; slotIndex < 3; slotIndex++) {
-            const centerX = slotStartX + slotIndex * slotSpacing;
+            const centerX = activeX;
+            const centerY = loadoutStartY + slotIndex * rowSpacing;
             const mainRadius = 36;
 
-            const cardBg = this.add.circle(centerX, topSlotsY, mainRadius, 0x202020, 1)
+            const cardBg = this.add.circle(centerX, centerY, mainRadius, 0x202020, 1)
                 .setStrokeStyle(2, 0xffffff, 1)
                 .setInteractive({ useHandCursor: true });
-            const cardLabel = this.add.text(centerX, topSlotsY - 56, `Skill ${slotIndex + 1}`, {
+            const cardLabel = this.add.text(centerX, centerY - 56, `Skill ${slotIndex + 1}`, {
                 fontSize: '11px',
                 color: '#d9d9d9'
             }).setOrigin(0.5);
-            const iconText = this.add.text(centerX, topSlotsY - 10, '', {
+            const iconText = this.add.text(centerX, centerY - 10, '', {
                 fontSize: '24px'
             }).setOrigin(0.5);
-            const nameText = this.add.text(centerX, topSlotsY + 21, '', {
+            const nameText = this.add.text(centerX, centerY + 21, '', {
                 fontSize: '9px',
                 color: '#ffffff',
                 fontStyle: 'bold',
                 wordWrap: { width: 74, useAdvancedWrap: true },
                 align: 'center'
             }).setOrigin(0.5);
-            const chargeText = this.add.text(centerX, topSlotsY + 56, '', {
+            const chargeText = this.add.text(centerX + 2, centerY + 56, '', {
                 fontSize: '10px',
                 color: '#cccccc'
             }).setOrigin(0.5);
 
             const supportSockets = [];
             for (let socketIndex = 0; socketIndex < 3; socketIndex++) {
-                const socketX = centerX - 28 + socketIndex * 28;
-                const socketY = topSlotsY + 94;
-                const connector = this.add.line(centerX, topSlotsY, 0, 0, socketX - centerX, socketY - topSlotsY, 0x8b8b8b, 0.75)
+                const socketX = supportStartX + socketIndex * supportGapX;
+                const socketY = centerY;
+                const connector = this.add.line(centerX, centerY, 0, 0, socketX - centerX, socketY - centerY, 0x8b8b8b, 0.75)
                     .setLineWidth(1, 1);
                 const socketRadius = 12;
                 const socketBg = this.add.circle(socketX, socketY, socketRadius, 0x2f2f2f, 1)
@@ -1545,7 +1548,7 @@ class Match3Scene extends Phaser.Scene {
                 nameText,
                 chargeText,
                 supportSockets,
-                mainCenter: { x: centerX, y: topSlotsY },
+                mainCenter: { x: centerX, y: centerY },
                 mainRadius
             });
             this.skillsScreenGroup.add([cardBg, cardLabel, iconText, nameText, chargeText]);
