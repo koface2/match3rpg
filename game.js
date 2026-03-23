@@ -811,9 +811,9 @@ class Match3Scene extends Phaser.Scene {
             { key: 'necklace', label: 'Necklace', x: leftPanelCenterX, y: silhouetteTopY + 102 },
             { key: 'chest', label: 'Chest', x: leftPanelCenterX, y: silhouetteTopY + 156 },
             { key: 'belt', label: 'Belt', x: leftPanelCenterX, y: silhouetteTopY + 222 },
-            { key: 'offhand', label: 'Off Hand', x: leftPanelCenterX - 82, y: silhouetteTopY + 160 },
-            { key: 'mainhand', label: 'Main Hand', x: leftPanelCenterX + 82, y: silhouetteTopY + 160 },
-            { key: 'gloves', label: 'Gloves', x: leftPanelCenterX + 82, y: silhouetteTopY + 226 },
+            { key: 'mainhand', label: 'Main Hand', x: leftPanelCenterX - 82, y: silhouetteTopY + 160 },
+            { key: 'offhand', label: 'Off Hand', x: leftPanelCenterX + 82, y: silhouetteTopY + 160 },
+            { key: 'gloves', label: 'Gloves', x: leftPanelCenterX - 82, y: silhouetteTopY + 226 },
             { key: 'boots', label: 'Boots', x: leftPanelCenterX, y: silhouetteTopY + 304 },
             { key: 'ring1', label: 'Ring 1', x: leftPanelCenterX - 62, y: silhouetteTopY + 286 },
             { key: 'ring2', label: 'Ring 2', x: leftPanelCenterX + 62, y: silhouetteTopY + 286 }
@@ -848,9 +848,10 @@ class Match3Scene extends Phaser.Scene {
                 .setStrokeStyle(1, 0xffffff, 0.66)
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
-            const slotIcon = this.add.text(slot.x, slot.y, '', { fontSize: '26px', color: '#ffffff' }).setOrigin(0.5);
+            const slotIcon = this.add.text(slot.x, slot.y - 6, '', { fontSize: '26px', color: '#ffffff' }).setOrigin(0.5);
             const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 - 10, slot.label, { fontSize: '11px', color: '#ffff00' }).setOrigin(0.5, 0.5);
-            const slotValue = this.add.text(slot.x, slot.y + slotSize / 2 + 10, 'Empty', { fontSize: '11px', color: '#ffffff' }).setOrigin(0.5, 0.5);
+            // Item name inside the slot (bottom edge) so it never bleeds into the adjacent slot below
+            const slotValue = this.add.text(slot.x, slot.y + slotSize / 2 - 2, '', { fontSize: '8px', color: '#aaaaaa', align: 'center', wordWrap: { width: slotSize - 4, useAdvancedWrap: true } }).setOrigin(0.5, 1);
 
             const inspectEquippedItem = () => {
                 const equippedItem = this.equippedItems[slot.key];
@@ -1016,7 +1017,7 @@ class Match3Scene extends Phaser.Scene {
         Object.entries(this.player.equipment).forEach(([key, value]) => {
             const equippedItem = this.equippedItems[key] || null;
             if (this.equipmentText[key]) {
-                this.equipmentText[key].setText(value === 'None' ? 'Empty' : value);
+                this.equipmentText[key].setText(value === 'None' ? '' : value);
             }
             if (this.equipmentIconText[key]) {
                 this.equipmentIconText[key].setText(equippedItem ? equippedItem.icon : '');
