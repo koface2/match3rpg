@@ -16,6 +16,43 @@ const MONSTER_AVATARS = ['👹', '👺', '🧟', '👾', '🤖', '🐉', '🕷�
 const MONSTER_NAMES = ['Ogre', 'Oni', 'Zombie', 'Ghost', 'Robot', 'Dragon', 'Spider', 'Squid'];
 const PLAYER_AVATAR = '👸';
 
+const ITEM_RARITIES = [
+    { name: 'Common', weight: 60, affixes: 1, statMultiplier: 1.0, frameColor: 0xa3a3a3, textColor: '#d0d0d0' },
+    { name: 'Magic', weight: 25, affixes: 2, statMultiplier: 1.15, frameColor: 0x5aa9ff, textColor: '#8ec5ff' },
+    { name: 'Rare', weight: 12, affixes: 4, statMultiplier: 1.35, frameColor: 0xffd166, textColor: '#ffe08f' },
+    { name: 'Legendary', weight: 3, affixes: 6, statMultiplier: 1.65, frameColor: 0xff7f11, textColor: '#ffb35c' }
+];
+
+const ITEM_BASES = [
+    { slotGroup: 'helmet', type: 'Helmet', baseName: 'Helm', icon: '🪖', description: 'Headgear built for close combat.', baseStats: { armor: 3 } },
+    { slotGroup: 'chest', type: 'Chest', baseName: 'Cuirass', icon: '🦺', description: 'Body armor that absorbs heavy strikes.', baseStats: { armor: 5, health: 6 } },
+    { slotGroup: 'gloves', type: 'Gloves', baseName: 'Gauntlets', icon: '🧤', description: 'Grip and control for weapon handling.', baseStats: { physical: 2 } },
+    { slotGroup: 'boots', type: 'Boots', baseName: 'Greaves', icon: '🥾', description: 'Footwear built for stability and speed.', baseStats: { ranged: 2, armor: 1 } },
+    { slotGroup: 'belt', type: 'Belt', baseName: 'Warbelt', icon: '🧷', description: 'Carries supplies and reinforces stance.', baseStats: { health: 8 } },
+    { slotGroup: 'mainhand', type: 'Weapon', baseName: 'Blade', icon: '🗡️', description: 'Main offensive weapon.', baseStats: { physical: 4 } },
+    { slotGroup: 'offhand', type: 'Shield', baseName: 'Buckler', icon: '🛡️', description: 'Defensive off-hand protector.', baseStats: { armor: 4 } },
+    { slotGroup: 'ring', type: 'Ring', baseName: 'Band', icon: '💍', description: 'A ring that channels focused power.', baseStats: { magic: 2 } },
+    { slotGroup: 'necklace', type: 'Necklace', baseName: 'Amulet', icon: '📿', description: 'Necklace etched with ancient sigils.', baseStats: { magic: 3, ranged: 1 } }
+];
+
+const ITEM_PREFIXES = [
+    { name: 'Brutal', stats: { physical: [2, 6] } },
+    { name: 'Arcane', stats: { magic: [2, 6] } },
+    { name: 'Deadeye', stats: { ranged: [2, 6] } },
+    { name: 'Stalwart', stats: { armor: [2, 7] } },
+    { name: 'Vital', stats: { health: [8, 20] } },
+    { name: 'Prosperous', stats: { loot: [4, 14] } }
+];
+
+const ITEM_SUFFIXES = [
+    { name: 'of Slaying', stats: { physical: [1, 5], magic: [1, 4] } },
+    { name: 'of Focus', stats: { magic: [2, 7] } },
+    { name: 'of Precision', stats: { ranged: [2, 7] } },
+    { name: 'of Guarding', stats: { armor: [2, 8] } },
+    { name: 'of Vitality', stats: { health: [10, 24] } },
+    { name: 'of Fortune', stats: { loot: [5, 16] } }
+];
+
 class Match3Scene extends Phaser.Scene {
     constructor() {
         super('Match3Scene');
@@ -70,18 +107,9 @@ class Match3Scene extends Phaser.Scene {
         this.currentMonsterAvatar = MONSTER_AVATARS[monsterIndex];
         this.currentMonsterName = MONSTER_NAMES[monsterIndex];
 
-        this.inventory = [
-            { id: 'iron-helm', name: 'Iron Helm', slot: 'helmet', type: 'Helmet', rarity: 'Common', icon: '🪖', frameColor: 0xa3a3a3, description: 'Simple iron head protection.', stats: { armor: 4 } },
-            { id: 'hunter-coat', name: 'Hunter Coat', slot: 'chest', type: 'Chest', rarity: 'Uncommon', icon: '🦺', frameColor: 0x66bb6a, description: 'Leather coat favored by scouts.', stats: { armor: 5, ranged: 2 } },
-            { id: 'war-gloves', name: 'War Gloves', slot: 'gloves', type: 'Gloves', rarity: 'Common', icon: '🧤', frameColor: 0xa3a3a3, description: 'Reinforced gloves for melee grip.', stats: { physical: 3 } },
-            { id: 'trail-boots', name: 'Trail Boots', slot: 'boots', type: 'Boots', rarity: 'Common', icon: '🥾', frameColor: 0xa3a3a3, description: 'Light boots for quick movement.', stats: { ranged: 1, armor: 2 } },
-            { id: 'oak-belt', name: 'Oak Belt', slot: 'belt', type: 'Belt', rarity: 'Common', icon: '🧷', frameColor: 0xa3a3a3, description: 'Sturdy belt with potion loops.', stats: { health: 10 } },
-            { id: 'knight-blade', name: 'Knight Blade', slot: 'mainhand', type: 'Weapon', rarity: 'Rare', icon: '🗡️', frameColor: 0x42a5f5, description: 'A balanced one-handed sword.', stats: { physical: 6 } },
-            { id: 'tower-buckler', name: 'Tower Buckler', slot: 'offhand', type: 'Shield', rarity: 'Uncommon', icon: '🛡️', frameColor: 0x66bb6a, description: 'Small shield with strong guard.', stats: { armor: 6 } },
-            { id: 'topaz-band', name: 'Topaz Band', slot: 'ring1', type: 'Ring', rarity: 'Uncommon', icon: '💍', frameColor: 0x66bb6a, description: 'Warm stone that boosts vitality.', stats: { health: 15 } },
-            { id: 'moon-band', name: 'Moon Band', slot: 'ring2', type: 'Ring', rarity: 'Uncommon', icon: '💍', frameColor: 0x66bb6a, description: 'Pale band for magical focus.', stats: { magic: 4 } },
-            { id: 'sage-amulet', name: 'Sage Amulet', slot: 'necklace', type: 'Necklace', rarity: 'Rare', icon: '📿', frameColor: 0x42a5f5, description: 'Ancient charm that sharpens focus.', stats: { magic: 6, ranged: 2 } }
-        ];
+        this.maxInventorySlots = 12;
+        this.itemIdCounter = 0;
+        this.inventory = this.generateStarterInventory();
         this.equippedItems = {};
         this.inventoryTiles = [];
         this.selectedInventoryItem = null;
@@ -140,6 +168,177 @@ class Match3Scene extends Phaser.Scene {
             this.hudContainer.add(textObj);
             this.combatLogTexts.push(textObj);
         });
+    }
+
+    generateStarterInventory() {
+        const starter = [];
+        for (let i = 0; i < 10; i++) {
+            const forcedRarity = i < 6 ? 'Common' : (i < 9 ? 'Magic' : null);
+            starter.push(this.generateItem(forcedRarity));
+        }
+        return starter;
+    }
+
+    getSlotLabel(slotGroup) {
+        if (slotGroup === 'ring') return 'Ring (Either Slot)';
+        return slotGroup.charAt(0).toUpperCase() + slotGroup.slice(1);
+    }
+
+    getStatLabel(stat) {
+        const labels = {
+            health: 'Health',
+            physical: 'Physical',
+            magic: 'Magic',
+            ranged: 'Ranged',
+            loot: 'Loot Find',
+            armor: 'Armor'
+        };
+        return labels[stat] || stat.charAt(0).toUpperCase() + stat.slice(1);
+    }
+
+    getEquippedStatTotals() {
+        const totals = {
+            health: 0,
+            physical: 0,
+            magic: 0,
+            ranged: 0,
+            loot: 0,
+            armor: 0
+        };
+
+        Object.values(this.equippedItems).forEach(item => {
+            if (!item || !item.stats) return;
+            Object.entries(item.stats).forEach(([stat, value]) => {
+                if (totals[stat] === undefined) {
+                    totals[stat] = 0;
+                }
+                totals[stat] += value;
+            });
+        });
+
+        return totals;
+    }
+
+    getRarityByName(name) {
+        return ITEM_RARITIES.find(rarity => rarity.name === name) || ITEM_RARITIES[0];
+    }
+
+    rollRarity() {
+        const totalWeight = ITEM_RARITIES.reduce((sum, rarity) => sum + rarity.weight, 0);
+        let roll = Phaser.Math.Between(1, totalWeight);
+
+        for (let i = 0; i < ITEM_RARITIES.length; i++) {
+            roll -= ITEM_RARITIES[i].weight;
+            if (roll <= 0) {
+                return ITEM_RARITIES[i];
+            }
+        }
+
+        return ITEM_RARITIES[0];
+    }
+
+    rollAffixes(pool, count, multiplier, usedNames) {
+        const affixes = [];
+
+        while (affixes.length < count && usedNames.size < pool.length) {
+            const affix = Phaser.Utils.Array.GetRandom(pool);
+            if (!affix || usedNames.has(affix.name)) continue;
+
+            usedNames.add(affix.name);
+
+            const rolledStats = {};
+            Object.entries(affix.stats).forEach(([stat, range]) => {
+                const [min, max] = range;
+                const value = Math.max(1, Math.round(Phaser.Math.Between(min, max) * multiplier));
+                rolledStats[stat] = value;
+            });
+
+            affixes.push({ name: affix.name, stats: rolledStats });
+        }
+
+        return affixes;
+    }
+
+    mergeStats(target, source) {
+        Object.entries(source).forEach(([stat, value]) => {
+            if (!target[stat]) target[stat] = 0;
+            target[stat] += value;
+        });
+    }
+
+    generateItem(forcedRarity = null) {
+        const base = Phaser.Utils.Array.GetRandom(ITEM_BASES);
+        const rarity = forcedRarity ? this.getRarityByName(forcedRarity) : this.rollRarity();
+        const statMultiplier = rarity.statMultiplier;
+
+        const prefixCount = Math.ceil(rarity.affixes / 2);
+        const suffixCount = Math.floor(rarity.affixes / 2);
+        const usedNames = new Set();
+
+        const prefixes = this.rollAffixes(ITEM_PREFIXES, prefixCount, statMultiplier, usedNames);
+        const suffixes = this.rollAffixes(ITEM_SUFFIXES, suffixCount, statMultiplier, usedNames);
+
+        const totalStats = {};
+        this.mergeStats(totalStats, base.baseStats);
+        prefixes.forEach(prefix => this.mergeStats(totalStats, prefix.stats));
+        suffixes.forEach(suffix => this.mergeStats(totalStats, suffix.stats));
+
+        const primaryPrefix = prefixes.length > 0 ? `${prefixes[0].name} ` : '';
+        const primarySuffix = suffixes.length > 0 ? ` ${suffixes[0].name}` : '';
+        const rarityFlavor = rarity.name === 'Legendary' ? 'Mythic ' : '';
+        const itemName = `${primaryPrefix}${rarityFlavor}${base.baseName}${primarySuffix}`.trim();
+
+        const affixSummary = [
+            ...prefixes.map(prefix => `Prefix: ${prefix.name}`),
+            ...suffixes.map(suffix => `Affix: ${suffix.name}`)
+        ].join(' | ');
+
+        const itemId = `itm-${Date.now()}-${this.itemIdCounter++}`;
+
+        return {
+            id: itemId,
+            name: itemName,
+            slotGroup: base.slotGroup,
+            type: base.type,
+            rarity: rarity.name,
+            icon: base.icon,
+            frameColor: rarity.frameColor,
+            rarityTextColor: rarity.textColor,
+            description: `${base.description} ${affixSummary}`.trim(),
+            stats: totalStats,
+            prefixes,
+            suffixes
+        };
+    }
+
+    addItemToInventory(item) {
+        if (this.inventory.length >= this.maxInventorySlots) {
+            this.addCombatLog('Inventory full. Item dropped on the ground.', '#ff8888');
+            return false;
+        }
+
+        this.inventory.push(item);
+        this.updateInventoryGridUI();
+        return true;
+    }
+
+    tryDropLootItem(lootAmount) {
+        const gear = this.getEquippedStatTotals();
+        const dropChance = Phaser.Math.Clamp(0.10 + lootAmount / 90 + gear.loot / 120, 0, 0.85);
+
+        if (Math.random() > dropChance) return;
+
+        const item = this.generateItem();
+        if (this.addItemToInventory(item)) {
+            this.addCombatLog(`Loot Drop: ${item.rarity} ${item.name}`, item.rarityTextColor);
+        }
+    }
+
+    resolveEquipSlot(slotGroup) {
+        if (slotGroup !== 'ring') return slotGroup;
+        if (!this.equippedItems.ring1) return 'ring1';
+        if (!this.equippedItems.ring2) return 'ring2';
+        return 'ring1';
     }
 
     createPlayerUI() {
@@ -468,6 +667,7 @@ class Match3Scene extends Phaser.Scene {
             tileInner.setStrokeStyle(1, item.frameColor, 0.8);
             tileIcon.setText(item.icon);
             tileName.setText(item.name);
+            tileName.setColor(item.rarityTextColor || '#ffffff');
         });
     }
 
@@ -476,13 +676,14 @@ class Match3Scene extends Phaser.Scene {
         this.selectedInventoryItem = item;
 
         const statText = Object.entries(item.stats)
-            .map(([key, value]) => `${key.toUpperCase()}: +${value}`)
+            .map(([key, value]) => `${this.getStatLabel(key)}: +${value}`)
             .join('   ');
 
         this.inventoryModalFrame.setStrokeStyle(2, item.frameColor, 1);
         this.inventoryModalIcon.setText(item.icon);
         this.inventoryModalName.setText(item.name);
-        this.inventoryModalType.setText(`Type: ${item.type}  |  Slot: ${item.slot}  |  Rarity: ${item.rarity}`);
+        this.inventoryModalName.setColor(item.rarityTextColor || '#ffffff');
+        this.inventoryModalType.setText(`Type: ${item.type}  |  Slot: ${this.getSlotLabel(item.slotGroup)}  |  Rarity: ${item.rarity}`);
         this.inventoryModalDesc.setText(item.description);
         this.inventoryModalStats.setText(statText || 'No bonus stats');
         this.inventoryModal.setVisible(true);
@@ -499,7 +700,8 @@ class Match3Scene extends Phaser.Scene {
         if (!this.selectedInventoryItem) return;
 
         const item = this.selectedInventoryItem;
-        const previousEquippedItem = this.equippedItems[item.slot] || null;
+        const targetSlot = this.resolveEquipSlot(item.slotGroup);
+        const previousEquippedItem = this.equippedItems[targetSlot] || null;
         const inventoryIndex = this.inventory.findIndex(inventoryItem => inventoryItem.id === item.id);
 
         if (inventoryIndex === -1) {
@@ -512,10 +714,10 @@ class Match3Scene extends Phaser.Scene {
             this.inventory.push(previousEquippedItem);
         }
 
-        this.player.equipment[item.slot] = item.name;
-        this.equippedItems[item.slot] = item;
+        this.player.equipment[targetSlot] = item.name;
+        this.equippedItems[targetSlot] = item;
         this.updateEquipmentScreen();
-        this.addCombatLog(`Equipped ${item.name} in ${item.slot}`, '#99ff99');
+        this.addCombatLog(`Equipped ${item.name} in ${targetSlot}`, '#99ff99');
         this.closeInventoryItemPopup();
     }
 
@@ -539,12 +741,15 @@ class Match3Scene extends Phaser.Scene {
 
     updatePlayerUI() {
         if (!this.playerStatsText) return;
+
+        const gear = this.getEquippedStatTotals();
         this.playerStatsText.setText([
             `Health: ${this.player.health}`,
-            `Physical: ${this.player.physical}`,
-            `Magic: ${this.player.magic}`,
-            `Ranged: ${this.player.ranged}`,
+            `Physical: ${this.player.physical} (+${gear.physical})`,
+            `Magic: ${this.player.magic} (+${gear.magic})`,
+            `Ranged: ${this.player.ranged} (+${gear.ranged})`,
             `Loot: ${this.player.loot}`,
+            `Armor: +${gear.armor}`,
             `Score: ${this.score}`
         ].join('\n'));
 
@@ -865,6 +1070,7 @@ class Match3Scene extends Phaser.Scene {
     }
 
     clearMatches(matches) {
+        const gear = this.getEquippedStatTotals();
         let totalEnemyDamage = 0;
         let totalPlayerHeal = 0;
         let physicalDamage = 0;
@@ -881,27 +1087,26 @@ class Match3Scene extends Phaser.Scene {
                 switch (effect) {
                     case 'physical':
                         this.player.physical += 5;
-                        physicalDamage += 8;
-                        totalEnemyDamage += 8;
+                        physicalDamage += 8 + gear.physical;
+                        totalEnemyDamage += 8 + gear.physical;
                         break;
                     case 'magic':
                         this.player.magic += 5;
-                        magicDamage += 8;
-                        totalEnemyDamage += 8;
+                        magicDamage += 8 + gear.magic;
+                        totalEnemyDamage += 8 + gear.magic;
                         break;
                     case 'ranged':
                         this.player.ranged += 5;
-                        rangedDamage += 8;
-                        totalEnemyDamage += 8;
+                        rangedDamage += 8 + gear.ranged;
+                        totalEnemyDamage += 8 + gear.ranged;
                         break;
                     case 'health':
-                        this.player.health += 10;
-                        healAmount += 10;
-                        totalPlayerHeal += 10;
+                        healAmount += 10 + Math.floor(gear.health / 10);
+                        totalPlayerHeal += 10 + Math.floor(gear.health / 10);
                         break;
                     case 'loot':
                         this.player.loot += 10;
-                        lootAmount += 10;
+                        lootAmount += 10 + gear.loot;
                         break;
                 }
             }
@@ -923,6 +1128,7 @@ class Match3Scene extends Phaser.Scene {
         }
         if (lootAmount > 0) {
             this.addCombatLog(`Gold gained: +${lootAmount}`, '#ffff00');
+            this.tryDropLootItem(lootAmount);
         }
 
         if (totalEnemyDamage > 0) {
@@ -1064,11 +1270,13 @@ class Match3Scene extends Phaser.Scene {
 
     enemyAttack() {
         if (this.enemy.health <= 0) return;
+        const gear = this.getEquippedStatTotals();
         const damage = this.enemy.attack;
-        this.player.health -= damage;
+        const mitigatedDamage = Math.max(1, damage - Math.floor(gear.armor / 3));
+        this.player.health -= mitigatedDamage;
         if (this.player.health < 0) this.player.health = 0;
-        this.addCombatLog(`Enemy Attack: -${damage}`, '#ff6666');
-        this.showCombatMessage(`Hero -${damage}`, '#ff4444', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_HEIGHT * TILE_SIZE - 40);
+        this.addCombatLog(`Enemy Attack: -${mitigatedDamage} (${Math.floor(gear.armor / 3)} blocked)`, '#ff6666');
+        this.showCombatMessage(`Hero -${mitigatedDamage}`, '#ff4444', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_HEIGHT * TILE_SIZE - 40);
         this.updatePlayerUI();
         if (this.player.health <= 0) {
             this.add.text(GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_HEIGHT * TILE_SIZE / 2 - 20, 'Game Over', { fontSize: '48px', color: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5);
