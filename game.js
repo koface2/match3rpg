@@ -372,7 +372,6 @@ class Match3Scene extends Phaser.Scene {
         if (castResult.lootAmount > 0) {
             this.player.loot += castResult.lootAmount;
             this.addCombatLog(`Skill Loot Bonus: +${castResult.lootAmount}`, '#ffee75');
-            this.tryDropLootItem(castResult.lootAmount);
         }
 
         if (this.enemy.health <= 0) {
@@ -899,12 +898,7 @@ class Match3Scene extends Phaser.Scene {
     }
 
     generateStarterInventory() {
-        const starter = [];
-        for (let i = 0; i < 10; i++) {
-            const forcedRarity = i < 6 ? 'Common' : (i < 9 ? 'Magic' : null);
-            starter.push(this.generateItem(forcedRarity));
-        }
-        return starter;
+        return [];
     }
 
     getSlotLabel(slotGroup) {
@@ -1982,7 +1976,6 @@ class Match3Scene extends Phaser.Scene {
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
         this.setGameBoardActive(false);
         this.updateEquipmentScreen();
-        this.addCombatLog('Switched to equipment screen', '#00ffff');
     }
 
     showSkillsScreen() {
@@ -1996,7 +1989,6 @@ class Match3Scene extends Phaser.Scene {
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
         this.setGameBoardActive(false);
         this.refreshSkillsScreenUI();
-        this.addCombatLog('Switched to skills screen', '#ffd56b');
     }
 
     showGameScreen() {
@@ -2010,7 +2002,6 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.setVisible(true);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(true);
         this.setGameBoardActive(true);
-        this.addCombatLog('Back to game screen', '#00ffff');
     }
 
     updateEquipmentScreen() {
@@ -2548,7 +2539,6 @@ class Match3Scene extends Phaser.Scene {
         }
         if (lootAmount > 0) {
             this.addCombatLog(`Gold gained: +${lootAmount}`, '#ffff00');
-            this.tryDropLootItem(lootAmount);
         }
 
         this.addSkillChargeFromMatches(matchCounts);
