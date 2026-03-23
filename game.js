@@ -1,8 +1,8 @@
 const GRID_WIDTH = 6;
 const GRID_HEIGHT = 6;
-const TILE_SIZE = 64;
-const GRID_OFFSET_X = 160;
-const GRID_OFFSET_Y = 80;
+const TILE_SIZE = 60;
+const GRID_OFFSET_X = 15;
+const GRID_OFFSET_Y = 418;
 
 const TILE_TYPES = [
     { name: 'health', color: 0xff1493, icon: '♥', effect: 'health' },
@@ -109,14 +109,14 @@ class Match3Scene extends Phaser.Scene {
         this.enemyHealthBar = null;
         this.combatLog = [];
         this.combatLogTexts = [];
-        this.maxCombatLogLines = 5;
+        this.maxCombatLogLines = 3;
 
         this.boardContainer = null;
         this.hudContainer = null;
         this.equipmentScreenGroup = null;
         this.currentScreen = 'game';
         this.combatLogTexts = [];
-        this.maxCombatLogLines = 5;
+        this.maxCombatLogLines = 3;
         const monsterIndex = Phaser.Math.Between(0, MONSTER_AVATARS.length - 1);
         this.currentMonsterAvatar = MONSTER_AVATARS[monsterIndex];
         this.currentMonsterName = MONSTER_NAMES[monsterIndex];
@@ -161,8 +161,8 @@ class Match3Scene extends Phaser.Scene {
     }
 
     createCombatLog() {
-        const logY = GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE + 20;
-        const bg = this.add.rectangle(GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, logY + 30, GRID_WIDTH * TILE_SIZE, 80, 0x111111, 0.9).setOrigin(0.5);
+        // Positioned between HUD panels and the grid
+        const bg = this.add.rectangle(195, 391, 386, 46, 0x111111, 0.9).setOrigin(0.5);
         this.hudContainer.add(bg);
     }
 
@@ -179,14 +179,13 @@ class Match3Scene extends Phaser.Scene {
         this.combatLogTexts.forEach(t => t.destroy());
         this.combatLogTexts = [];
 
-        const logY = GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE + 20;
-        const logX = GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2;
-        const lineHeight = 15;
+        const logTopY = 370;
+        const lineHeight = 14;
 
         this.combatLog.forEach((entry, index) => {
-            const y = logY + (index - this.combatLog.length / 2) * lineHeight;
-            const textObj = this.add.text(logX - (GRID_WIDTH * TILE_SIZE) / 2 + 10, y, entry.text, {
-                fontSize: '14px',
+            const y = logTopY + index * lineHeight;
+            const textObj = this.add.text(12, y, entry.text, {
+                fontSize: '12px',
                 color: entry.color,
                 fontStyle: 'bold'
             });
@@ -484,37 +483,45 @@ class Match3Scene extends Phaser.Scene {
     }
 
     createPlayerUI() {
-        const gridCenterX = GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2;
-        const leftPanelX = 80;
-        const rightPanelX = GRID_OFFSET_X + GRID_WIDTH * TILE_SIZE + 80;
+        // Portrait layout: player LEFT, enemy RIGHT, both in top half above grid
+        const leftCX = 97;
+        const rightCX = 293;
+        const panelW = 188;
+        const panelH = 406;
+        const barW = 166;
 
-        // Player (Hero) UI on LEFT
-        this.hudContainer.add(this.add.rectangle(leftPanelX, 200, 140, 280, 0x111111, 0.9).setOrigin(0.5));
-        this.playerAvatar = this.add.text(leftPanelX, 110, PLAYER_AVATAR, { fontSize: '64px' }).setOrigin(0.5);
+        // Divider line between panels
+        this.hudContainer.add(this.add.rectangle(195, panelH / 2 + 4, 2, panelH, 0x444444, 1));
+
+        // --- Player panel (left) ---
+        this.hudContainer.add(this.add.rectangle(leftCX, panelH / 2 + 4, panelW, panelH, 0x111111, 0.9).setOrigin(0.5));
+        this.hudContainer.add(this.add.text(leftCX, 14, 'Hero', { fontSize: '17px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
+        this.playerAvatar = this.add.text(leftCX, 72, PLAYER_AVATAR, { fontSize: '52px' }).setOrigin(0.5);
         this.hudContainer.add(this.playerAvatar);
-        this.hudContainer.add(this.add.text(leftPanelX - 25, 60, 'Hero', { fontSize: '22px', color: '#fff', fontStyle: 'bold' }));
-        this.playerStatsText = this.add.text(leftPanelX - 60, 200, '', { fontSize: '16px', color: '#fff' });
-        this.hudContainer.add(this.playerStatsText);
-        this.playerHealthBarBg = this.add.rectangle(leftPanelX - 50, 165, 100, 12, 0x444444).setOrigin(0, 0.5);
+        this.hudContainer.add(this.add.text(14, 120, 'HP', { fontSize: '11px', color: '#aaa' }));
+        this.playerHealthBarBg = this.add.rectangle(14, 131, barW, 12, 0x444444).setOrigin(0, 0.5);
         this.hudContainer.add(this.playerHealthBarBg);
-        this.playerHealthBar = this.add.rectangle(leftPanelX - 50, 165, 100, 12, 0x00cc00).setOrigin(0, 0.5);
+        this.playerHealthBar = this.add.rectangle(14, 131, barW, 12, 0x00cc00).setOrigin(0, 0.5);
         this.hudContainer.add(this.playerHealthBar);
+        this.playerStatsText = this.add.text(8, 146, '', { fontSize: '12px', color: '#fff', lineSpacing: 2 });
+        this.hudContainer.add(this.playerStatsText);
 
-        // Enemy UI on RIGHT
-        this.hudContainer.add(this.add.rectangle(rightPanelX, 210, 140, 320, 0x111111, 0.9).setOrigin(0.5));
-        this.enemyAvatar = this.add.text(rightPanelX, 110, this.currentMonsterAvatar, { fontSize: '64px' }).setOrigin(0.5);
-        this.hudContainer.add(this.enemyAvatar);
-        this.enemyNameText = this.add.text(rightPanelX, 60, this.currentMonsterName, { fontSize: '22px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
+        // --- Enemy panel (right) ---
+        this.hudContainer.add(this.add.rectangle(rightCX, panelH / 2 + 4, panelW, panelH, 0x111111, 0.9).setOrigin(0.5));
+        this.enemyNameText = this.add.text(rightCX, 14, this.currentMonsterName, { fontSize: '15px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
         this.hudContainer.add(this.enemyNameText);
-        this.enemyStatsText = this.add.text(rightPanelX - 60, 190, '', { fontSize: '16px', color: '#fff' });
-        this.hudContainer.add(this.enemyStatsText);
-        this.enemyHealthBarBg = this.add.rectangle(rightPanelX - 50, 165, 100, 12, 0x444444).setOrigin(0, 0.5);
+        this.enemyAvatar = this.add.text(rightCX, 72, this.currentMonsterAvatar, { fontSize: '52px' }).setOrigin(0.5);
+        this.hudContainer.add(this.enemyAvatar);
+        this.hudContainer.add(this.add.text(210, 120, 'HP', { fontSize: '11px', color: '#aaa' }));
+        this.enemyHealthBarBg = this.add.rectangle(210, 131, barW, 12, 0x444444).setOrigin(0, 0.5);
         this.hudContainer.add(this.enemyHealthBarBg);
-        this.enemyHealthBar = this.add.rectangle(rightPanelX - 50, 165, 100, 12, 0xff0000).setOrigin(0, 0.5);
+        this.enemyHealthBar = this.add.rectangle(210, 131, barW, 12, 0xff0000).setOrigin(0, 0.5);
         this.hudContainer.add(this.enemyHealthBar);
+        this.enemyStatsText = this.add.text(205, 146, '', { fontSize: '12px', color: '#fff', lineSpacing: 2 });
+        this.hudContainer.add(this.enemyStatsText);
 
         this.createEquipmentScreen();
-        this.createEquipmentButton(leftPanelX, 300);
+        this.createEquipmentButton(leftCX, 358);
 
         this.updatePlayerUI();
         this.updateEnemyUI();
@@ -527,73 +534,73 @@ class Match3Scene extends Phaser.Scene {
         this.rewardScreenGroup = this.add.container(0, 0).setVisible(false);
 
         const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x121212, 0.96);
-        const panel = this.add.rectangle(width / 2, height / 2, width - 70, height - 70, 0x1f1f1f, 1).setStrokeStyle(2, 0x666666);
-        const title = this.add.text(width / 2, 48, 'Victory Rewards', {
-            fontSize: '36px',
+        const panel = this.add.rectangle(width / 2, height / 2, width - 20, height - 20, 0x1f1f1f, 1).setStrokeStyle(2, 0x666666);
+        const title = this.add.text(width / 2, 40, 'Victory Rewards', {
+            fontSize: '26px',
             color: '#ffd166',
             fontStyle: 'bold'
         }).setOrigin(0.5);
-        this.rewardLootInfoText = this.add.text(width / 2, 86, '', {
-            fontSize: '16px',
+        this.rewardLootInfoText = this.add.text(width / 2, 70, '', {
+            fontSize: '12px',
             color: '#9be7ff'
         }).setOrigin(0.5);
 
         this.rewardScreenGroup.add([bg, panel, title, this.rewardLootInfoText]);
 
         this.rewardCards = [];
-        const cardWidth = 210;
-        const cardHeight = 300;
-        const spacing = 30;
+        const cardWidth = 118;
+        const cardHeight = 275;
+        const spacing = 8;
         const startX = (width - (cardWidth * 3 + spacing * 2)) / 2 + cardWidth / 2;
 
         for (let i = 0; i < 3; i++) {
             const centerX = startX + i * (cardWidth + spacing);
-            const centerY = height / 2 + 20;
+            const centerY = height / 2 + 16;
 
             const cardBg = this.add.rectangle(centerX, centerY, cardWidth, cardHeight, 0x2a2a2a, 1).setStrokeStyle(2, 0x999999);
-            const icon = this.add.text(centerX, centerY - 106, '', { fontSize: '42px' }).setOrigin(0.5);
-            const name = this.add.text(centerX, centerY - 64, '', {
-                fontSize: '18px',
+            const icon = this.add.text(centerX, centerY - 100, '', { fontSize: '28px' }).setOrigin(0.5);
+            const name = this.add.text(centerX, centerY - 66, '', {
+                fontSize: '11px',
                 color: '#ffffff',
                 fontStyle: 'bold',
                 align: 'center',
-                wordWrap: { width: cardWidth - 20, useAdvancedWrap: true }
+                wordWrap: { width: cardWidth - 10, useAdvancedWrap: true }
             }).setOrigin(0.5);
-            const rarity = this.add.text(centerX, centerY - 25, '', {
-                fontSize: '15px',
+            const rarity = this.add.text(centerX, centerY - 32, '', {
+                fontSize: '10px',
                 color: '#ffffff'
             }).setOrigin(0.5);
-            const stats = this.add.text(centerX, centerY + 16, '', {
-                fontSize: '13px',
+            const stats = this.add.text(centerX, centerY + 0, '', {
+                fontSize: '9px',
                 color: '#ffd966',
                 align: 'center',
-                wordWrap: { width: cardWidth - 24, useAdvancedWrap: true }
+                wordWrap: { width: cardWidth - 10, useAdvancedWrap: true }
             }).setOrigin(0.5);
-            const equippedLabel = this.add.text(centerX, centerY + 64, '', {
-                fontSize: '11px',
+            const equippedLabel = this.add.text(centerX, centerY + 52, '', {
+                fontSize: '8px',
                 color: '#bbbbbb',
                 align: 'center',
-                wordWrap: { width: cardWidth - 16, useAdvancedWrap: true }
+                wordWrap: { width: cardWidth - 10, useAdvancedWrap: true }
             }).setOrigin(0.5);
-            const compare = this.add.text(centerX, centerY + 92, '', {
-                fontSize: '12px',
+            const compare = this.add.text(centerX, centerY + 78, '', {
+                fontSize: '9px',
                 color: '#8aff8a',
                 align: 'center',
-                wordWrap: { width: cardWidth - 16, useAdvancedWrap: true }
+                wordWrap: { width: cardWidth - 10, useAdvancedWrap: true }
             }).setOrigin(0.5);
 
-            const equipBtn = this.add.text(centerX - 52, centerY + 118, 'Equip', {
-                fontSize: '16px',
+            const equipBtn = this.add.text(centerX - 28, centerY + 108, 'Equip', {
+                fontSize: '11px',
                 color: '#111111',
                 backgroundColor: '#5aff9c',
-                padding: { left: 10, right: 10, top: 5, bottom: 5 }
+                padding: { left: 5, right: 5, top: 3, bottom: 3 }
             }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-            const stashBtn = this.add.text(centerX + 52, centerY + 118, 'Inventory', {
-                fontSize: '16px',
+            const stashBtn = this.add.text(centerX + 30, centerY + 108, 'Stash', {
+                fontSize: '11px',
                 color: '#ffffff',
                 backgroundColor: '#3b5ccc',
-                padding: { left: 10, right: 10, top: 5, bottom: 5 }
+                padding: { left: 5, right: 5, top: 3, bottom: 3 }
             }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
             this.rewardScreenGroup.add([cardBg, icon, name, rarity, stats, equippedLabel, compare, equipBtn, stashBtn]);
@@ -702,7 +709,7 @@ class Match3Scene extends Phaser.Scene {
             this.enemyAvatar.setText(this.currentMonsterAvatar);
             this.enemyAvatar.setAlpha(1);
             this.enemyAvatar.setAngle(0);
-            this.enemyAvatar.setY(110);
+            this.enemyAvatar.setY(72);
         }
 
         if (this.enemyNameText) {
@@ -741,8 +748,8 @@ class Match3Scene extends Phaser.Scene {
 
         const leftPanelCenterX = Math.floor(width * 0.30);
         const rightPanelCenterX = Math.floor(width * 0.75);
-        const silhouetteTopY = 118;
-        const slotSize = 72;
+        const silhouetteTopY = 108;
+        const slotSize = 56;
 
         const bg = this.add.rectangle(width / 2, height / 2, width - 40, height - 40, 0x1a1a1a, 1).setStrokeStyle(2, 0xffffff);
         const divider = this.add.rectangle(Math.floor(width * 0.56), height / 2, 2, height - 80, 0x555555, 1);
@@ -750,18 +757,18 @@ class Match3Scene extends Phaser.Scene {
         const leftPanelBg = this.add.rectangle(leftPanelCenterX, height / 2 + 10, width * 0.47, height - 130, 0x222222, 0.95).setStrokeStyle(1, 0x666666);
         const rightPanelBg = this.add.rectangle(rightPanelCenterX, height / 2 + 10, width * 0.34, height - 130, 0x232323, 0.95).setStrokeStyle(1, 0x666666);
 
-        const title = this.add.text(width / 2, 60, 'Equipment Tab', { fontSize: '28px', color: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5);
-        const tabInfo = this.add.text(20, 20, 'Game Tab: ', { fontSize: '18px', color: '#ffffff' }).setOrigin(0, 0);
-        const switchButton = this.add.text(120, 18, 'Back to Game', { fontSize: '18px', color: '#00ffcc', backgroundColor: '#333333', padding: { left: 6, right: 6, top: 4, bottom: 4 } }).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+        const title = this.add.text(width / 2, 50, 'Equipment', { fontSize: '22px', color: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5);
+        const tabInfo = this.add.text(10, 14, '', { fontSize: '12px', color: '#ffffff' }).setOrigin(0, 0);
+        const switchButton = this.add.text(10, 12, 'Back to Game', { fontSize: '14px', color: '#00ffcc', backgroundColor: '#333333', padding: { left: 5, right: 5, top: 3, bottom: 3 } }).setOrigin(0, 0).setInteractive({ useHandCursor: true });
         switchButton.on('pointerup', () => this.showGameScreen());
 
-        const slotsHeader = this.add.text(leftPanelCenterX, 95, 'Warrior Loadout', { fontSize: '18px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
-        const inventoryHeader = this.add.text(rightPanelCenterX, 95, 'Inventory', { fontSize: '18px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
+        const slotsHeader = this.add.text(leftPanelCenterX, 78, 'Loadout', { fontSize: '15px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
+        const inventoryHeader = this.add.text(rightPanelCenterX, 78, 'Inventory', { fontSize: '15px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
 
-        const inventoryHint = this.add.text(rightPanelCenterX, 125, 'Click a square item icon to inspect it, then equip it.', {
-            fontSize: '13px',
-            color: '#ffffff',
-            wordWrap: { width: Math.floor(width * 0.30), useAdvancedWrap: true }
+        const inventoryHint = this.add.text(rightPanelCenterX, 98, 'Tap item to inspect & equip.', {
+            fontSize: '10px',
+            color: '#aaaaaa',
+            wordWrap: { width: Math.floor(width * 0.40), useAdvancedWrap: true }
         }).setOrigin(0.5, 0);
 
         // Draw a high-contrast translucent warrior body so slot placement is easy to parse.
@@ -804,12 +811,12 @@ class Match3Scene extends Phaser.Scene {
             { key: 'necklace', label: 'Necklace', x: leftPanelCenterX, y: silhouetteTopY + 102 },
             { key: 'chest', label: 'Chest', x: leftPanelCenterX, y: silhouetteTopY + 156 },
             { key: 'belt', label: 'Belt', x: leftPanelCenterX, y: silhouetteTopY + 222 },
-            { key: 'offhand', label: 'Off Hand', x: leftPanelCenterX - 110, y: silhouetteTopY + 160 },
-            { key: 'mainhand', label: 'Main Hand', x: leftPanelCenterX + 110, y: silhouetteTopY + 160 },
-            { key: 'gloves', label: 'Gloves', x: leftPanelCenterX + 110, y: silhouetteTopY + 226 },
+            { key: 'offhand', label: 'Off Hand', x: leftPanelCenterX - 82, y: silhouetteTopY + 160 },
+            { key: 'mainhand', label: 'Main Hand', x: leftPanelCenterX + 82, y: silhouetteTopY + 160 },
+            { key: 'gloves', label: 'Gloves', x: leftPanelCenterX + 82, y: silhouetteTopY + 226 },
             { key: 'boots', label: 'Boots', x: leftPanelCenterX, y: silhouetteTopY + 304 },
-            { key: 'ring1', label: 'Ring 1', x: leftPanelCenterX - 82, y: silhouetteTopY + 286 },
-            { key: 'ring2', label: 'Ring 2', x: leftPanelCenterX + 82, y: silhouetteTopY + 286 }
+            { key: 'ring1', label: 'Ring 1', x: leftPanelCenterX - 62, y: silhouetteTopY + 286 },
+            { key: 'ring2', label: 'Ring 2', x: leftPanelCenterX + 62, y: silhouetteTopY + 286 }
         ];
 
         const equipmentIcons = {
@@ -841,9 +848,9 @@ class Match3Scene extends Phaser.Scene {
                 .setStrokeStyle(1, 0xffffff, 0.66)
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
-            const slotIcon = this.add.text(slot.x, slot.y, '', { fontSize: '34px', color: '#ffffff' }).setOrigin(0.5);
-            const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 - 14, slot.label, { fontSize: '14px', color: '#ffff00' }).setOrigin(0.5, 0.5);
-            const slotValue = this.add.text(slot.x, slot.y + slotSize / 2 + 14, 'Empty', { fontSize: '14px', color: '#ffffff' }).setOrigin(0.5, 0.5);
+            const slotIcon = this.add.text(slot.x, slot.y, '', { fontSize: '26px', color: '#ffffff' }).setOrigin(0.5);
+            const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 - 10, slot.label, { fontSize: '11px', color: '#ffff00' }).setOrigin(0.5, 0.5);
+            const slotValue = this.add.text(slot.x, slot.y + slotSize / 2 + 10, 'Empty', { fontSize: '11px', color: '#ffffff' }).setOrigin(0.5, 0.5);
 
             const inspectEquippedItem = () => {
                 const equippedItem = this.equippedItems[slot.key];
@@ -862,11 +869,11 @@ class Match3Scene extends Phaser.Scene {
         });
 
         this.inventoryTiles = [];
-        const inventoryGridLeft = rightPanelCenterX - 120;
+        const inventoryGridLeft = rightPanelCenterX - 66;
         const inventoryGridTop = 165;
-        const inventoryColumns = 3;
-        const inventoryCellSize = 78;
-        const inventoryCellGap = 18;
+        const inventoryColumns = 2;
+        const inventoryCellSize = 62;
+        const inventoryCellGap = 8;
 
         for (let index = 0; index < 12; index++) {
             const column = index % inventoryColumns;
@@ -878,15 +885,15 @@ class Match3Scene extends Phaser.Scene {
                 .setOrigin(0, 0)
                 .setStrokeStyle(2, 0x666666)
                 .setInteractive({ useHandCursor: true });
-            const tileInner = this.add.rectangle(cellX + 7, cellY + 7, inventoryCellSize - 14, inventoryCellSize - 14, 0x111111, 1)
+            const tileInner = this.add.rectangle(cellX + 5, cellY + 5, inventoryCellSize - 10, inventoryCellSize - 10, 0x111111, 1)
                 .setOrigin(0, 0)
                 .setStrokeStyle(1, 0x444444);
-            const tileIcon = this.add.text(cellX + inventoryCellSize / 2, cellY + 28, '', { fontSize: '28px' }).setOrigin(0.5);
-            const tileName = this.add.text(cellX + inventoryCellSize / 2, cellY + 61, '', {
-                fontSize: '9px',
+            const tileIcon = this.add.text(cellX + inventoryCellSize / 2, cellY + 20, '', { fontSize: '22px' }).setOrigin(0.5);
+            const tileName = this.add.text(cellX + inventoryCellSize / 2, cellY + 48, '', {
+                fontSize: '8px',
                 color: '#ffffff',
                 align: 'center',
-                wordWrap: { width: inventoryCellSize - 8, useAdvancedWrap: true }
+                wordWrap: { width: inventoryCellSize - 6, useAdvancedWrap: true }
             }).setOrigin(0.5);
 
             tileBg.on('pointerup', () => {
@@ -900,53 +907,53 @@ class Match3Scene extends Phaser.Scene {
 
         const modalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
             .setInteractive({ useHandCursor: true });
-        const modalCard = this.add.rectangle(width / 2, height / 2, 430, 360, 0x111111, 1)
+        const modalCard = this.add.rectangle(width / 2, height / 2, 370, 360, 0x111111, 1)
             .setStrokeStyle(2, 0xffffff);
         const modalTitle = this.add.text(width / 2, height / 2 - 110, 'Item Details', {
-            fontSize: '24px',
+            fontSize: '20px',
             color: '#ffff00',
             fontStyle: 'bold'
         }).setOrigin(0.5);
-        this.inventoryModalFrame = this.add.rectangle(width / 2, height / 2 - 62, 58, 58, 0x1f1f1f, 1).setStrokeStyle(2, 0x888888);
-        this.inventoryModalIcon = this.add.text(width / 2, height / 2 - 62, '', { fontSize: '30px' }).setOrigin(0.5);
-        this.inventoryModalName = this.add.text(width / 2, height / 2 - 14, '', { fontSize: '20px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.inventoryModalFrame = this.add.rectangle(width / 2, height / 2 - 62, 50, 50, 0x1f1f1f, 1).setStrokeStyle(2, 0x888888);
+        this.inventoryModalIcon = this.add.text(width / 2, height / 2 - 62, '', { fontSize: '26px' }).setOrigin(0.5);
+        this.inventoryModalName = this.add.text(width / 2, height / 2 - 14, '', { fontSize: '16px', color: '#ffffff', fontStyle: 'bold', wordWrap: { width: 340, useAdvancedWrap: true }, align: 'center' }).setOrigin(0.5);
         this.inventoryModalType = this.add.text(width / 2, height / 2 + 16, '', {
-            fontSize: '14px',
+            fontSize: '12px',
             color: '#00ffcc',
             align: 'center',
-            wordWrap: { width: 390, useAdvancedWrap: true }
+            wordWrap: { width: 340, useAdvancedWrap: true }
         }).setOrigin(0.5);
         this.inventoryModalDesc = this.add.text(width / 2, height / 2 + 10, '', {
-            fontSize: '14px',
+            fontSize: '12px',
             color: '#ffffff',
             align: 'center',
-            wordWrap: { width: 380, useAdvancedWrap: true }
+            wordWrap: { width: 340, useAdvancedWrap: true }
         }).setOrigin(0.5);
-        this.inventoryModalDesc.y = height / 2 + 72;
-        this.inventoryModalStats = this.add.text(width / 2, height / 2 + 122, '', {
-            fontSize: '14px',
+        this.inventoryModalDesc.y = height / 2 + 66;
+        this.inventoryModalStats = this.add.text(width / 2, height / 2 + 110, '', {
+            fontSize: '12px',
             color: '#ffd966',
             align: 'center',
-            wordWrap: { width: 380, useAdvancedWrap: true }
+            wordWrap: { width: 340, useAdvancedWrap: true }
         }).setOrigin(0.5);
 
-        const closeModalBtn = this.add.text(width / 2 - 120, height / 2 + 156, 'Close', {
-            fontSize: '18px',
+        const closeModalBtn = this.add.text(width / 2 - 90, height / 2 + 140, 'Close', {
+            fontSize: '15px',
             color: '#ffffff',
             backgroundColor: '#444444',
-            padding: { left: 10, right: 10, top: 5, bottom: 5 }
+            padding: { left: 8, right: 8, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        const removeBtn = this.add.text(width / 2, height / 2 + 156, 'Remove', {
-            fontSize: '18px',
+        const removeBtn = this.add.text(width / 2, height / 2 + 140, 'Remove', {
+            fontSize: '15px',
             color: '#ffffff',
             backgroundColor: '#a33d3d',
-            padding: { left: 12, right: 12, top: 5, bottom: 5 }
+            padding: { left: 8, right: 8, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        const equipBtn = this.add.text(width / 2 + 120, height / 2 + 156, 'Equip', {
-            fontSize: '18px',
+        const equipBtn = this.add.text(width / 2 + 90, height / 2 + 140, 'Equip', {
+            fontSize: '15px',
             color: '#111111',
             backgroundColor: '#00ff99',
-            padding: { left: 12, right: 12, top: 5, bottom: 5 }
+            padding: { left: 8, right: 8, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
         modalOverlay.on('pointerup', () => this.closeInventoryItemPopup());
@@ -976,7 +983,7 @@ class Match3Scene extends Phaser.Scene {
 
         this.updateInventoryGridUI();
 
-        const backBtn = this.add.text(width / 2, height - 60, 'Back to Game', { fontSize: '20px', color: '#00ff00', backgroundColor: '#333333', padding: { left: 10, right: 10, top: 6, bottom: 6 } }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        const backBtn = this.add.text(width / 2, height - 40, 'Back to Game', { fontSize: '16px', color: '#00ff00', backgroundColor: '#333333', padding: { left: 10, right: 10, top: 5, bottom: 5 } }).setOrigin(0.5).setInteractive({ useHandCursor: true });
         backBtn.on('pointerup', () => this.showGameScreen());
         this.equipmentScreenGroup.add(backBtn);
     }
@@ -1172,7 +1179,7 @@ class Match3Scene extends Phaser.Scene {
 
         if (this.playerHealthBar) {
             const fraction = Phaser.Math.Clamp(this.player.health / 100, 0, 1);
-            const targetWidth = 120 * fraction;
+            const targetWidth = 166 * fraction;
             const targetColor = (fraction > 0.5 ? 0x00cc00 : (fraction > 0.25 ? 0xffcc00 : 0xff0000));
             this.tweens.killTweensOf(this.playerHealthBar);
             this.tweens.add({
@@ -1194,7 +1201,7 @@ class Match3Scene extends Phaser.Scene {
 
         if (this.enemyHealthBar) {
             const fraction = Phaser.Math.Clamp(this.enemy.health / this.enemy.maxHealth, 0, 1);
-            const targetWidth = 120 * fraction;
+            const targetWidth = 166 * fraction;
             const targetColor = (fraction > 0.5 ? 0xff5555 : (fraction > 0.25 ? 0xffcc00 : 0xff0000));
             this.tweens.killTweensOf(this.enemyHealthBar);
             this.tweens.add({
@@ -1221,7 +1228,7 @@ class Match3Scene extends Phaser.Scene {
 
     handleEnemyDeath() {
         const centerX = GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2;
-        const centerY = GRID_OFFSET_Y / 2 + 40;
+        const centerY = 210;
 
         if (this.enemyAvatar) {
             this.tweens.add({
@@ -1550,7 +1557,7 @@ class Match3Scene extends Phaser.Scene {
 
         if (totalEnemyDamage > 0) {
             this.enemy.health = Math.max(0, this.enemy.health - totalEnemyDamage);
-            this.showCombatMessage(`Enemy -${totalEnemyDamage}`, '#ff5555', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, 40);
+            this.showCombatMessage(`Enemy -${totalEnemyDamage}`, '#ff5555', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y - 15);
 
             if (this.enemy.health <= 0) {
                 this.enemy.health = 0;
@@ -1565,7 +1572,7 @@ class Match3Scene extends Phaser.Scene {
 
         if (totalPlayerHeal > 0) {
             this.player.health = Math.min(500, this.player.health + totalPlayerHeal);
-            this.showCombatMessage(`Hero +${totalPlayerHeal}`, '#55ff55', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, 80);
+            this.showCombatMessage(`Hero +${totalPlayerHeal}`, '#55ff55', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + 20);
         }
 
         this.enemy.health = Math.max(0, this.enemy.health);
@@ -1696,10 +1703,10 @@ class Match3Scene extends Phaser.Scene {
         this.player.health -= mitigatedDamage;
         if (this.player.health < 0) this.player.health = 0;
         this.addCombatLog(`Enemy Attack: -${mitigatedDamage} (${Math.floor(gear.armor / 3)} blocked)`, '#ff6666');
-        this.showCombatMessage(`Hero -${mitigatedDamage}`, '#ff4444', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_HEIGHT * TILE_SIZE - 40);
+        this.showCombatMessage(`Hero -${mitigatedDamage}`, '#ff4444', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20);
         this.updatePlayerUI();
         if (this.player.health <= 0) {
-            this.add.text(GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_HEIGHT * TILE_SIZE / 2 - 20, 'Game Over', { fontSize: '48px', color: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5);
+            this.add.text(GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + (GRID_HEIGHT * TILE_SIZE) / 2, 'Game Over', { fontSize: '48px', color: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5);
             this.isSwapping = true;
         }
     }
@@ -1731,8 +1738,8 @@ class Match3Scene extends Phaser.Scene {
 
 const config = {
     type: Phaser.AUTO,
-    width: GRID_OFFSET_X + GRID_WIDTH * TILE_SIZE + 220,
-    height: GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE + 80,
+    width: 390,
+    height: 780,
     backgroundColor: '#2c3e50',
     scene: Match3Scene
 };
