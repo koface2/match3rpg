@@ -1599,9 +1599,14 @@ class Match3Scene extends Phaser.Scene {
                     color: '#aaaaaa'
                 }).setOrigin(0.5);
 
+                let dragStartX = 0;
+                let dragStartY = 0;
+                let dragMoved = false;
+                const dragTapThreshold = 12;
+
                 tileBg.on('pointerup', () => {
-                    if (this.skillGemWasDragged) {
-                        this.skillGemWasDragged = false;
+                    if (dragMoved) {
+                        dragMoved = false;
                         return;
                     }
                     const selectedGem = this.skillsInventoryGems[tileIndex];
@@ -1609,9 +1614,12 @@ class Match3Scene extends Phaser.Scene {
                     this.openSkillGemPopup(selectedGem, tileIndex);
                 });
 
-                tileBg.on('dragstart', () => {
+                tileBg.on('dragstart', (pointer) => {
                     this.draggingSkillGemTile = tileBg;
                     this.skillGemWasDragged = false;
+                    dragMoved = false;
+                    dragStartX = pointer.worldX;
+                    dragStartY = pointer.worldY;
                     tileBg.setDepth(1200);
                     iconText.setDepth(1201);
                     nameText.setDepth(1201);
@@ -1619,7 +1627,12 @@ class Match3Scene extends Phaser.Scene {
                 });
 
                 tileBg.on('drag', (pointer, dragX, dragY) => {
-                    this.skillGemWasDragged = true;
+                    if (!dragMoved) {
+                        const dx = pointer.worldX - dragStartX;
+                        const dy = pointer.worldY - dragStartY;
+                        dragMoved = (dx * dx + dy * dy) >= (dragTapThreshold * dragTapThreshold);
+                    }
+                    this.skillGemWasDragged = dragMoved;
                     tileBg.x = dragX;
                     tileBg.y = dragY;
                     iconText.x = dragX;
@@ -1631,12 +1644,20 @@ class Match3Scene extends Phaser.Scene {
                 });
 
                 tileBg.on('dragend', (pointer) => {
-                    this.handleSkillGemDrop({ index: tileIndex }, pointer.worldX, pointer.worldY);
+                    if (dragMoved) {
+                        this.handleSkillGemDrop({ index: tileIndex }, pointer.worldX, pointer.worldY);
+                    } else {
+                        const selectedGem = this.skillsInventoryGems[tileIndex];
+                        if (selectedGem && (!this.skillsGemModal || !this.skillsGemModal.visible)) {
+                            this.openSkillGemPopup(selectedGem, tileIndex);
+                        }
+                    }
                     tileBg.setDepth(0);
                     iconText.setDepth(0);
                     nameText.setDepth(0);
                     typeText.setDepth(0);
                     this.draggingSkillGemTile = null;
+                    dragMoved = false;
                     this.refreshSkillsScreenUI();
                 });
 
