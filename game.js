@@ -266,6 +266,7 @@ class Match3Scene extends Phaser.Scene {
         this.skillsGemModalDiscardBtn = null;
         this.draggingSkillGemTile = null;
         this.skillGemWasDragged = false;
+        this.armedEquipGem = null;
     }
 
     create() {
@@ -592,6 +593,7 @@ class Match3Scene extends Phaser.Scene {
     equipSelectedGemFromPopup() {
         if (!this.selectedSkillGem) return;
         const display = this.getSkillGemDisplay(this.selectedSkillGem);
+        this.armedEquipGem = { ...this.selectedSkillGem };
         this.addCombatLog(`${display.name} selected. Tap a slot to equip.`, '#ffd56b');
         this.closeSkillGemPopup();
         this.refreshSkillsScreenUI();
@@ -629,11 +631,21 @@ class Match3Scene extends Phaser.Scene {
     }
 
     equipSelectedGemToActiveSlot(slotIndex) {
-        this.equipGemToActiveSlot(slotIndex, this.selectedSkillGem);
+        if (!this.armedEquipGem) return;
+        const equipped = this.equipGemToActiveSlot(slotIndex, this.armedEquipGem);
+        if (equipped) {
+            this.armedEquipGem = null;
+            this.refreshSkillsScreenUI();
+        }
     }
 
     equipSelectedGemToSupportSlot(slotIndex, socketIndex) {
-        this.equipGemToSupportSlot(slotIndex, socketIndex, this.selectedSkillGem);
+        if (!this.armedEquipGem) return;
+        const equipped = this.equipGemToSupportSlot(slotIndex, socketIndex, this.armedEquipGem);
+        if (equipped) {
+            this.armedEquipGem = null;
+            this.refreshSkillsScreenUI();
+        }
     }
 
     equipGemToActiveSlot(slotIndex, gem) {
@@ -712,6 +724,8 @@ class Match3Scene extends Phaser.Scene {
     refreshSkillsScreenUI() {
         if (!this.skillsScreenGroup || !this.skillsActiveSlotUI || this.skillsActiveSlotUI.length === 0) return;
 
+        const armedType = this.armedEquipGem ? this.armedEquipGem.type : null;
+
         this.skillsActiveSlotUI.forEach((slotUI, slotIndex) => {
             const loadout = this.playerSkills[slotIndex];
             if (!loadout) return;
@@ -723,7 +737,9 @@ class Match3Scene extends Phaser.Scene {
             const isReady = charge >= threshold;
             const borderColor = tileData ? tileData.color : 0xffffff;
 
-            slotUI.cardBg.setStrokeStyle(2, borderColor, isReady ? 1 : 0.6);
+            const activeTargetAlpha = armedType === 'active' ? 1 : (isReady ? 1 : 0.6);
+            const activeTargetStroke = armedType === 'active' ? 0xfff07a : borderColor;
+            slotUI.cardBg.setStrokeStyle(2, activeTargetStroke, activeTargetAlpha);
             slotUI.cardBg.setFillStyle(isReady ? 0x2a2a2a : 0x202020, isReady ? 1 : 0.86);
             slotUI.iconText.setText(tileData ? tileData.icon : '◆');
             slotUI.nameText.setText(activeSkill ? activeSkill.name : 'None');
@@ -735,13 +751,21 @@ class Match3Scene extends Phaser.Scene {
                 const supportId = loadout.supportIds[socketIndex];
                 const supportGem = this.getSupportGemById(supportId);
                 socketUI.socketText.setText(supportGem ? supportGem.short : '---');
-                socketUI.socketBg.setStrokeStyle(1, supportGem ? borderColor : 0x808080, 1);
+                const supportStroke = armedType === 'support'
+                    ? 0xfff07a
+                    : (supportGem ? borderColor : 0x808080);
+                const supportAlpha = armedType === 'support' ? 1 : 1;
+                socketUI.socketBg.setStrokeStyle(1, supportStroke, supportAlpha);
                 socketUI.connector.setStrokeStyle(1, isReady ? borderColor : 0x8b8b8b, isReady ? 0.95 : 0.65);
             });
         });
 
         if (this.selectedGemLabel) {
-            if (!this.selectedSkillGem) {
+            if (this.armedEquipGem) {
+                const display = this.getSkillGemDisplay(this.armedEquipGem);
+                this.selectedGemLabel.setText(`Equip Mode: ${display.name} (${display.typeLabel})`);
+                this.selectedGemLabel.setColor('#fff07a');
+            } else if (!this.selectedSkillGem) {
                 this.selectedGemLabel.setText('Selected: none');
                 this.selectedGemLabel.setColor('#bbbbbb');
             } else {
@@ -1988,6 +2012,7 @@ class Match3Scene extends Phaser.Scene {
 
     showEquipmentScreen() {
         this.currentScreen = 'equipment';
+        this.armedEquipGem = null;
         this.closeSkillGemPopup();
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(true);
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
@@ -2014,6 +2039,7 @@ class Match3Scene extends Phaser.Scene {
 
     showGameScreen() {
         this.currentScreen = 'game';
+        this.armedEquipGem = null;
         this.closeSkillGemPopup();
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
         if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
