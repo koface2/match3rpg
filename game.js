@@ -249,6 +249,7 @@ class Match3Scene extends Phaser.Scene {
         this.skillSlotUI = [];
         this.playerSkills = this.createInitialSkillLoadout();
         this.skillCharge = this.createInitialSkillCharge();
+        this.skillChargeFxContainer = null;
 
         this.skillsScreenGroup = null;
         this.skillsActiveSlotUI = [];
@@ -274,6 +275,8 @@ class Match3Scene extends Phaser.Scene {
 
         this.boardContainer = this.add.container(0, 0);
         this.hudContainer = this.add.container(0, 0);
+        this.skillChargeFxContainer = this.add.container(0, 0);
+        this.skillChargeFxContainer.setDepth(1100);
 
         this.createGrid();
         this.renderGrid();
@@ -397,6 +400,124 @@ class Match3Scene extends Phaser.Scene {
             this.skillCharge[effect] += count;
         });
         this.updateSkillBarUI();
+    }
+
+    getSkillCardChargeTargets(effect) {
+        if (!effect || !this.skillSlotUI || this.skillSlotUI.length === 0) {
+            return [];
+        }
+
+        const targets = [];
+        this.playerSkills.forEach((loadout, index) => {
+            const activeSkill = this.getActiveSkillById(loadout.activeId);
+            if (!activeSkill || activeSkill.tileEffect !== effect) return;
+
+            const slotUI = this.skillSlotUI[index];
+            if (!slotUI || !slotUI.bg) return;
+
+            targets.push({
+                x: slotUI.bg.x,
+                y: slotUI.bg.y,
+                slotIndex: index
+            });
+        });
+
+        return targets;
+    }
+
+    flashSkillCardCharge(slotIndex, color) {
+        const slotUI = this.skillSlotUI[slotIndex];
+        if (!slotUI || !slotUI.bg) return;
+
+        const flash = this.add.rectangle(slotUI.bg.x, slotUI.bg.y, slotUI.bg.width - 2, slotUI.bg.height - 2, color, 0.5)
+            .setOrigin(0.5)
+            .setDepth(1080);
+
+        if (this.skillChargeFxContainer) {
+            this.skillChargeFxContainer.add(flash);
+        }
+
+        this.tweens.add({
+            targets: flash,
+            alpha: 0,
+            scaleX: 1.08,
+            scaleY: 1.08,
+            duration: 220,
+            ease: 'Quad.easeOut',
+            onComplete: () => flash.destroy()
+        });
+    }
+
+    launchChargeParticle(startX, startY, targetX, targetY, color, delay, onHit) {
+        const orb = this.add.circle(startX, startY, Phaser.Math.Between(2, 4), color, 0.95).setDepth(1095);
+        const glow = this.add.circle(startX, startY, Phaser.Math.Between(6, 10), color, 0.28).setDepth(1094);
+
+        if (this.skillChargeFxContainer) {
+            this.skillChargeFxContainer.add([glow, orb]);
+        }
+
+        const midX = (startX + targetX) / 2 + Phaser.Math.Between(-20, 20);
+        const midY = Math.min(startY, targetY) - Phaser.Math.Between(25, 80);
+
+        this.tweens.addCounter({
+            from: 0,
+            to: 1,
+            delay,
+            duration: Phaser.Math.Between(420, 620),
+            ease: 'Cubic.easeInOut',
+            onUpdate: tween => {
+                const t = tween.getValue();
+                const oneMinusT = 1 - t;
+                const x = oneMinusT * oneMinusT * startX + 2 * oneMinusT * t * midX + t * t * targetX;
+                const y = oneMinusT * oneMinusT * startY + 2 * oneMinusT * t * midY + t * t * targetY;
+
+                orb.setPosition(x, y);
+                glow.setPosition(x, y);
+                orb.setScale(1 - (t * 0.25));
+                glow.setScale(1.1 - (t * 0.5));
+                glow.setAlpha(0.28 * (1 - t));
+            },
+            onComplete: () => {
+                orb.destroy();
+                glow.destroy();
+                if (onHit) onHit();
+            }
+        });
+    }
+
+    spawnSkillChargeParticles(matchedTiles) {
+        if (!matchedTiles || matchedTiles.length === 0) return;
+
+        const flashedSlots = new Set();
+
+        matchedTiles.forEach((tile, tileIndex) => {
+            const targets = this.getSkillCardChargeTargets(tile.effect);
+            if (targets.length === 0) return;
+
+            targets.forEach((target, targetIndex) => {
+                const particleCount = Phaser.Math.Between(1, 2);
+
+                for (let i = 0; i < particleCount; i++) {
+                    const startX = tile.x + Phaser.Math.Between(-8, 8);
+                    const startY = tile.y + Phaser.Math.Between(-8, 8);
+                    const delay = tileIndex * 12 + targetIndex * 30 + i * 38;
+
+                    this.launchChargeParticle(
+                        startX,
+                        startY,
+                        target.x,
+                        target.y,
+                        tile.color,
+                        delay,
+                        () => {
+                            if (flashedSlots.has(target.slotIndex)) return;
+                            flashedSlots.add(target.slotIndex);
+                            this.flashSkillCardCharge(target.slotIndex, tile.color);
+                        }
+                    );
+                }
+            });
+        });
     }
 
     cycleSupportGem(slotIndex, socketIndex) {
@@ -2533,12 +2654,19 @@ class Match3Scene extends Phaser.Scene {
             health: 0,
             loot: 0
         };
+        const matchedTilesForEffects = [];
 
         matches.forEach(match => {
             const [x, y] = match.split(',').map(Number);
             const tileType = this.grid[y][x];
             if (tileType >= 0 && TILE_TYPES[tileType]) {
                 const effect = TILE_TYPES[tileType].effect;
+                matchedTilesForEffects.push({
+                    x: GRID_OFFSET_X + x * TILE_SIZE + TILE_SIZE / 2,
+                    y: GRID_OFFSET_Y + y * TILE_SIZE + TILE_SIZE / 2,
+                    effect,
+                    color: TILE_TYPES[tileType].color
+                });
                 if (matchCounts[effect] !== undefined) {
                     matchCounts[effect] += 1;
                 }
@@ -2589,6 +2717,7 @@ class Match3Scene extends Phaser.Scene {
         }
 
         this.addSkillChargeFromMatches(matchCounts);
+    this.spawnSkillChargeParticles(matchedTilesForEffects);
 
         if (totalEnemyDamage > 0) {
             this.enemy.health = Math.max(0, this.enemy.health - totalEnemyDamage);
