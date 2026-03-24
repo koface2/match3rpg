@@ -463,7 +463,7 @@ class Match3Scene extends Phaser.Scene {
             from: 0,
             to: 1,
             delay,
-            duration: Phaser.Math.Between(420, 620),
+            duration: Phaser.Math.Between(680, 980),
             ease: 'Cubic.easeInOut',
             onUpdate: tween => {
                 const t = tween.getValue();
@@ -500,7 +500,7 @@ class Match3Scene extends Phaser.Scene {
                 for (let i = 0; i < particleCount; i++) {
                     const startX = tile.x + Phaser.Math.Between(-8, 8);
                     const startY = tile.y + Phaser.Math.Between(-8, 8);
-                    const delay = tileIndex * 12 + targetIndex * 30 + i * 38;
+                    const delay = tileIndex * 18 + targetIndex * 42 + i * 55;
 
                     this.launchChargeParticle(
                         startX,
@@ -514,6 +514,80 @@ class Match3Scene extends Phaser.Scene {
                             flashedSlots.add(target.slotIndex);
                             this.flashSkillCardCharge(target.slotIndex, tile.color);
                         }
+                    );
+                }
+            });
+        });
+    }
+
+    spawnComboTierEffect(centerX, centerY, color, rowLength, bonusUnits) {
+        const ring = this.add.circle(centerX, centerY, 10, color, 0)
+            .setStrokeStyle(3, color, 0.95)
+            .setDepth(1096);
+        const pulse = this.add.circle(centerX, centerY, 8, color, 0.4)
+            .setDepth(1095);
+        const text = this.add.text(centerX, centerY - 8, `${rowLength}x +${bonusUnits}`, {
+            fontSize: rowLength >= 5 ? '20px' : '16px',
+            color: '#ffffff',
+            fontStyle: 'bold',
+            stroke: this.toHexColor(color),
+            strokeThickness: rowLength >= 5 ? 8 : 6
+        }).setOrigin(0.5).setDepth(1097);
+
+        if (this.skillChargeFxContainer) {
+            this.skillChargeFxContainer.add([ring, pulse, text]);
+        }
+
+        this.tweens.add({
+            targets: ring,
+            scaleX: rowLength >= 5 ? 3.3 : 2.5,
+            scaleY: rowLength >= 5 ? 3.3 : 2.5,
+            alpha: 0,
+            duration: rowLength >= 5 ? 650 : 520,
+            ease: 'Cubic.easeOut',
+            onComplete: () => ring.destroy()
+        });
+
+        this.tweens.add({
+            targets: pulse,
+            scaleX: rowLength >= 5 ? 1.9 : 1.5,
+            scaleY: rowLength >= 5 ? 1.9 : 1.5,
+            alpha: 0,
+            duration: rowLength >= 5 ? 530 : 430,
+            ease: 'Quad.easeOut',
+            onComplete: () => pulse.destroy()
+        });
+
+        this.tweens.add({
+            targets: text,
+            y: centerY - 34,
+            alpha: 0,
+            duration: 700,
+            ease: 'Quad.easeOut',
+            onComplete: () => text.destroy()
+        });
+    }
+
+    spawnComboBonusChargeParticles(comboSources) {
+        if (!comboSources || comboSources.length === 0) return;
+
+        comboSources.forEach((source, sourceIndex) => {
+            const targets = this.getSkillCardChargeTargets(source.effect);
+            if (targets.length === 0) return;
+
+            targets.forEach((target, targetIndex) => {
+                const particleCount = Math.min(8, 2 + Math.ceil(source.bonusUnits / 2));
+
+                for (let i = 0; i < particleCount; i++) {
+                    const delay = sourceIndex * 45 + targetIndex * 65 + i * 42;
+                    this.launchChargeParticle(
+                        source.x + Phaser.Math.Between(-14, 14),
+                        source.y + Phaser.Math.Between(-14, 14),
+                        target.x,
+                        target.y,
+                        source.color,
+                        delay,
+                        null
                     );
                 }
             });
@@ -2577,10 +2651,10 @@ class Match3Scene extends Phaser.Scene {
 
         this.renderGrid();
 
-        const matches = this.findMatches();
-        if (matches.length > 0) {
+        const matchData = this.findMatchData();
+        if (matchData.matched.length > 0) {
             this.time.delayedCall(800, () => {
-                this.clearMatches(matches);
+                this.clearMatches(matchData.matched, matchData.runs);
                 this.applyGravity();
             });
         } else {
@@ -2594,14 +2668,19 @@ class Match3Scene extends Phaser.Scene {
         }
     }
 
-    findMatches() {
+    findMatchData() {
         const matched = new Set();
+        const runs = [];
 
-        // Horizontal
+        // Horizontal runs
         for (let y = 0; y < GRID_HEIGHT; y++) {
-            for (let x = 0; x < GRID_WIDTH; x++) {
+            let x = 0;
+            while (x < GRID_WIDTH) {
                 const type = this.grid[y][x];
-                if (type === -1) continue;
+                if (type === -1) {
+                    x++;
+                    continue;
+                }
 
                 let count = 1;
                 while (x + count < GRID_WIDTH && this.grid[y][x + count] === type) {
@@ -2609,18 +2688,35 @@ class Match3Scene extends Phaser.Scene {
                 }
 
                 if (count >= 3) {
+                    const tiles = [];
                     for (let i = 0; i < count; i++) {
                         matched.add(`${x + i},${y}`);
+                        tiles.push({ x: x + i, y });
                     }
+
+                    const tileType = TILE_TYPES[type];
+                    runs.push({
+                        length: count,
+                        orientation: 'horizontal',
+                        effect: tileType ? tileType.effect : null,
+                        color: tileType ? tileType.color : 0xffffff,
+                        tiles
+                    });
                 }
+
+                x += count;
             }
         }
 
-        // Vertical
+        // Vertical runs
         for (let x = 0; x < GRID_WIDTH; x++) {
-            for (let y = 0; y < GRID_HEIGHT; y++) {
+            let y = 0;
+            while (y < GRID_HEIGHT) {
                 const type = this.grid[y][x];
-                if (type === -1) continue;
+                if (type === -1) {
+                    y++;
+                    continue;
+                }
 
                 let count = 1;
                 while (y + count < GRID_HEIGHT && this.grid[y + count][x] === type) {
@@ -2628,17 +2724,37 @@ class Match3Scene extends Phaser.Scene {
                 }
 
                 if (count >= 3) {
+                    const tiles = [];
                     for (let i = 0; i < count; i++) {
                         matched.add(`${x},${y + i}`);
+                        tiles.push({ x, y: y + i });
                     }
+
+                    const tileType = TILE_TYPES[type];
+                    runs.push({
+                        length: count,
+                        orientation: 'vertical',
+                        effect: tileType ? tileType.effect : null,
+                        color: tileType ? tileType.color : 0xffffff,
+                        tiles
+                    });
                 }
+
+                y += count;
             }
         }
 
-        return Array.from(matched);
+        return {
+            matched: Array.from(matched),
+            runs
+        };
     }
 
-    clearMatches(matches) {
+    findMatches() {
+        return this.findMatchData().matched;
+    }
+
+    clearMatches(matches, comboRuns = []) {
         const gear = this.getEquippedStatTotals();
         let totalEnemyDamage = 0;
         let totalPlayerHeal = 0;
@@ -2655,6 +2771,7 @@ class Match3Scene extends Phaser.Scene {
             loot: 0
         };
         const matchedTilesForEffects = [];
+        const comboChargeSources = [];
 
         matches.forEach(match => {
             const [x, y] = match.split(',').map(Number);
@@ -2700,6 +2817,70 @@ class Match3Scene extends Phaser.Scene {
             this.score += 10;
         });
 
+        comboRuns.forEach(run => {
+            if (!run || !run.effect || !run.tiles || run.tiles.length === 0) return;
+
+            let bonusUnits = 0;
+            if (run.length === 4) {
+                bonusUnits = 2;
+            } else if (run.length >= 5) {
+                bonusUnits = 5 + ((run.length - 5) * 2);
+            }
+            if (bonusUnits <= 0) return;
+
+            const center = run.tiles.reduce((acc, tile) => {
+                acc.x += GRID_OFFSET_X + tile.x * TILE_SIZE + TILE_SIZE / 2;
+                acc.y += GRID_OFFSET_Y + tile.y * TILE_SIZE + TILE_SIZE / 2;
+                return acc;
+            }, { x: 0, y: 0 });
+            center.x /= run.tiles.length;
+            center.y /= run.tiles.length;
+
+            this.spawnComboTierEffect(center.x, center.y, run.color, run.length, bonusUnits);
+            this.addCombatLog(
+                `${run.length >= 5 ? '5-Row' : '4-Row'} ${run.effect} bonus: +${bonusUnits}`,
+                this.toHexColor(run.color)
+            );
+
+            comboChargeSources.push({
+                x: center.x,
+                y: center.y,
+                effect: run.effect,
+                color: run.color,
+                bonusUnits
+            });
+
+            if (matchCounts[run.effect] !== undefined) {
+                matchCounts[run.effect] += bonusUnits;
+            }
+
+            switch (run.effect) {
+                case 'physical':
+                    this.player.physical += 5 * bonusUnits;
+                    physicalDamage += (8 + gear.physical) * bonusUnits;
+                    totalEnemyDamage += (8 + gear.physical) * bonusUnits;
+                    break;
+                case 'magic':
+                    this.player.magic += 5 * bonusUnits;
+                    magicDamage += (8 + gear.magic) * bonusUnits;
+                    totalEnemyDamage += (8 + gear.magic) * bonusUnits;
+                    break;
+                case 'ranged':
+                    this.player.ranged += 5 * bonusUnits;
+                    rangedDamage += (8 + gear.ranged) * bonusUnits;
+                    totalEnemyDamage += (8 + gear.ranged) * bonusUnits;
+                    break;
+                case 'health':
+                    healAmount += (10 + Math.floor(gear.health / 10)) * bonusUnits;
+                    totalPlayerHeal += (10 + Math.floor(gear.health / 10)) * bonusUnits;
+                    break;
+                case 'loot':
+                    this.player.loot += 10 * bonusUnits;
+                    lootAmount += (10 + gear.loot) * bonusUnits;
+                    break;
+            }
+        });
+
         if (physicalDamage > 0) {
             this.addCombatLog(`Physical Damage: ${physicalDamage}`, '#ff0000');
         }
@@ -2717,7 +2898,8 @@ class Match3Scene extends Phaser.Scene {
         }
 
         this.addSkillChargeFromMatches(matchCounts);
-    this.spawnSkillChargeParticles(matchedTilesForEffects);
+        this.spawnSkillChargeParticles(matchedTilesForEffects);
+        this.spawnComboBonusChargeParticles(comboChargeSources);
 
         if (totalEnemyDamage > 0) {
             this.enemy.health = Math.max(0, this.enemy.health - totalEnemyDamage);
@@ -2840,10 +3022,10 @@ class Match3Scene extends Phaser.Scene {
 
             // Check for cascading matches after new tiles fall
             this.time.delayedCall(450, () => {
-                const matches = this.findMatches();
-                if (matches.length > 0) {
+                const matchData = this.findMatchData();
+                if (matchData.matched.length > 0) {
                     this.time.delayedCall(800, () => {
-                        this.clearMatches(matches);
+                        this.clearMatches(matchData.matched, matchData.runs);
                         this.applyGravity();
                     });
                 } else {
