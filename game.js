@@ -455,7 +455,7 @@ class Match3Scene extends Phaser.Scene {
         });
     }
 
-    launchChargeParticle(startX, startY, targetX, targetY, color, delay, onHit) {
+    launchChargeParticle(startX, startY, targetX, targetY, color, delay, onHit, durationMin = 680, durationMax = 980) {
         const orb = this.add.circle(startX, startY, Phaser.Math.Between(2, 4), color, 0.95).setDepth(1095);
         const glow = this.add.circle(startX, startY, Phaser.Math.Between(6, 10), color, 0.28).setDepth(1094);
 
@@ -470,7 +470,7 @@ class Match3Scene extends Phaser.Scene {
             from: 0,
             to: 1,
             delay,
-            duration: Phaser.Math.Between(680, 980),
+            duration: Phaser.Math.Between(durationMin, durationMax),
             ease: 'Cubic.easeInOut',
             onUpdate: tween => {
                 const t = tween.getValue();
@@ -498,6 +498,28 @@ class Match3Scene extends Phaser.Scene {
         const flashedSlots = new Set();
 
         matchedTiles.forEach((tile, tileIndex) => {
+            if (tile.effect === 'loot') {
+                const target = this.getLootMeterParticleTarget();
+                if (target) {
+                    const particleCount = Phaser.Math.Between(2, 3);
+                    for (let i = 0; i < particleCount; i++) {
+                        const startX = tile.x + Phaser.Math.Between(-8, 8);
+                        const startY = tile.y + Phaser.Math.Between(-8, 8);
+                        const delay = tileIndex * 22 + i * 58;
+                        this.launchChargeParticle(
+                            startX,
+                            startY,
+                            target.x,
+                            target.y,
+                            tile.color,
+                            delay,
+                            () => this.flashLootMeterCharge(tile.color)
+                        );
+                    }
+                }
+                return;
+            }
+
             const targets = this.getSkillCardChargeTargets(tile.effect);
             if (targets.length === 0) return;
 
@@ -527,6 +549,40 @@ class Match3Scene extends Phaser.Scene {
         });
     }
 
+    getLootMeterParticleTarget() {
+        if (!this.lootMeterBarBg) return null;
+
+        const x = this.lootMeterBarBg.x + Math.max(10, this.lootMeterBarBg.width * 0.5);
+        const y = this.lootMeterBarBg.y;
+        return { x, y };
+    }
+
+    flashLootMeterCharge(color) {
+        if (!this.lootMeterBarBg) return;
+
+        const flash = this.add.rectangle(
+            this.lootMeterBarBg.x + this.lootMeterBarBg.width / 2,
+            this.lootMeterBarBg.y,
+            this.lootMeterBarBg.width,
+            this.lootMeterBarBg.height + 2,
+            color,
+            0.55
+        ).setOrigin(0.5).setDepth(1092);
+
+        if (this.skillChargeFxContainer) {
+            this.skillChargeFxContainer.add(flash);
+        }
+
+        this.tweens.add({
+            targets: flash,
+            alpha: 0,
+            scaleY: 1.7,
+            duration: 320,
+            ease: 'Quad.easeOut',
+            onComplete: () => flash.destroy()
+        });
+    }
+
     spawnComboTierEffect(centerX, centerY, color, rowLength, bonusUnits) {
         const ring = this.add.circle(centerX, centerY, 10, color, 0)
             .setStrokeStyle(3, color, 0.95)
@@ -550,7 +606,7 @@ class Match3Scene extends Phaser.Scene {
             scaleX: rowLength >= 5 ? 3.3 : 2.5,
             scaleY: rowLength >= 5 ? 3.3 : 2.5,
             alpha: 0,
-            duration: rowLength >= 5 ? 650 : 520,
+            duration: rowLength >= 5 ? 1100 : 900,
             ease: 'Cubic.easeOut',
             onComplete: () => ring.destroy()
         });
@@ -560,16 +616,16 @@ class Match3Scene extends Phaser.Scene {
             scaleX: rowLength >= 5 ? 1.9 : 1.5,
             scaleY: rowLength >= 5 ? 1.9 : 1.5,
             alpha: 0,
-            duration: rowLength >= 5 ? 530 : 430,
+            duration: rowLength >= 5 ? 930 : 760,
             ease: 'Quad.easeOut',
             onComplete: () => pulse.destroy()
         });
 
         this.tweens.add({
             targets: text,
-            y: centerY - 34,
+            y: centerY - 42,
             alpha: 0,
-            duration: 700,
+            duration: 1200,
             ease: 'Quad.easeOut',
             onComplete: () => text.destroy()
         });
@@ -586,7 +642,7 @@ class Match3Scene extends Phaser.Scene {
                 const particleCount = Math.min(8, 2 + Math.ceil(source.bonusUnits / 2));
 
                 for (let i = 0; i < particleCount; i++) {
-                    const delay = sourceIndex * 45 + targetIndex * 65 + i * 42;
+                    const delay = sourceIndex * 80 + targetIndex * 95 + i * 68;
                     this.launchChargeParticle(
                         source.x + Phaser.Math.Between(-14, 14),
                         source.y + Phaser.Math.Between(-14, 14),
@@ -594,7 +650,9 @@ class Match3Scene extends Phaser.Scene {
                         target.y,
                         source.color,
                         delay,
-                        null
+                        null,
+                        980,
+                        1400
                     );
                 }
             });
@@ -1439,16 +1497,16 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.add(this.enemyHealthBarBg);
         this.enemyHealthBar = this.add.rectangle(210, 131, barW, 12, 0xff0000).setOrigin(0, 0.5);
         this.hudContainer.add(this.enemyHealthBar);
-        // --- Loot Meter (centered below panels) ---
-        const lmY = 162;
-        const lmW = 160;
+        // --- Loot Meter (under player HP bar) ---
+        const lmW = barW;
         const lmH = 10;
-        const lmX = (leftCX + rightCX) / 2;
-        this.hudContainer.add(this.add.text(lmX, lmY - 12, 'Loot Meter', { fontSize: '9px', color: '#ffd966', fontStyle: 'bold' }).setOrigin(0.5));
-        this.lootMeterBarBg = this.add.rectangle(lmX - lmW / 2, lmY, lmW, lmH, 0x333333).setOrigin(0, 0.5);
-        this.lootMeterBar = this.add.rectangle(lmX - lmW / 2, lmY, 0, lmH, 0xffd966).setOrigin(0, 0.5);
-        this.lootMeterText = this.add.text(lmX, lmY, '0%', { fontSize: '8px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
-        this.hudContainer.add([this.lootMeterBarBg, this.lootMeterBar, this.lootMeterText]);
+        const lmX = 14;
+        const lmY = 151;
+        this.lootMeterLabel = this.add.text(lmX, lmY - 10, 'LOOT', { fontSize: '9px', color: '#ffd966', fontStyle: 'bold' }).setOrigin(0, 0.5);
+        this.lootMeterBarBg = this.add.rectangle(lmX, lmY, lmW, lmH, 0x333333).setOrigin(0, 0.5);
+        this.lootMeterBar = this.add.rectangle(lmX, lmY, 0, lmH, 0xffd966).setOrigin(0, 0.5);
+        this.lootMeterText = this.add.text(lmX + lmW / 2, lmY, '0%', { fontSize: '8px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.hudContainer.add([this.lootMeterLabel, this.lootMeterBarBg, this.lootMeterBar, this.lootMeterText]);
 
         this.createEquipmentScreen();
         this.createSkillsScreen();
