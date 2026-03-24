@@ -2373,15 +2373,15 @@ class Match3Scene extends Phaser.Scene {
 
         const slotConfig = [
             { key: 'helmet', label: 'Helmet', x: topCenterX, y: topPanelTopY + 28 },
-            { key: 'necklace', label: 'Necklace', x: topCenterX, y: topPanelTopY + 82 },
-            { key: 'mainhand', label: 'Main Hand', x: topCenterX - 100, y: topPanelTopY + 126 },
-            { key: 'chest', label: 'Chest', x: topCenterX, y: topPanelTopY + 136 },
-            { key: 'offhand', label: 'Off Hand', x: topCenterX + 100, y: topPanelTopY + 126 },
-            { key: 'gloves', label: 'Gloves', x: topCenterX - 100, y: topPanelTopY + 198 },
-            { key: 'belt', label: 'Belt', x: topCenterX, y: topPanelTopY + 200 },
-            { key: 'ring1', label: 'Ring 1', x: topCenterX + 100, y: topPanelTopY + 198 },
-            { key: 'ring2', label: 'Ring 2', x: topCenterX - 70, y: topPanelTopY + 264 },
-            { key: 'boots', label: 'Boots', x: topCenterX, y: topPanelTopY + 264 }
+            { key: 'necklace', label: 'Necklace', x: topCenterX - 84, y: topPanelTopY + 80 },
+            { key: 'mainhand', label: 'Main Hand', x: topCenterX - 108, y: topPanelTopY + 134 },
+            { key: 'chest', label: 'Chest', x: topCenterX, y: topPanelTopY + 138 },
+            { key: 'offhand', label: 'Off Hand', x: topCenterX + 108, y: topPanelTopY + 134 },
+            { key: 'gloves', label: 'Gloves', x: topCenterX - 108, y: topPanelTopY + 196 },
+            { key: 'belt', label: 'Belt', x: topCenterX, y: topPanelTopY + 196 },
+            { key: 'ring1', label: 'Ring 1', x: topCenterX + 108, y: topPanelTopY + 196 },
+            { key: 'ring2', label: 'Ring 2', x: topCenterX + 138, y: topPanelTopY + 236 },
+            { key: 'boots', label: 'Boots', x: topCenterX, y: topPanelTopY + 236 }
         ];
 
         this.equipmentText = {};
@@ -2414,8 +2414,8 @@ class Match3Scene extends Phaser.Scene {
             }).setOrigin(0.5).setAlpha(0.52);
             const slotIcon = this.add.text(slot.x, slot.y - 6, '', { fontSize: '26px', color: '#ffffff' }).setOrigin(0.5);
             const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 - 10, slot.label, { fontSize: '11px', color: '#9cb7c7' }).setOrigin(0.5, 0.5);
-            // Item name inside the slot (bottom edge) so it never bleeds into the adjacent slot below
-            const slotValue = this.add.text(slot.x, slot.y + slotSize / 2 - 2, '', { fontSize: '8px', color: '#aaaaaa', align: 'center', wordWrap: { width: slotSize - 4, useAdvancedWrap: true } }).setOrigin(0.5, 1);
+            // Keep item names inside each tile so they don't overlap section headers or stat cards.
+            const slotValue = this.add.text(slot.x, slot.y + slotSize / 2 - 9, '', { fontSize: '7px', color: '#aaaaaa', align: 'center', wordWrap: { width: slotSize - 8, useAdvancedWrap: true } }).setOrigin(0.5, 1);
 
             const inspectEquippedItem = () => {
                 const equippedItem = this.equippedItems[slot.key];
