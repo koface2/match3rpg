@@ -17,7 +17,7 @@ const MONSTER_NAMES = ['Ogre', 'Oni', 'Zombie', 'Ghost', 'Robot', 'Dragon', 'Spi
 const PLAYER_AVATAR = '👸';
 
 const ITEM_RARITIES = [
-    { name: 'Common', weight: 60, affixes: 1, statMultiplier: 1.0, frameColor: 0xa3a3a3, textColor: '#d0d0d0' },
+    { name: 'Normal', weight: 60, affixes: 0, statMultiplier: 1.0, frameColor: 0xa3a3a3, textColor: '#d0d0d0' },
     { name: 'Magic', weight: 25, affixes: 2, statMultiplier: 1.15, frameColor: 0x5aa9ff, textColor: '#8ec5ff' },
     { name: 'Rare', weight: 12, affixes: 4, statMultiplier: 1.35, frameColor: 0xffd166, textColor: '#ffe08f' },
     { name: 'Legendary', weight: 3, affixes: 6, statMultiplier: 1.65, frameColor: 0xff7f11, textColor: '#ffb35c' }
@@ -41,7 +41,15 @@ const ITEM_PREFIXES = [
     { name: 'Deadeye', stats: { ranged: [2, 6] } },
     { name: 'Stalwart', stats: { armor: [2, 7] } },
     { name: 'Vital', stats: { health: [8, 20] } },
-    { name: 'Prosperous', stats: { loot: [4, 14] } }
+    { name: 'Prosperous', stats: { loot: [4, 14] } },
+    { name: 'Cruel', stats: { physical: [4, 10] } },
+    { name: 'Runic', stats: { magic: [4, 10] } },
+    { name: 'Sharpened', stats: { ranged: [3, 8], physical: [1, 3] } },
+    { name: 'Fortified', stats: { armor: [4, 12], health: [4, 10] } },
+    { name: 'Vampiric', stats: { health: [6, 16], physical: [1, 4] } },
+    { name: 'Gilded', stats: { loot: [6, 20] } },
+    { name: 'Nimble', stats: { ranged: [2, 5], armor: [1, 3] } },
+    { name: 'Sorcerous', stats: { magic: [3, 8], health: [3, 8] } }
 ];
 
 const ITEM_SUFFIXES = [
@@ -50,7 +58,15 @@ const ITEM_SUFFIXES = [
     { name: 'of Precision', stats: { ranged: [2, 7] } },
     { name: 'of Guarding', stats: { armor: [2, 8] } },
     { name: 'of Vitality', stats: { health: [10, 24] } },
-    { name: 'of Fortune', stats: { loot: [5, 16] } }
+    { name: 'of Fortune', stats: { loot: [5, 16] } },
+    { name: 'of Carnage', stats: { physical: [4, 12] } },
+    { name: 'of the Magi', stats: { magic: [4, 12] } },
+    { name: 'of the Hawk', stats: { ranged: [4, 10] } },
+    { name: 'of the Fortress', stats: { armor: [5, 14], health: [4, 10] } },
+    { name: 'of Regeneration', stats: { health: [12, 32] } },
+    { name: 'of Plunder', stats: { loot: [8, 22] } },
+    { name: 'of Devastation', stats: { physical: [3, 8], ranged: [2, 6] } },
+    { name: 'of the Archmage', stats: { magic: [3, 9], health: [5, 12] } }
 ];
 
 const EQUIPMENT_SLOT_GROUP_BY_KEY = {
@@ -1273,10 +1289,42 @@ class Match3Scene extends Phaser.Scene {
     }
 
     generateItem(forcedRarity = null) {
-        const base = Phaser.Utils.Array.GetRandom(ITEM_BASES);
-        const rarity = forcedRarity ? this.getRarityByName(forcedRarity) : this.rollRarity();
-        const statMultiplier = rarity.statMultiplier;
+        return this.generateLoot(this.battleNumber * 10, forcedRarity);
+    }
 
+    /**
+     * generateLoot(lootScore, forcedRarity)
+     *
+     * Creates a Path of Exile style item object.
+     *
+     * lootScore drives both rarity probability and stat power:
+     *   - 0-20   → mostly Normal (white) items with no affixes
+     *   - 20-50  → Magic (blue) items start appearing (1-2 affixes)
+     *   - 50-80  → Rare (yellow) items with 4 affixes become possible
+     *   - 80+    → Legendary (orange) items with 6 affixes can drop
+     *
+     * Item data structure:
+     *   {
+     *     id, name, slotGroup, type, rarity, itemLevel,
+     *     icon, frameColor, rarityTextColor,
+     *     description,
+     *     stats: { physical, magic, ranged, armor, health, loot, ... },
+     *     prefixes: [{ name, stats }],
+     *     suffixes: [{ name, stats }]
+     *   }
+     */
+    generateLoot(lootScore, forcedRarity = null) {
+        const base = Phaser.Utils.Array.GetRandom(ITEM_BASES);
+        const rarity = forcedRarity
+            ? this.getRarityByName(forcedRarity)
+            : this.rollRarityFromScore(lootScore);
+
+        // itemLevel scales stat ranges: floor 1, soft-caps around 2.5×
+        const itemLevel = Math.max(1, Math.floor(lootScore / 10));
+        const levelScale = 1 + (itemLevel - 1) * 0.12;
+        const statMultiplier = rarity.statMultiplier * levelScale;
+
+        // Affix counts: Normal=0, Magic=1-2, Rare=4, Legendary=6
         const prefixCount = Math.ceil(rarity.affixes / 2);
         const suffixCount = Math.floor(rarity.affixes / 2);
         const usedNames = new Set();
@@ -1284,11 +1332,18 @@ class Match3Scene extends Phaser.Scene {
         const prefixes = this.rollAffixes(ITEM_PREFIXES, prefixCount, statMultiplier, usedNames);
         const suffixes = this.rollAffixes(ITEM_SUFFIXES, suffixCount, statMultiplier, usedNames);
 
+        // Base stats also scale with item level
+        const scaledBaseStats = {};
+        Object.entries(base.baseStats).forEach(([stat, value]) => {
+            scaledBaseStats[stat] = Math.max(1, Math.round(value * levelScale));
+        });
+
         const totalStats = {};
-        this.mergeStats(totalStats, base.baseStats);
+        this.mergeStats(totalStats, scaledBaseStats);
         prefixes.forEach(prefix => this.mergeStats(totalStats, prefix.stats));
         suffixes.forEach(suffix => this.mergeStats(totalStats, suffix.stats));
 
+        // Build PoE-style name
         const primaryPrefix = prefixes.length > 0 ? `${prefixes[0].name} ` : '';
         const primarySuffix = suffixes.length > 0 ? ` ${suffixes[0].name}` : '';
         const rarityFlavor = rarity.name === 'Legendary' ? 'Mythic ' : '';
@@ -1307,6 +1362,7 @@ class Match3Scene extends Phaser.Scene {
             slotGroup: base.slotGroup,
             type: base.type,
             rarity: rarity.name,
+            itemLevel,
             icon: base.icon,
             frameColor: rarity.frameColor,
             rarityTextColor: rarity.textColor,
@@ -1315,6 +1371,39 @@ class Match3Scene extends Phaser.Scene {
             prefixes,
             suffixes
         };
+    }
+
+    /**
+     * Rarity roll driven entirely by a single lootScore number.
+     * Low scores → almost all Normal. High scores → Legendary possible.
+     */
+    rollRarityFromScore(lootScore) {
+        const s = Math.max(0, lootScore);
+
+        // Weights shift smoothly with score
+        const weights = {
+            Normal:    Math.max(5,  70 - s * 0.8),
+            Magic:     Math.min(45, 10 + s * 0.45),
+            Rare:      Math.min(35, Math.max(0, (s - 30) * 0.45)),
+            Legendary: Math.min(20, Math.max(0, (s - 60) * 0.25))
+        };
+
+        const weightedTable = ITEM_RARITIES.map(r => ({
+            name: r.name,
+            weight: weights[r.name] || r.weight
+        }));
+
+        const totalWeight = weightedTable.reduce((sum, r) => sum + r.weight, 0);
+        let roll = Phaser.Math.Between(1, Math.round(totalWeight));
+
+        for (let i = 0; i < weightedTable.length; i++) {
+            roll -= weightedTable[i].weight;
+            if (roll <= 0) {
+                return this.getRarityByName(weightedTable[i].name);
+            }
+        }
+
+        return ITEM_RARITIES[0];
     }
 
     addItemToInventory(item) {
@@ -1347,7 +1436,7 @@ class Match3Scene extends Phaser.Scene {
         const meterBonus = Math.floor(this.lootMeter / 20);
 
         const weights = {
-            Common: Math.max(5, 60 - tierShift * 5 - meterBonus * 6),
+            Normal: Math.max(5, 60 - tierShift * 5 - meterBonus * 6),
             Magic: Math.min(50, 25 + tierShift * 2 + meterBonus * 2),
             Rare: Math.min(40, 12 + tierShift * 2 + meterBonus * 3),
             Legendary: Math.min(25, 3 + tierShift + meterBonus * 2)
@@ -1614,12 +1703,13 @@ class Match3Scene extends Phaser.Scene {
         const gear = this.getEquippedStatTotals();
         const lootPower = this.player.loot + gear.loot;
         const meterPct = Math.floor((this.lootMeter / this.lootMeterMax) * 100);
-        this.rewardLootInfoText.setText(`Loot Meter: ${meterPct}% | Loot stat: ${lootPower}`);
+        // lootScore combines battle progression, loot meter, and gear loot stat
+        const lootScore = this.battleNumber * 10 + this.lootMeter * 0.5 + Math.floor(lootPower / 10);
+        this.rewardLootInfoText.setText(`Loot Score: ${Math.floor(lootScore)} | Meter: ${meterPct}%`);
 
         this.rewardChoices = [];
         for (let i = 0; i < 3; i++) {
-            const rarity = this.rollRarityWithLootBonus();
-            this.rewardChoices.push(this.generateItem(rarity.name));
+            this.rewardChoices.push(this.generateLoot(lootScore));
         }
 
         this.rewardCards.forEach((card, index) => {
@@ -1636,7 +1726,7 @@ class Match3Scene extends Phaser.Scene {
             card.icon.setText(item.icon);
             card.name.setText(item.name);
             card.name.setColor(item.rarityTextColor || '#ffffff');
-            card.rarity.setText(`${item.rarity} ${item.type}`);
+            card.rarity.setText(`iLvl ${item.itemLevel || 1} ${item.rarity} ${item.type}`);
             card.rarity.setColor(item.rarityTextColor || '#ffffff');
             card.stats.setText(statText || 'No stats');
             card.equippedLabel.setText(`Replacing ${compareData.targetSlot || item.slotGroup}: ${compareData.equippedName}`);
@@ -2385,7 +2475,7 @@ class Match3Scene extends Phaser.Scene {
         this.inventoryModalIcon.setText(item.icon);
         this.inventoryModalName.setText(item.name);
         this.inventoryModalName.setColor(item.rarityTextColor || '#ffffff');
-        this.inventoryModalType.setText(`Type: ${item.type}  |  Slot: ${this.getSlotLabel(item.slotGroup)}  |  Rarity: ${item.rarity}`);
+        this.inventoryModalType.setText(`iLvl ${item.itemLevel || 1} ${item.rarity}  |  ${this.getSlotLabel(item.slotGroup)}`);
         this.inventoryModalDesc.setText(item.description);
         this.inventoryModalStats.setText(statText || 'No bonus stats');
         if (this.inventoryModalEquipBtn) {
