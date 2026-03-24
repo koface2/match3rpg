@@ -1215,6 +1215,83 @@ class Match3Scene extends Phaser.Scene {
         return slotGroup.charAt(0).toUpperCase() + slotGroup.slice(1);
     }
 
+    getEmptySlotIcon(slotKey) {
+        const icons = {
+            helmet: '🪖',
+            necklace: '📿',
+            chest: '🦺',
+            belt: '🧷',
+            mainhand: '🗡️',
+            offhand: '🛡️',
+            gloves: '🧤',
+            boots: '🥾',
+            ring1: '💍',
+            ring2: '💍'
+        };
+
+        return icons[slotKey] || '◻';
+    }
+
+    pulseUiTargets(targets, scale = 1.08, duration = 90) {
+        const validTargets = (targets || []).filter(Boolean);
+        if (validTargets.length === 0) return;
+
+        this.tweens.killTweensOf(validTargets);
+        validTargets.forEach(target => {
+            target.setScale(1);
+        });
+
+        this.tweens.add({
+            targets: validTargets,
+            scaleX: scale,
+            scaleY: scale,
+            duration,
+            yoyo: true,
+            ease: 'Quad.easeOut'
+        });
+    }
+
+    refreshEquipmentScreenAnimations() {
+        if (this.characterStatTiles) {
+            Object.values(this.characterStatTiles).forEach(tile => {
+                if (!tile || !tile.cardBg) return;
+                const targets = [tile.cardBg, tile.icon, tile.valueText];
+                this.tweens.killTweensOf(targets);
+                targets.forEach(target => target.setScale(1));
+                this.tweens.add({
+                    targets,
+                    scaleX: 1.02,
+                    scaleY: 1.02,
+                    duration: 1200,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut',
+                    delay: tile.delay || 0
+                });
+            });
+        }
+
+        if (this.equipmentSlotGlows) {
+            Object.entries(this.equipmentSlotGlows).forEach(([key, glow]) => {
+                if (!glow) return;
+                this.tweens.killTweensOf(glow);
+                glow.setScale(1);
+                if (!this.equippedItems[key]) return;
+
+                this.tweens.add({
+                    targets: glow,
+                    scaleX: 1.06,
+                    scaleY: 1.06,
+                    alpha: 0.7,
+                    duration: 900,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
+            });
+        }
+    }
+
     getStatLabel(stat) {
         const labels = {
             health: 'Health',
@@ -2173,11 +2250,11 @@ class Match3Scene extends Phaser.Scene {
         const slotSize = 56;
 
         const bg = this.add.rectangle(width / 2, height / 2, width - 40, height - 40, 0x1a1a1a, 1).setStrokeStyle(2, 0xffffff);
-        const splitY = 396;
+        const splitY = 446;
         const divider = this.add.rectangle(width / 2, splitY, width - 52, 2, 0x555555, 1);
 
-        const topPanelBg = this.add.rectangle(width / 2, 236, width - 56, 300, 0x222222, 0.95).setStrokeStyle(1, 0x666666);
-        const bottomPanelBg = this.add.rectangle(width / 2, 592, width - 56, 332, 0x232323, 0.95).setStrokeStyle(1, 0x666666);
+        const topPanelBg = this.add.rectangle(width / 2, 260, width - 56, 352, 0x222222, 0.95).setStrokeStyle(1, 0x666666);
+        const bottomPanelBg = this.add.rectangle(width / 2, 610, width - 56, 292, 0x232323, 0.95).setStrokeStyle(1, 0x666666);
 
         const title = this.add.text(width / 2, 50, 'Equipment', { fontSize: '22px', color: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5);
         const tabInfo = this.add.text(10, 14, '', { fontSize: '12px', color: '#ffffff' }).setOrigin(0, 0);
@@ -2185,9 +2262,9 @@ class Match3Scene extends Phaser.Scene {
         switchButton.on('pointerup', () => this.showGameScreen());
 
         const slotsHeader = this.add.text(topCenterX, 84, 'Loadout', { fontSize: '15px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
-        const inventoryHeader = this.add.text(topCenterX, 422, 'Inventory', { fontSize: '15px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
+        const inventoryHeader = this.add.text(topCenterX, 468, 'Inventory', { fontSize: '15px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
 
-        const inventoryHint = this.add.text(topCenterX, 444, 'Tap item to inspect & equip.', {
+        const inventoryHint = this.add.text(topCenterX, 486, 'Tap item to inspect & equip.', {
             fontSize: '10px',
             color: '#aaaaaa',
             wordWrap: { width: Math.floor(width * 0.72), useAdvancedWrap: true }
@@ -2228,44 +2305,115 @@ class Match3Scene extends Phaser.Scene {
             warriorGlyph
         ]);
 
-        // Character stats display
-        const statsY = splitY - 30;
-        const statsHeaderText = this.add.text(topCenterX, statsY - 14, 'Character Stats', { fontSize: '10px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
-        this.charStatsLine1 = this.add.text(topCenterX, statsY + 2, '', { fontSize: '11px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
-        this.charStatsLine2 = this.add.text(topCenterX, statsY + 16, '', { fontSize: '9px', color: '#aaaaaa' }).setOrigin(0.5);
-        this.equipmentScreenGroup.add([statsHeaderText, this.charStatsLine1, this.charStatsLine2]);
+        const statsHeaderText = this.add.text(topCenterX, 354, 'Character Stats', {
+            fontSize: '11px',
+            color: '#00ffcc',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        const statCardConfig = [
+            { key: 'strength', short: 'STR', icon: '⚔', x: topCenterX - 108, color: 0xff8a5b, accent: '#ffb08b' },
+            { key: 'intelligence', short: 'INT', icon: '✦', x: topCenterX, color: 0x4c8dff, accent: '#8bb7ff' },
+            { key: 'dexterity', short: 'DEX', icon: '➶', x: topCenterX + 108, color: 0x49c46b, accent: '#8ae2a0' }
+        ];
+
+        this.characterStatTiles = {};
+        statCardConfig.forEach(card => {
+            const cardBg = this.add.rectangle(card.x, 394, 96, 78, 0x151515, 0.98)
+                .setStrokeStyle(2, card.color, 1);
+            cardBg.setInteractive({ useHandCursor: true });
+            const cardIcon = this.add.text(card.x, 368, card.icon, {
+                fontSize: '18px',
+                color: card.accent
+            }).setOrigin(0.5);
+            const cardTitle = this.add.text(card.x, 383, card.short, {
+                fontSize: '10px',
+                color: card.accent,
+                fontStyle: 'bold'
+            }).setOrigin(0.5);
+            const cardValue = this.add.text(card.x, 400, '', {
+                fontSize: '18px',
+                color: '#ffffff',
+                fontStyle: 'bold'
+            }).setOrigin(0.5);
+            const cardBonus = this.add.text(card.x, 422, '', {
+                fontSize: '8px',
+                color: '#cfd6dd',
+                align: 'center',
+                wordWrap: { width: 82, useAdvancedWrap: true }
+            }).setOrigin(0.5);
+
+            this.characterStatTiles[card.key] = {
+                cardBg,
+                icon: cardIcon,
+                valueText: cardValue,
+                bonusText: cardBonus,
+                delay: card.key === 'strength' ? 0 : (card.key === 'intelligence' ? 110 : 220)
+            };
+
+            cardBg.on('pointerup', () => {
+                this.pulseUiTargets([cardBg, cardIcon, cardValue], 1.06, 110);
+            });
+
+            this.equipmentScreenGroup.add([
+                cardBg,
+                cardIcon,
+                cardTitle,
+                cardValue,
+                cardBonus
+            ]);
+        });
+
+        this.charStatsFooter = this.add.text(topCenterX, 436, '', {
+            fontSize: '9px',
+            color: '#9aa7b5',
+            align: 'center'
+        }).setOrigin(0.5);
+        this.equipmentScreenGroup.add([statsHeaderText, this.charStatsFooter]);
 
         const slotConfig = [
             { key: 'helmet', label: 'Helmet', x: topCenterX, y: topPanelTopY + 28 },
             { key: 'necklace', label: 'Necklace', x: topCenterX, y: topPanelTopY + 82 },
+            { key: 'mainhand', label: 'Main Hand', x: topCenterX - 100, y: topPanelTopY + 126 },
             { key: 'chest', label: 'Chest', x: topCenterX, y: topPanelTopY + 136 },
-            { key: 'belt', label: 'Belt', x: topCenterX, y: topPanelTopY + 192 },
-            { key: 'mainhand', label: 'Main Hand', x: topCenterX - 92, y: topPanelTopY + 136 },
-            { key: 'offhand', label: 'Off Hand', x: topCenterX + 92, y: topPanelTopY + 136 },
-            { key: 'gloves', label: 'Gloves', x: topCenterX - 92, y: topPanelTopY + 192 },
-            { key: 'boots', label: 'Boots', x: topCenterX, y: topPanelTopY + 250 },
-            { key: 'ring1', label: 'Ring 1', x: topCenterX - 64, y: topPanelTopY + 250 },
-            { key: 'ring2', label: 'Ring 2', x: topCenterX + 64, y: topPanelTopY + 250 }
+            { key: 'offhand', label: 'Off Hand', x: topCenterX + 100, y: topPanelTopY + 126 },
+            { key: 'gloves', label: 'Gloves', x: topCenterX - 100, y: topPanelTopY + 198 },
+            { key: 'belt', label: 'Belt', x: topCenterX, y: topPanelTopY + 200 },
+            { key: 'ring1', label: 'Ring 1', x: topCenterX + 100, y: topPanelTopY + 198 },
+            { key: 'ring2', label: 'Ring 2', x: topCenterX - 70, y: topPanelTopY + 264 },
+            { key: 'boots', label: 'Boots', x: topCenterX, y: topPanelTopY + 264 }
         ];
 
         this.equipmentText = {};
         this.equipmentIconText = {};
         this.equipmentSlotFrames = {};
+        this.equipmentSlotGhostIcons = {};
+        this.equipmentSlotShells = {};
+        this.equipmentSlotGlows = {};
+        this.equipmentSlotLabels = {};
 
         slotConfig.forEach(slot => {
+            const slotGlow = this.add.rectangle(slot.x, slot.y, slotSize + 10, slotSize + 10, 0xffffff, 0)
+                .setStrokeStyle(3, 0xffffff, 0)
+                .setOrigin(0.5);
+
             // Square slot for equipment
-            const slotBg = this.add.rectangle(slot.x, slot.y, slotSize, slotSize, 0x2e2e2e, 0.78)
-                .setStrokeStyle(2, 0xffffff)
+            const slotBg = this.add.rectangle(slot.x, slot.y, slotSize, slotSize, 0x26303a, 0.9)
+                .setStrokeStyle(2, 0x6d7d8a, 1)
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
 
             // Inner tile area for item image/icon
-            const slotImageBg = this.add.rectangle(slot.x, slot.y, slotSize * 0.7, slotSize * 0.7, 0x000000, 0.28)
-                .setStrokeStyle(1, 0xffffff, 0.66)
+            const slotImageBg = this.add.rectangle(slot.x, slot.y, slotSize * 0.7, slotSize * 0.7, 0x0e1318, 0.8)
+                .setStrokeStyle(1, 0x8ea2b3, 0.9)
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
+            const slotGhostIcon = this.add.text(slot.x, slot.y - 5, this.getEmptySlotIcon(slot.key), {
+                fontSize: '19px',
+                color: '#778593'
+            }).setOrigin(0.5).setAlpha(0.52);
             const slotIcon = this.add.text(slot.x, slot.y - 6, '', { fontSize: '26px', color: '#ffffff' }).setOrigin(0.5);
-            const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 - 10, slot.label, { fontSize: '11px', color: '#ffff00' }).setOrigin(0.5, 0.5);
+            const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 - 10, slot.label, { fontSize: '11px', color: '#9cb7c7' }).setOrigin(0.5, 0.5);
             // Item name inside the slot (bottom edge) so it never bleeds into the adjacent slot below
             const slotValue = this.add.text(slot.x, slot.y + slotSize / 2 - 2, '', { fontSize: '8px', color: '#aaaaaa', align: 'center', wordWrap: { width: slotSize - 4, useAdvancedWrap: true } }).setOrigin(0.5, 1);
 
@@ -2275,21 +2423,30 @@ class Match3Scene extends Phaser.Scene {
                     this.openInventoryItemPopup(equippedItem, 'equipped', slot.key);
                 }
             };
+            const pulseSlot = () => {
+                this.pulseUiTargets([slotBg, slotImageBg, slotIcon, slotGhostIcon], 1.08, 95);
+            };
+            slotBg.on('pointerdown', pulseSlot);
+            slotImageBg.on('pointerdown', pulseSlot);
             slotBg.on('pointerup', inspectEquippedItem);
             slotImageBg.on('pointerup', inspectEquippedItem);
 
             this.equipmentText[slot.key] = slotValue;
             this.equipmentIconText[slot.key] = slotIcon;
             this.equipmentSlotFrames[slot.key] = slotImageBg;
+            this.equipmentSlotGhostIcons[slot.key] = slotGhostIcon;
+            this.equipmentSlotShells[slot.key] = slotBg;
+            this.equipmentSlotGlows[slot.key] = slotGlow;
+            this.equipmentSlotLabels[slot.key] = slotLabel;
 
-            this.equipmentScreenGroup.add([slotBg, slotImageBg, slotIcon, slotLabel, slotValue]);
+            this.equipmentScreenGroup.add([slotGlow, slotBg, slotImageBg, slotGhostIcon, slotIcon, slotLabel, slotValue]);
         });
 
         this.inventoryTiles = [];
         const inventoryColumns = 4;
-        const inventoryCellSize = 70;
+        const inventoryCellSize = 64;
         const inventoryCellGap = 8;
-        const inventoryGridTop = 462;
+        const inventoryGridTop = 514;
         const inventoryGridLeft = (width - (inventoryColumns * inventoryCellSize + (inventoryColumns - 1) * inventoryCellGap)) / 2;
 
         for (let index = 0; index < 12; index++) {
@@ -2334,7 +2491,13 @@ class Match3Scene extends Phaser.Scene {
         this.inventoryModalFrame = this.add.rectangle(width / 2, height / 2 - 62, 50, 50, 0x1f1f1f, 1).setStrokeStyle(2, 0x888888);
         this.inventoryModalIcon = this.add.text(width / 2, height / 2 - 62, '', { fontSize: '26px' }).setOrigin(0.5);
         this.inventoryModalName = this.add.text(width / 2, height / 2 - 14, '', { fontSize: '16px', color: '#ffffff', fontStyle: 'bold', wordWrap: { width: 340, useAdvancedWrap: true }, align: 'center' }).setOrigin(0.5);
-        this.inventoryModalType = this.add.text(width / 2, height / 2 + 16, '', {
+        this.inventoryModalSlotBadge = this.add.text(width / 2, height / 2 + 12, '', {
+            fontSize: '11px',
+            color: '#111111',
+            backgroundColor: '#8bb7ff',
+            padding: { left: 7, right: 7, top: 3, bottom: 3 }
+        }).setOrigin(0.5);
+        this.inventoryModalType = this.add.text(width / 2, height / 2 + 38, '', {
             fontSize: '12px',
             color: '#00ffcc',
             align: 'center',
@@ -2346,27 +2509,27 @@ class Match3Scene extends Phaser.Scene {
             align: 'center',
             wordWrap: { width: 340, useAdvancedWrap: true }
         }).setOrigin(0.5);
-        this.inventoryModalDesc.y = height / 2 + 66;
-        this.inventoryModalStats = this.add.text(width / 2, height / 2 + 110, '', {
+        this.inventoryModalDesc.y = height / 2 + 78;
+        this.inventoryModalStats = this.add.text(width / 2, height / 2 + 122, '', {
             fontSize: '12px',
             color: '#ffd966',
             align: 'center',
             wordWrap: { width: 340, useAdvancedWrap: true }
         }).setOrigin(0.5);
 
-        const closeModalBtn = this.add.text(width / 2 - 90, height / 2 + 140, 'Close', {
+        const closeModalBtn = this.add.text(width / 2 - 90, height / 2 + 150, 'Close', {
             fontSize: '15px',
             color: '#ffffff',
             backgroundColor: '#444444',
             padding: { left: 8, right: 8, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        const removeBtn = this.add.text(width / 2, height / 2 + 140, 'Remove', {
+        const removeBtn = this.add.text(width / 2, height / 2 + 150, 'Remove', {
             fontSize: '15px',
             color: '#ffffff',
             backgroundColor: '#a33d3d',
             padding: { left: 8, right: 8, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        const equipBtn = this.add.text(width / 2 + 90, height / 2 + 140, 'Equip', {
+        const equipBtn = this.add.text(width / 2 + 90, height / 2 + 150, 'Equip', {
             fontSize: '15px',
             color: '#111111',
             backgroundColor: '#00ff99',
@@ -2388,6 +2551,7 @@ class Match3Scene extends Phaser.Scene {
             this.inventoryModalFrame,
             this.inventoryModalIcon,
             this.inventoryModalName,
+            this.inventoryModalSlotBadge,
             this.inventoryModalType,
             this.inventoryModalDesc,
             this.inventoryModalStats,
@@ -2400,7 +2564,7 @@ class Match3Scene extends Phaser.Scene {
 
         this.updateInventoryGridUI();
 
-        const backBtn = this.add.text(width / 2, height - 40, 'Back to Game', { fontSize: '16px', color: '#00ff00', backgroundColor: '#333333', padding: { left: 10, right: 10, top: 5, bottom: 5 } }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        const backBtn = this.add.text(width / 2, height - 28, 'Back to Game', { fontSize: '16px', color: '#00ff00', backgroundColor: '#333333', padding: { left: 10, right: 10, top: 5, bottom: 5 } }).setOrigin(0.5).setInteractive({ useHandCursor: true });
         backBtn.on('pointerup', () => this.showGameScreen());
         this.equipmentScreenGroup.add(backBtn);
     }
@@ -2417,6 +2581,7 @@ class Match3Scene extends Phaser.Scene {
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
         this.setGameBoardActive(false);
         this.updateEquipmentScreen();
+        this.refreshEquipmentScreenAnimations();
     }
 
     showSkillsScreen() {
@@ -2453,27 +2618,47 @@ class Match3Scene extends Phaser.Scene {
             const equippedItem = this.equippedItems[key] || null;
             if (this.equipmentText[key]) {
                 this.equipmentText[key].setText(value === 'None' ? '' : value);
+                this.equipmentText[key].setColor(equippedItem ? (equippedItem.rarityTextColor || '#ffffff') : '#94a1ab');
             }
             if (this.equipmentIconText[key]) {
                 this.equipmentIconText[key].setText(equippedItem ? equippedItem.icon : '');
             }
             if (this.equipmentSlotFrames[key]) {
-                this.equipmentSlotFrames[key].setStrokeStyle(2, equippedItem ? equippedItem.frameColor : 0xffffff, 1);
+                this.equipmentSlotFrames[key].setStrokeStyle(2, equippedItem ? equippedItem.frameColor : 0x8ea2b3, equippedItem ? 1 : 0.8);
+            }
+            if (this.equipmentSlotGhostIcons[key]) {
+                this.equipmentSlotGhostIcons[key].setVisible(!equippedItem);
+            }
+            if (this.equipmentSlotShells[key]) {
+                this.equipmentSlotShells[key]
+                    .setFillStyle(equippedItem ? 0x2d3640 : 0x26303a, equippedItem ? 0.98 : 0.9)
+                    .setStrokeStyle(2, equippedItem ? equippedItem.frameColor : 0x6d7d8a, equippedItem ? 1 : 0.95);
+            }
+            if (this.equipmentSlotGlows[key]) {
+                this.equipmentSlotGlows[key].setStrokeStyle(3, equippedItem ? equippedItem.frameColor : 0xffffff, equippedItem ? 0.45 : 0);
+            }
+            if (this.equipmentSlotLabels[key]) {
+                this.equipmentSlotLabels[key].setColor(equippedItem ? '#ffe08f' : '#9cb7c7');
             }
         });
 
         // Update character stats display
-        if (this.charStatsLine1 && this.charStatsLine2) {
+        if (this.characterStatTiles && this.charStatsFooter) {
             const p = this.player;
             const b = this.getCharacterStatBonuses();
-            this.charStatsLine1.setText(
-                `STR ${p.strength}  |  INT ${p.intelligence}  |  DEX ${p.dexterity}`
-            );
-            this.charStatsLine2.setText(
-                `+${b.physicalDamageBonus} Phys  +${b.armorBonus} Armor  |  +${b.magicDamageBonus} Mag  ${b.energyShield} ES  |  +${b.rangedDamageBonus} Rng  ${b.critChance.toFixed(0)}% Crit  ${b.evasionChance.toFixed(0)}% Eva`
-            );
+            this.characterStatTiles.strength.valueText.setText(String(p.strength));
+            this.characterStatTiles.strength.bonusText.setText(`+${b.physicalDamageBonus} DMG\n+${b.armorBonus} ARMOR`);
+
+            this.characterStatTiles.intelligence.valueText.setText(String(p.intelligence));
+            this.characterStatTiles.intelligence.bonusText.setText(`+${b.magicDamageBonus} MAGIC\n${b.energyShield} SHIELD`);
+
+            this.characterStatTiles.dexterity.valueText.setText(String(p.dexterity));
+            this.characterStatTiles.dexterity.bonusText.setText(`+${b.rangedDamageBonus} RANGED\n${b.critChance.toFixed(0)}% CRIT  ${b.evasionChance.toFixed(0)}% EVA`);
+
+            this.charStatsFooter.setText('Strength powers steel. Intelligence powers wards. Dexterity powers precision.');
         }
 
+        this.refreshEquipmentScreenAnimations();
         this.updateInventoryGridUI();
     }
 
@@ -2518,6 +2703,11 @@ class Match3Scene extends Phaser.Scene {
         this.inventoryModalIcon.setText(item.icon);
         this.inventoryModalName.setText(item.name);
         this.inventoryModalName.setColor(item.rarityTextColor || '#ffffff');
+        if (this.inventoryModalSlotBadge) {
+            this.inventoryModalSlotBadge.setText(`${this.getEmptySlotIcon(item.slotGroup === 'ring' ? 'ring1' : item.slotGroup)}  ${this.getSlotLabel(item.slotGroup)}`);
+            this.inventoryModalSlotBadge.setBackgroundColor(item.rarityTextColor || '#8bb7ff');
+            this.inventoryModalSlotBadge.setColor(item.rarity === 'Legendary' ? '#111111' : '#111111');
+        }
         this.inventoryModalType.setText(`iLvl ${item.itemLevel || 1} ${item.rarity}  |  ${this.getSlotLabel(item.slotGroup)}`);
         this.inventoryModalDesc.setText(item.description);
         this.inventoryModalStats.setText(statText || 'No bonus stats');
