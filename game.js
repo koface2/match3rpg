@@ -251,6 +251,13 @@ class Match3Scene extends Phaser.Scene {
         this.skillCharge = this.createInitialSkillCharge();
         this.skillChargeFxContainer = null;
 
+        this.lootMeter = 0;
+        this.lootMeterMax = 100;
+        this.lootMeterBarBg = null;
+        this.lootMeterBar = null;
+        this.lootMeterText = null;
+        this.lootMeterLabel = null;
+
         this.skillsScreenGroup = null;
         this.skillsActiveSlotUI = [];
         this.skillsInventoryGems = this.createSkillGemInventoryPool();
@@ -1279,12 +1286,13 @@ class Match3Scene extends Phaser.Scene {
         const gear = this.getEquippedStatTotals();
         const lootPower = this.player.loot + gear.loot;
         const tierShift = Math.floor(lootPower / 120);
+        const meterBonus = Math.floor(this.lootMeter / 20);
 
         const weights = {
-            Common: Math.max(10, 60 - tierShift * 5),
-            Magic: Math.min(45, 25 + tierShift * 2),
-            Rare: Math.min(35, 12 + tierShift * 2),
-            Legendary: Math.min(20, 3 + tierShift)
+            Common: Math.max(5, 60 - tierShift * 5 - meterBonus * 6),
+            Magic: Math.min(50, 25 + tierShift * 2 + meterBonus * 2),
+            Rare: Math.min(40, 12 + tierShift * 2 + meterBonus * 3),
+            Legendary: Math.min(25, 3 + tierShift + meterBonus * 2)
         };
 
         const weightedTable = ITEM_RARITIES.map(rarity => ({
@@ -1431,6 +1439,17 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.add(this.enemyHealthBarBg);
         this.enemyHealthBar = this.add.rectangle(210, 131, barW, 12, 0xff0000).setOrigin(0, 0.5);
         this.hudContainer.add(this.enemyHealthBar);
+        // --- Loot Meter (centered below panels) ---
+        const lmY = 162;
+        const lmW = 160;
+        const lmH = 10;
+        const lmX = (leftCX + rightCX) / 2;
+        this.hudContainer.add(this.add.text(lmX, lmY - 12, 'Loot Meter', { fontSize: '9px', color: '#ffd966', fontStyle: 'bold' }).setOrigin(0.5));
+        this.lootMeterBarBg = this.add.rectangle(lmX - lmW / 2, lmY, lmW, lmH, 0x333333).setOrigin(0, 0.5);
+        this.lootMeterBar = this.add.rectangle(lmX - lmW / 2, lmY, 0, lmH, 0xffd966).setOrigin(0, 0.5);
+        this.lootMeterText = this.add.text(lmX, lmY, '0%', { fontSize: '8px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.hudContainer.add([this.lootMeterBarBg, this.lootMeterBar, this.lootMeterText]);
+
         this.createEquipmentScreen();
         this.createSkillsScreen();
         this.createEquipmentButton(leftCX - 46, 210);
@@ -1536,7 +1555,8 @@ class Match3Scene extends Phaser.Scene {
 
         const gear = this.getEquippedStatTotals();
         const lootPower = this.player.loot + gear.loot;
-        this.rewardLootInfoText.setText(`Loot influence: ${lootPower} (higher value improves rarity)`);
+        const meterPct = Math.floor((this.lootMeter / this.lootMeterMax) * 100);
+        this.rewardLootInfoText.setText(`Loot Meter: ${meterPct}% | Loot stat: ${lootPower}`);
 
         this.rewardChoices = [];
         for (let i = 0; i < 3; i++) {
@@ -1614,6 +1634,7 @@ class Match3Scene extends Phaser.Scene {
     startNextBattle() {
         this.battleNumber += 1;
         this.skillCharge = this.createInitialSkillCharge();
+        this.lootMeter = 0;
         const monsterIndex = Phaser.Math.Between(0, MONSTER_AVATARS.length - 1);
         this.currentMonsterAvatar = MONSTER_AVATARS[monsterIndex];
         this.currentMonsterName = MONSTER_NAMES[monsterIndex];
@@ -2415,6 +2436,37 @@ class Match3Scene extends Phaser.Scene {
             });
             this.playerHealthBar.fillColor = targetColor;
         }
+
+        this.updateLootMeterUI();
+    }
+
+    addLootMeter(amount) {
+        this.lootMeter = Math.min(this.lootMeterMax, this.lootMeter + amount);
+        this.updateLootMeterUI();
+    }
+
+    updateLootMeterUI() {
+        if (!this.lootMeterBar) return;
+        const fraction = Phaser.Math.Clamp(this.lootMeter / this.lootMeterMax, 0, 1);
+        const targetWidth = 160 * fraction;
+        this.tweens.killTweensOf(this.lootMeterBar);
+        this.tweens.add({
+            targets: this.lootMeterBar,
+            width: targetWidth,
+            duration: 350,
+            ease: 'Power2'
+        });
+        const pct = Math.floor(fraction * 100);
+        if (this.lootMeterText) {
+            this.lootMeterText.setText(`${pct}%`);
+        }
+        if (pct >= 75) {
+            this.lootMeterBar.fillColor = 0xff7f11;
+        } else if (pct >= 40) {
+            this.lootMeterBar.fillColor = 0xffd166;
+        } else {
+            this.lootMeterBar.fillColor = 0xffd966;
+        }
     }
 
     updateEnemyUI() {
@@ -2762,7 +2814,7 @@ class Match3Scene extends Phaser.Scene {
         let magicDamage = 0;
         let rangedDamage = 0;
         let healAmount = 0;
-        let lootAmount = 0;
+        let lootMeterGain = 0;
         const matchCounts = {
             physical: 0,
             magic: 0,
@@ -2773,6 +2825,8 @@ class Match3Scene extends Phaser.Scene {
         const matchedTilesForEffects = [];
         const comboChargeSources = [];
 
+        // --- Regular tile clearing: only charge skills, no damage/heal ---
+        // Gold tiles charge the loot meter instead
         matches.forEach(match => {
             const [x, y] = match.split(',').map(Number);
             const tileType = this.grid[y][x];
@@ -2787,46 +2841,19 @@ class Match3Scene extends Phaser.Scene {
                 if (matchCounts[effect] !== undefined) {
                     matchCounts[effect] += 1;
                 }
-                switch (effect) {
-                    case 'physical':
-                        this.player.physical += 5;
-                        physicalDamage += 8 + gear.physical;
-                        totalEnemyDamage += 8 + gear.physical;
-                        break;
-                    case 'magic':
-                        this.player.magic += 5;
-                        magicDamage += 8 + gear.magic;
-                        totalEnemyDamage += 8 + gear.magic;
-                        break;
-                    case 'ranged':
-                        this.player.ranged += 5;
-                        rangedDamage += 8 + gear.ranged;
-                        totalEnemyDamage += 8 + gear.ranged;
-                        break;
-                    case 'health':
-                        healAmount += 10 + Math.floor(gear.health / 10);
-                        totalPlayerHeal += 10 + Math.floor(gear.health / 10);
-                        break;
-                    case 'loot':
-                        this.player.loot += 10;
-                        lootAmount += 10 + gear.loot;
-                        break;
+                // Gold tiles charge loot meter on any match (including 3s)
+                if (effect === 'loot') {
+                    lootMeterGain += 3;
                 }
             }
             this.grid[y][x] = -1;
             this.score += 10;
         });
 
+        // --- 4 and 5-row combos: crit damage / heal / loot boost ---
         comboRuns.forEach(run => {
             if (!run || !run.effect || !run.tiles || run.tiles.length === 0) return;
-
-            let bonusUnits = 0;
-            if (run.length === 4) {
-                bonusUnits = 2;
-            } else if (run.length >= 5) {
-                bonusUnits = 5 + ((run.length - 5) * 2);
-            }
-            if (bonusUnits <= 0) return;
+            if (run.length < 4) return;
 
             const center = run.tiles.reduce((acc, tile) => {
                 acc.x += GRID_OFFSET_X + tile.x * TILE_SIZE + TILE_SIZE / 2;
@@ -2836,50 +2863,76 @@ class Match3Scene extends Phaser.Scene {
             center.x /= run.tiles.length;
             center.y /= run.tiles.length;
 
-            this.spawnComboTierEffect(center.x, center.y, run.color, run.length, bonusUnits);
-            this.addCombatLog(
-                `${run.length >= 5 ? '5-Row' : '4-Row'} ${run.effect} bonus: +${bonusUnits}`,
-                this.toHexColor(run.color)
-            );
+            const is5 = run.length >= 5;
+            const critMultiplier = is5 ? 3.0 : 1.5;
+            const comboLabel = is5 ? '5-Row CRIT' : '4-Row CRIT';
+
+            switch (run.effect) {
+                case 'physical': {
+                    const baseDmg = 12 + gear.physical * 2;
+                    const critDmg = Math.floor(baseDmg * critMultiplier);
+                    physicalDamage += critDmg;
+                    totalEnemyDamage += critDmg;
+                    this.spawnComboTierEffect(center.x, center.y, run.color, run.length, critDmg);
+                    this.addCombatLog(`${comboLabel} ⚔️ Physical: ${critDmg}`, '#ff4444');
+                    break;
+                }
+                case 'magic': {
+                    const baseDmg = 14 + gear.magic * 2;
+                    const critDmg = Math.floor(baseDmg * critMultiplier);
+                    magicDamage += critDmg;
+                    totalEnemyDamage += critDmg;
+                    this.spawnComboTierEffect(center.x, center.y, run.color, run.length, critDmg);
+                    this.addCombatLog(`${comboLabel} 📖 Magic: ${critDmg}`, '#5a7aff');
+                    break;
+                }
+                case 'ranged': {
+                    const baseDmg = 10 + gear.ranged * 2;
+                    const critDmg = Math.floor(baseDmg * critMultiplier);
+                    rangedDamage += critDmg;
+                    totalEnemyDamage += critDmg;
+                    this.spawnComboTierEffect(center.x, center.y, run.color, run.length, critDmg);
+                    this.addCombatLog(`${comboLabel} 🏹 Ranged: ${critDmg}`, '#55ff55');
+                    break;
+                }
+                case 'health': {
+                    const baseHeal = 15 + Math.floor(gear.health / 5);
+                    const critHeal = Math.floor(baseHeal * critMultiplier);
+                    healAmount += critHeal;
+                    totalPlayerHeal += critHeal;
+                    this.spawnComboTierEffect(center.x, center.y, run.color, run.length, critHeal);
+                    this.addCombatLog(`${comboLabel} ♥ Heal: +${critHeal}`, '#ff69b4');
+                    break;
+                }
+                case 'loot': {
+                    const baseLoot = is5 ? 25 : 12;
+                    lootMeterGain += baseLoot;
+                    this.spawnComboTierEffect(center.x, center.y, run.color, run.length, baseLoot);
+                    this.addCombatLog(`${comboLabel} 🪙 Loot Meter +${baseLoot}`, '#ffd966');
+                    break;
+                }
+            }
+
+            // Bonus skill charge from combos
+            const bonusCharge = is5 ? 3 : 1;
+            if (matchCounts[run.effect] !== undefined) {
+                matchCounts[run.effect] += bonusCharge;
+            }
 
             comboChargeSources.push({
                 x: center.x,
                 y: center.y,
                 effect: run.effect,
                 color: run.color,
-                bonusUnits
+                bonusUnits: bonusCharge
             });
-
-            if (matchCounts[run.effect] !== undefined) {
-                matchCounts[run.effect] += bonusUnits;
-            }
-
-            switch (run.effect) {
-                case 'physical':
-                    this.player.physical += 5 * bonusUnits;
-                    physicalDamage += (8 + gear.physical) * bonusUnits;
-                    totalEnemyDamage += (8 + gear.physical) * bonusUnits;
-                    break;
-                case 'magic':
-                    this.player.magic += 5 * bonusUnits;
-                    magicDamage += (8 + gear.magic) * bonusUnits;
-                    totalEnemyDamage += (8 + gear.magic) * bonusUnits;
-                    break;
-                case 'ranged':
-                    this.player.ranged += 5 * bonusUnits;
-                    rangedDamage += (8 + gear.ranged) * bonusUnits;
-                    totalEnemyDamage += (8 + gear.ranged) * bonusUnits;
-                    break;
-                case 'health':
-                    healAmount += (10 + Math.floor(gear.health / 10)) * bonusUnits;
-                    totalPlayerHeal += (10 + Math.floor(gear.health / 10)) * bonusUnits;
-                    break;
-                case 'loot':
-                    this.player.loot += 10 * bonusUnits;
-                    lootAmount += (10 + gear.loot) * bonusUnits;
-                    break;
-            }
         });
+
+        // Apply loot meter gains
+        if (lootMeterGain > 0) {
+            this.addLootMeter(lootMeterGain);
+            this.addCombatLog(`Loot Meter +${lootMeterGain}`, '#ffd966');
+        }
 
         if (physicalDamage > 0) {
             this.addCombatLog(`Physical Damage: ${physicalDamage}`, '#ff0000');
@@ -2889,12 +2942,6 @@ class Match3Scene extends Phaser.Scene {
         }
         if (rangedDamage > 0) {
             this.addCombatLog(`Ranged Damage: ${rangedDamage}`, '#00ff00');
-        }
-        if (healAmount > 0) {
-            this.addCombatLog(`Healing: +${healAmount}`, '#ff1493');
-        }
-        if (lootAmount > 0) {
-            this.addCombatLog(`Gold gained: +${lootAmount}`, '#ffff00');
         }
 
         this.addSkillChargeFromMatches(matchCounts);
