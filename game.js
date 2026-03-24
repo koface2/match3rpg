@@ -185,6 +185,34 @@ const SUPPORT_SKILL_GEMS = [
     }
 ];
 
+// ---------------------------------------------------------------------------
+// Talent Tree — 9 nodes across Strength / Intelligence / Dexterity branches.
+// col/row are the original grid coordinates from the tree designer (used to
+// compute pixel positions on the talent screen).
+// prereqs: node IDs that must be allocated before this node unlocks.
+// deps:    additional dependency nodes whose paths must exist first.
+// ---------------------------------------------------------------------------
+const TALENT_TREE_NODES = [
+    { id: 1,  name: 'Strength',       icon: '⚔️', stat: 'strength',     amount: 3, shortDesc: '+3 STR',      col: 12, row: 5, prereqs: [],   deps: []   },
+    { id: 2,  name: 'Dexterity',      icon: '🏹', stat: 'dexterity',    amount: 3, shortDesc: '+3 DEX',      col: 13, row: 6, prereqs: [],   deps: []   },
+    { id: 3,  name: 'Intelligence',   icon: '📖', stat: 'intelligence', amount: 3, shortDesc: '+3 INT',      col: 11, row: 6, prereqs: [],   deps: []   },
+    { id: 11, name: 'Physical Dmg',   icon: '💥', stat: 'physical',     amount: 5, shortDesc: '+5 Physical', col: 12, row: 3, prereqs: [1],  deps: []   },
+    { id: 13, name: 'Strength II',    icon: '⚔️', stat: 'strength',     amount: 3, shortDesc: '+3 STR',      col: 12, row: 4, prereqs: [1],  deps: [11] },
+    { id: 14, name: 'Intelligence II',icon: '📖', stat: 'intelligence', amount: 3, shortDesc: '+3 INT',      col: 10, row: 7, prereqs: [3],  deps: [15] },
+    { id: 15, name: 'Magic Dmg',      icon: '✨', stat: 'magic',        amount: 5, shortDesc: '+5 Magic',    col:  9, row: 8, prereqs: [3],  deps: []   },
+    { id: 16, name: 'Ranged Dmg',     icon: '🎯', stat: 'ranged',       amount: 5, shortDesc: '+5 Ranged',  col: 15, row: 8, prereqs: [2],  deps: []   },
+    { id: 17, name: 'Dexterity II',   icon: '🏹', stat: 'dexterity',    amount: 3, shortDesc: '+3 DEX',      col: 14, row: 7, prereqs: [2],  deps: [16] }
+];
+
+const TALENT_TREE_CONNECTIONS = [
+    { from: 1,  to: 11 },
+    { from: 11, to: 13 },
+    { from: 3,  to: 15 },
+    { from: 15, to: 14 },
+    { from: 2,  to: 16 },
+    { from: 16, to: 17 }
+];
+
 class Match3Scene extends Phaser.Scene {
     constructor() {
         super('Match3Scene');
@@ -213,7 +241,8 @@ class Match3Scene extends Phaser.Scene {
                 ring1: 'None',
                 ring2: 'None',
                 necklace: 'None'
-            }
+            },
+            talentPoints: 0
         };
         this.enemy = {
             health: 200,
@@ -236,6 +265,10 @@ class Match3Scene extends Phaser.Scene {
         this.boardContainer = null;
         this.hudContainer = null;
         this.equipmentScreenGroup = null;
+        this.talentScreenGroup = null;
+        this.talentNodeUI = {};
+        this.talentPointsLabel = null;
+        this.talentConnectionGraphics = null;
         this.currentScreen = 'game';
         this.combatLogTexts = [];
         this.maxCombatLogLines = 3;
@@ -247,6 +280,8 @@ class Match3Scene extends Phaser.Scene {
         this.itemIdCounter = 0;
         this.inventory = this.generateStarterInventory();
         this.equippedItems = {};
+        this.allocatedTalents = new Set();
+        this.talentStatBonuses = { physical: 0, magic: 0, ranged: 0 };
         this.inventoryTiles = [];
         this.selectedInventoryItem = null;
         this.selectedItemSource = null;
@@ -1326,6 +1361,12 @@ class Match3Scene extends Phaser.Scene {
             });
         });
 
+        if (this.talentStatBonuses) {
+            Object.entries(this.talentStatBonuses).forEach(([stat, bonus]) => {
+                if (bonus > 0 && totals[stat] !== undefined) totals[stat] += bonus;
+            });
+        }
+
         return totals;
     }
 
@@ -1753,8 +1794,10 @@ class Match3Scene extends Phaser.Scene {
 
         this.createEquipmentScreen();
         this.createSkillsScreen();
+        this.createTalentScreen();
         this.createEquipmentButton(leftCX - 46, 210);
         this.createSkillsButton(leftCX + 46, 210);
+        this.createTalentButton(rightCX - 46, 210);
 
         this.updatePlayerUI();
         this.updateEnemyUI();
@@ -1850,6 +1893,7 @@ class Match3Scene extends Phaser.Scene {
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
         if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
+        if (this.talentScreenGroup) this.talentScreenGroup.setVisible(false);
         this.rewardScreenGroup.setVisible(true);
         this.setGameBoardActive(false);
         this.closeInventoryItemPopup();
@@ -1970,8 +2014,10 @@ class Match3Scene extends Phaser.Scene {
         this.updateEnemyUI();
 
         this.isSwapping = false;
+        this.player.talentPoints += 1;
         this.showGameScreen();
         this.addCombatLog(`A new enemy appears: ${this.currentMonsterName} (Battle ${this.battleNumber})`, '#ffcc66');
+        this.addCombatLog(`Talent point earned! (${this.player.talentPoints} available)`, '#ffd700');
     }
 
     createEquipmentButton(x, y) {
@@ -1999,6 +2045,224 @@ class Match3Scene extends Phaser.Scene {
 
         this.skillsButton.on('pointerup', () => {
             this.showSkillsScreen();
+        });
+    }
+
+    createTalentButton(x, y) {
+        this.talentButton = this.add.text(x, y, 'Talents', {
+            fontSize: '14px',
+            color: '#ffd700',
+            backgroundColor: '#333333',
+            padding: { left: 8, right: 8, top: 4, bottom: 4 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        this.hudContainer.add(this.talentButton);
+        this.talentButton.on('pointerup', () => {
+            this.showTalentScreen();
+        });
+    }
+
+    showTalentScreen() {
+        this.currentScreen = 'talents';
+        this.armedEquipGem = null;
+        this.closeSkillGemPopup();
+        this.closeInventoryItemPopup();
+        if (this.talentScreenGroup) this.talentScreenGroup.setVisible(true);
+        if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
+        if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
+        if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
+        this.boardContainer.setVisible(false);
+        this.hudContainer.setVisible(false);
+        if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
+        this.setGameBoardActive(false);
+        this.refreshTalentScreenUI();
+    }
+
+    getTalentNodeScreenPos(node) {
+        if (!node) return { x: 0, y: 0 };
+        return {
+            x: 39 + (node.col - 9) * 52,
+            y: 115 + (node.row - 3) * 70
+        };
+    }
+
+    isTalentAvailable(node) {
+        if (!node) return false;
+        return node.prereqs.every(id => this.allocatedTalents.has(id))
+            && node.deps.every(id => this.allocatedTalents.has(id));
+    }
+
+    allocateTalent(nodeId) {
+        const node = TALENT_TREE_NODES.find(n => n.id === nodeId);
+        if (!node) return;
+
+        if (this.allocatedTalents.has(nodeId)) {
+            this.addCombatLog(`${node.name} already learned.`, '#888888');
+            return;
+        }
+
+        if (!this.isTalentAvailable(node)) {
+            const missingIds = [...node.prereqs, ...node.deps].filter(id => !this.allocatedTalents.has(id));
+            const missingNames = missingIds.map(id => {
+                const n = TALENT_TREE_NODES.find(n2 => n2.id === id);
+                return n ? n.name : '?';
+            });
+            this.addCombatLog(`Requires: ${missingNames.join(', ')}`, '#ff8888');
+            return;
+        }
+
+        if (this.player.talentPoints <= 0) {
+            this.addCombatLog('No talent points — defeat an enemy to earn one!', '#ff8888');
+            return;
+        }
+
+        this.player.talentPoints -= 1;
+        this.allocatedTalents.add(nodeId);
+
+        if (node.stat === 'strength' || node.stat === 'intelligence' || node.stat === 'dexterity') {
+            this.player[node.stat] = (this.player[node.stat] || 0) + node.amount;
+        } else {
+            this.talentStatBonuses[node.stat] = (this.talentStatBonuses[node.stat] || 0) + node.amount;
+        }
+
+        this.addCombatLog(`Learned ${node.name}! ${node.shortDesc}`, '#ffd700');
+        this.refreshTalentScreenUI();
+    }
+
+    createTalentScreen() {
+        const width = this.sys.game.config.width;
+        const height = this.sys.game.config.height;
+
+        this.talentScreenGroup = this.add.container(0, 0).setVisible(false);
+
+        const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x080810, 1);
+        const panel = this.add.rectangle(width / 2, height / 2, width - 10, height - 10, 0x0e0e1a, 1)
+            .setStrokeStyle(2, 0xffd700, 0.8);
+
+        const title = this.add.text(width / 2, 28, 'Talent Tree', {
+            fontSize: '22px', color: '#ffd700', fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        const subtitle = this.add.text(width / 2, 52, 'Tap a node to allocate a talent point', {
+            fontSize: '11px', color: '#b8a860'
+        }).setOrigin(0.5);
+
+        this.talentPointsLabel = this.add.text(width / 2, 74, 'Points: 0', {
+            fontSize: '14px', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        const backBtn = this.add.text(12, 10, '← Back', {
+            fontSize: '14px', color: '#00ffcc', backgroundColor: '#1a1a2e',
+            padding: { left: 8, right: 8, top: 4, bottom: 4 }
+        }).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+        backBtn.on('pointerup', () => this.showGameScreen());
+
+        this.talentScreenGroup.add([bg, panel, title, subtitle, this.talentPointsLabel, backBtn]);
+
+        // Graphics layer for connection lines (drawn below nodes)
+        this.talentConnectionGraphics = this.add.graphics();
+        this.talentScreenGroup.add(this.talentConnectionGraphics);
+
+        // Build node UI elements
+        this.talentNodeUI = {};
+        const nodeRadius = 26;
+
+        TALENT_TREE_NODES.forEach(node => {
+            const { x, y } = this.getTalentNodeScreenPos(node);
+
+            const glow = this.add.circle(x, y, nodeRadius + 8, 0xffd700, 0.12).setAlpha(0);
+            const circle = this.add.circle(x, y, nodeRadius, 0x111122, 1)
+                .setStrokeStyle(2, 0x333355, 1)
+                .setInteractive({ useHandCursor: true });
+
+            const iconText = this.add.text(x, y - 5, node.icon, { fontSize: '18px' }).setOrigin(0.5);
+
+            const nameText = this.add.text(x, y + nodeRadius + 4, node.name, {
+                fontSize: '9px', color: '#888899', align: 'center',
+                wordWrap: { width: 68, useAdvancedWrap: true }
+            }).setOrigin(0.5, 0);
+
+            const effectText = this.add.text(x, y + nodeRadius + 17, node.shortDesc, {
+                fontSize: '8px', color: '#666677', align: 'center'
+            }).setOrigin(0.5, 0);
+
+            circle.on('pointerup', () => this.allocateTalent(node.id));
+
+            this.talentNodeUI[node.id] = { circle, glow, iconText, nameText, effectText };
+            this.talentScreenGroup.add([glow, circle, iconText, nameText, effectText]);
+        });
+
+        this.refreshTalentScreenUI();
+    }
+
+    refreshTalentScreenUI() {
+        if (!this.talentScreenGroup) return;
+
+        if (this.talentPointsLabel) {
+            const pts = this.player.talentPoints;
+            this.talentPointsLabel.setText(`Talent Points: ${pts}`);
+            this.talentPointsLabel.setColor(pts > 0 ? '#ffd700' : '#888888');
+        }
+
+        // Redraw connection lines
+        if (this.talentConnectionGraphics) {
+            this.talentConnectionGraphics.clear();
+            TALENT_TREE_CONNECTIONS.forEach(conn => {
+                const fromNode = TALENT_TREE_NODES.find(n => n.id === conn.from);
+                const toNode   = TALENT_TREE_NODES.find(n => n.id === conn.to);
+                if (!fromNode || !toNode) return;
+                const fp = this.getTalentNodeScreenPos(fromNode);
+                const tp = this.getTalentNodeScreenPos(toNode);
+                const fromAlloc = this.allocatedTalents.has(conn.from);
+                const toAlloc   = this.allocatedTalents.has(conn.to);
+                const color = (fromAlloc && toAlloc) ? 0xffd700
+                            : (fromAlloc || toAlloc) ? 0x887733
+                            : 0x2a2a3a;
+                const alpha = (fromAlloc && toAlloc) ? 0.9
+                            : (fromAlloc || toAlloc) ? 0.55
+                            : 0.3;
+                this.talentConnectionGraphics.lineStyle(3, color, alpha);
+                this.talentConnectionGraphics.beginPath();
+                this.talentConnectionGraphics.moveTo(fp.x, fp.y);
+                this.talentConnectionGraphics.lineTo(tp.x, tp.y);
+                this.talentConnectionGraphics.strokePath();
+            });
+        }
+
+        // Update node visuals
+        Object.entries(this.talentNodeUI).forEach(([idStr, ui]) => {
+            const nodeId = parseInt(idStr);
+            const node = TALENT_TREE_NODES.find(n => n.id === nodeId);
+            if (!node || !ui) return;
+
+            const isAllocated  = this.allocatedTalents.has(nodeId);
+            const isUnlockable = !isAllocated && this.isTalentAvailable(node);
+            const isAvailable  = isUnlockable && this.player.talentPoints > 0;
+
+            if (isAllocated) {
+                ui.circle.setFillStyle(0x2e2200, 1).setStrokeStyle(2, 0xffd700, 1);
+                ui.glow.setAlpha(0.5);
+                ui.iconText.setAlpha(1);
+                ui.nameText.setColor('#ffd700');
+                ui.effectText.setColor('#ccaa44');
+            } else if (isAvailable) {
+                ui.circle.setFillStyle(0x142035, 1).setStrokeStyle(2, 0x6699ff, 1);
+                ui.glow.setAlpha(0.25);
+                ui.iconText.setAlpha(1);
+                ui.nameText.setColor('#88aaff');
+                ui.effectText.setColor('#6677bb');
+            } else if (isUnlockable) {
+                ui.circle.setFillStyle(0x101a28, 1).setStrokeStyle(2, 0x334466, 1);
+                ui.glow.setAlpha(0);
+                ui.iconText.setAlpha(0.65);
+                ui.nameText.setColor('#556688');
+                ui.effectText.setColor('#3a4455');
+            } else {
+                ui.circle.setFillStyle(0x0a0a15, 1).setStrokeStyle(2, 0x222233, 1);
+                ui.glow.setAlpha(0);
+                ui.iconText.setAlpha(0.3);
+                ui.nameText.setColor('#333344');
+                ui.effectText.setColor('#222233');
+            }
         });
     }
 
@@ -2636,6 +2900,7 @@ class Match3Scene extends Phaser.Scene {
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(true);
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
         if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
+        if (this.talentScreenGroup) this.talentScreenGroup.setVisible(false);
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
@@ -2650,6 +2915,7 @@ class Match3Scene extends Phaser.Scene {
         if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(true);
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
+        if (this.talentScreenGroup) this.talentScreenGroup.setVisible(false);
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
@@ -2664,6 +2930,7 @@ class Match3Scene extends Phaser.Scene {
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
         if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
+        if (this.talentScreenGroup) this.talentScreenGroup.setVisible(false);
         this.closeInventoryItemPopup();
         this.boardContainer.setVisible(true);
         this.hudContainer.setVisible(true);
