@@ -197,6 +197,9 @@ class Match3Scene extends Phaser.Scene {
             magic: 0,
             ranged: 0,
             loot: 0,
+            strength: 10,
+            intelligence: 10,
+            dexterity: 10,
             equipment: {
                 helmet: 'None',
                 chest: 'None',
@@ -1107,9 +1110,15 @@ class Match3Scene extends Phaser.Scene {
             .map(id => this.getSupportGemById(id))
             .filter(Boolean);
 
+        const charBonuses = this.getCharacterStatBonuses();
+        let statBonus = 0;
+        if (activeSkill.scalingStat === 'physical') statBonus = charBonuses.physicalDamageBonus;
+        else if (activeSkill.scalingStat === 'magic') statBonus = charBonuses.magicDamageBonus;
+        else if (activeSkill.scalingStat === 'ranged') statBonus = charBonuses.rangedDamageBonus;
+
         const statScale = activeSkill.scalingStat === 'health'
             ? Math.floor((gear.health || 0) / 10)
-            : Math.floor((gear[activeSkill.scalingStat] || 0) * 0.75);
+            : Math.floor((gear[activeSkill.scalingStat] || 0) * 0.75) + statBonus;
 
         const overChargeBonus = Math.max(0, availableCharge - threshold) * 0.1;
         const supportMultiplier = supports.reduce((mult, gem) => mult + (gem.powerMultiplier || 0), 1);
@@ -1239,6 +1248,21 @@ class Match3Scene extends Phaser.Scene {
         });
 
         return totals;
+    }
+
+    getCharacterStatBonuses() {
+        const str = this.player.strength;
+        const int = this.player.intelligence;
+        const dex = this.player.dexterity;
+        return {
+            physicalDamageBonus: Math.floor(str / 2),
+            armorBonus: Math.floor(str / 3),
+            magicDamageBonus: Math.floor(int / 2),
+            energyShield: Math.floor(int * 1.5),
+            rangedDamageBonus: Math.floor(dex / 2),
+            critChance: Math.min(75, dex * 0.5),
+            evasionChance: Math.min(50, dex * 0.5)
+        };
     }
 
     getRarityByName(name) {
@@ -2204,6 +2228,13 @@ class Match3Scene extends Phaser.Scene {
             warriorGlyph
         ]);
 
+        // Character stats display
+        const statsY = splitY - 30;
+        const statsHeaderText = this.add.text(topCenterX, statsY - 14, 'Character Stats', { fontSize: '10px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
+        this.charStatsLine1 = this.add.text(topCenterX, statsY + 2, '', { fontSize: '11px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.charStatsLine2 = this.add.text(topCenterX, statsY + 16, '', { fontSize: '9px', color: '#aaaaaa' }).setOrigin(0.5);
+        this.equipmentScreenGroup.add([statsHeaderText, this.charStatsLine1, this.charStatsLine2]);
+
         const slotConfig = [
             { key: 'helmet', label: 'Helmet', x: topCenterX, y: topPanelTopY + 28 },
             { key: 'necklace', label: 'Necklace', x: topCenterX, y: topPanelTopY + 82 },
@@ -2430,6 +2461,18 @@ class Match3Scene extends Phaser.Scene {
                 this.equipmentSlotFrames[key].setStrokeStyle(2, equippedItem ? equippedItem.frameColor : 0xffffff, 1);
             }
         });
+
+        // Update character stats display
+        if (this.charStatsLine1 && this.charStatsLine2) {
+            const p = this.player;
+            const b = this.getCharacterStatBonuses();
+            this.charStatsLine1.setText(
+                `STR ${p.strength}  |  INT ${p.intelligence}  |  DEX ${p.dexterity}`
+            );
+            this.charStatsLine2.setText(
+                `+${b.physicalDamageBonus} Phys  +${b.armorBonus} Armor  |  +${b.magicDamageBonus} Mag  ${b.energyShield} ES  |  +${b.rangedDamageBonus} Rng  ${b.critChance.toFixed(0)}% Crit  ${b.evasionChance.toFixed(0)}% Eva`
+            );
+        }
 
         this.updateInventoryGridUI();
     }
@@ -3015,10 +3058,16 @@ class Match3Scene extends Phaser.Scene {
             const critMultiplier = is5 ? 3.0 : 1.5;
             const comboLabel = is5 ? '5-Row CRIT' : '4-Row CRIT';
 
+            const charBonuses = this.getCharacterStatBonuses();
+
             switch (run.effect) {
                 case 'physical': {
-                    const baseDmg = 12 + gear.physical * 2;
-                    const critDmg = Math.floor(baseDmg * critMultiplier);
+                    const baseDmg = 12 + gear.physical * 2 + charBonuses.physicalDamageBonus;
+                    let critDmg = Math.floor(baseDmg * critMultiplier);
+                    if (Math.random() * 100 < charBonuses.critChance) {
+                        critDmg = Math.floor(critDmg * 1.5);
+                        this.addCombatLog(`CRIT! (DEX)`, '#ffff00');
+                    }
                     physicalDamage += critDmg;
                     totalEnemyDamage += critDmg;
                     this.spawnComboTierEffect(center.x, center.y, run.color, run.length, critDmg);
@@ -3026,8 +3075,12 @@ class Match3Scene extends Phaser.Scene {
                     break;
                 }
                 case 'magic': {
-                    const baseDmg = 14 + gear.magic * 2;
-                    const critDmg = Math.floor(baseDmg * critMultiplier);
+                    const baseDmg = 14 + gear.magic * 2 + charBonuses.magicDamageBonus;
+                    let critDmg = Math.floor(baseDmg * critMultiplier);
+                    if (Math.random() * 100 < charBonuses.critChance) {
+                        critDmg = Math.floor(critDmg * 1.5);
+                        this.addCombatLog(`CRIT! (DEX)`, '#ffff00');
+                    }
                     magicDamage += critDmg;
                     totalEnemyDamage += critDmg;
                     this.spawnComboTierEffect(center.x, center.y, run.color, run.length, critDmg);
@@ -3035,8 +3088,12 @@ class Match3Scene extends Phaser.Scene {
                     break;
                 }
                 case 'ranged': {
-                    const baseDmg = 10 + gear.ranged * 2;
-                    const critDmg = Math.floor(baseDmg * critMultiplier);
+                    const baseDmg = 10 + gear.ranged * 2 + charBonuses.rangedDamageBonus;
+                    let critDmg = Math.floor(baseDmg * critMultiplier);
+                    if (Math.random() * 100 < charBonuses.critChance) {
+                        critDmg = Math.floor(critDmg * 1.5);
+                        this.addCombatLog(`CRIT! (DEX)`, '#ffff00');
+                    }
                     rangedDamage += critDmg;
                     totalEnemyDamage += critDmg;
                     this.spawnComboTierEffect(center.x, center.y, run.color, run.length, critDmg);
@@ -3239,11 +3296,32 @@ class Match3Scene extends Phaser.Scene {
     enemyAttack() {
         if (this.enemy.health <= 0 || this.awaitingRewardChoice) return;
         const gear = this.getEquippedStatTotals();
+        const charBonuses = this.getCharacterStatBonuses();
+
+        // Evasion check (DEX)
+        if (Math.random() * 100 < charBonuses.evasionChance) {
+            this.addCombatLog(`Evaded enemy attack! (${charBonuses.evasionChance.toFixed(0)}% evasion)`, '#00ffcc');
+            this.showCombatMessage('EVADE!', '#00ffcc', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20);
+            this.updatePlayerUI();
+            return;
+        }
+
         const damage = this.enemy.attack;
-        const mitigatedDamage = Math.max(1, damage - Math.floor(gear.armor / 3));
+        const totalArmor = gear.armor + charBonuses.armorBonus;
+        const armorReduction = Math.floor(totalArmor / 3);
+        let mitigatedDamage = Math.max(1, damage - armorReduction);
+
+        // Energy shield absorbs damage first (INT)
+        let shieldAbsorbed = 0;
+        if (charBonuses.energyShield > 0 && mitigatedDamage > 0) {
+            shieldAbsorbed = Math.min(mitigatedDamage, Math.floor(charBonuses.energyShield * 0.3));
+            mitigatedDamage -= shieldAbsorbed;
+        }
+
         this.player.health -= mitigatedDamage;
         if (this.player.health < 0) this.player.health = 0;
-        this.addCombatLog(`Enemy Attack: -${mitigatedDamage} (${Math.floor(gear.armor / 3)} blocked)`, '#ff6666');
+        const shieldMsg = shieldAbsorbed > 0 ? `, ${shieldAbsorbed} shielded` : '';
+        this.addCombatLog(`Enemy Attack: -${mitigatedDamage} (${armorReduction} blocked${shieldMsg})`, '#ff6666');
         this.showCombatMessage(`Hero -${mitigatedDamage}`, '#ff4444', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20);
         this.updatePlayerUI();
         if (this.player.health <= 0) {
