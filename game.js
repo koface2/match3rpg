@@ -29,7 +29,9 @@ const ITEM_BASES = [
     { slotGroup: 'gloves', type: 'Gloves', baseName: 'Gauntlets', icon: '🧤', description: 'Grip and control for weapon handling.', baseStats: { physical: 2 } },
     { slotGroup: 'boots', type: 'Boots', baseName: 'Greaves', icon: '🥾', description: 'Footwear built for stability and speed.', baseStats: { ranged: 2, armor: 1 } },
     { slotGroup: 'belt', type: 'Belt', baseName: 'Warbelt', icon: '🧷', description: 'Carries supplies and reinforces stance.', baseStats: { health: 8 } },
-    { slotGroup: 'mainhand', type: 'Weapon', baseName: 'Blade', icon: '🗡️', description: 'Main offensive weapon.', baseStats: { physical: 4 } },
+    { slotGroup: 'mainhand', type: 'Sword', baseName: 'Longsword', icon: '⚔️', description: 'A balanced blade that excels at physical damage.', baseStats: { physical: 5 }, weaponClass: 'sword' },
+    { slotGroup: 'mainhand', type: 'Wand', baseName: 'Wand', icon: '🪄', description: 'A conduit for arcane force and focused spellcraft.', baseStats: { magic: 5 }, weaponClass: 'wand' },
+    { slotGroup: 'mainhand', type: 'Bow', baseName: 'Longbow', icon: '🏹', description: 'A two-handed bow tuned for ranged damage.', baseStats: { ranged: 6 }, weaponClass: 'bow', twoHanded: true },
     { slotGroup: 'offhand', type: 'Shield', baseName: 'Buckler', icon: '🛡️', description: 'Defensive off-hand protector.', baseStats: { armor: 4 } },
     { slotGroup: 'ring', type: 'Ring', baseName: 'Band', icon: '💍', description: 'A ring that channels focused power.', baseStats: { magic: 2 } },
     { slotGroup: 'necklace', type: 'Necklace', baseName: 'Amulet', icon: '📿', description: 'Necklace etched with ancient sigils.', baseStats: { magic: 3, ranged: 1 } }
@@ -1462,6 +1464,8 @@ class Match3Scene extends Phaser.Scene {
             name: itemName,
             slotGroup: base.slotGroup,
             type: base.type,
+            weaponClass: base.weaponClass || null,
+            twoHanded: !!base.twoHanded,
             rarity: rarity.name,
             itemLevel,
             icon: base.icon,
@@ -1653,6 +1657,55 @@ class Match3Scene extends Phaser.Scene {
         if (!item || !targetSlot) return false;
         const requiredGroup = EQUIPMENT_SLOT_GROUP_BY_KEY[targetSlot];
         return requiredGroup === item.slotGroup;
+    }
+
+    isTwoHandedItem(item) {
+        return !!(item && item.slotGroup === 'mainhand' && item.twoHanded);
+    }
+
+    getDisplacedItemsForEquip(item, targetSlot) {
+        if (!item || !targetSlot) return [];
+
+        if (targetSlot !== 'mainhand' && targetSlot !== 'offhand') {
+            const existing = this.equippedItems[targetSlot] || null;
+            return existing ? [{ slotKey: targetSlot, item: existing }] : [];
+        }
+
+        const displaced = [];
+        const mainhandItem = this.equippedItems.mainhand || null;
+        const offhandItem = this.equippedItems.offhand || null;
+
+        if (targetSlot === 'mainhand') {
+            if (mainhandItem) displaced.push({ slotKey: 'mainhand', item: mainhandItem });
+            if (this.isTwoHandedItem(item) && offhandItem) displaced.push({ slotKey: 'offhand', item: offhandItem });
+            return displaced;
+        }
+
+        if (offhandItem) displaced.push({ slotKey: 'offhand', item: offhandItem });
+        if (mainhandItem && this.isTwoHandedItem(mainhandItem)) {
+            displaced.push({ slotKey: 'mainhand', item: mainhandItem });
+        }
+        return displaced;
+    }
+
+    canStoreDisplacedItems(displacedItems, inventorySlotsFreed = 0) {
+        const freed = Math.max(0, inventorySlotsFreed);
+        return (this.inventory.length - freed + displacedItems.length) <= this.maxInventorySlots;
+    }
+
+    applyEquippedItemToSlot(item, targetSlot) {
+        this.player.equipment[targetSlot] = item.name;
+        this.equippedItems[targetSlot] = item;
+
+        if (targetSlot === 'mainhand' && this.isTwoHandedItem(item)) {
+            this.player.equipment.offhand = 'Occupied by Bow';
+            this.equippedItems.offhand = null;
+        }
+    }
+
+    clearEquippedSlot(slotKey) {
+        this.equippedItems[slotKey] = null;
+        this.player.equipment[slotKey] = 'None';
     }
 
     createPlayerUI() {
@@ -1849,16 +1902,23 @@ class Match3Scene extends Phaser.Scene {
             this.addCombatLog(`Cannot equip ${item.name}: invalid slot`, '#ff8888');
             return;
         }
-        const previousEquippedItem = this.equippedItems[targetSlot] || null;
-
-        if (previousEquippedItem) {
-            this.addItemToInventory(previousEquippedItem);
+        const displacedItems = this.getDisplacedItemsForEquip(item, targetSlot);
+        if (!this.canStoreDisplacedItems(displacedItems)) {
+            this.addCombatLog('Not enough inventory space to swap gear.', '#ff8888');
+            return;
         }
 
-        this.player.equipment[targetSlot] = item.name;
-        this.equippedItems[targetSlot] = item;
+        for (let i = 0; i < displacedItems.length; i++) {
+            const displaced = displacedItems[i];
+            if (displaced && displaced.item) {
+                this.addItemToInventory(displaced.item);
+                this.clearEquippedSlot(displaced.slotKey);
+            }
+        }
+
+        this.applyEquippedItemToSlot(item, targetSlot);
         this.updateEquipmentScreen();
-        this.addCombatLog(`Equipped ${item.name} in ${targetSlot}`, '#99ff99');
+        this.addCombatLog(`Equipped ${item.name} in ${targetSlot}${this.isTwoHandedItem(item) ? ' (2H)' : ''}`, '#99ff99');
     }
 
     claimRewardItem(item, destination) {
@@ -2375,10 +2435,10 @@ class Match3Scene extends Phaser.Scene {
             { key: 'helmet', label: 'Helmet', x: topCenterX, y: topPanelTopY + 28 },
             { key: 'necklace', label: 'Necklace', x: topCenterX - 84, y: topPanelTopY + 80 },
             { key: 'mainhand', label: 'Main Hand', x: topCenterX - 108, y: topPanelTopY + 134 },
-            { key: 'chest', label: 'Chest', x: topCenterX, y: topPanelTopY + 138 },
+            { key: 'chest', label: 'Chest', x: topCenterX, y: topPanelTopY + 126 },
             { key: 'offhand', label: 'Off Hand', x: topCenterX + 108, y: topPanelTopY + 134 },
             { key: 'gloves', label: 'Gloves', x: topCenterX - 108, y: topPanelTopY + 196 },
-            { key: 'belt', label: 'Belt', x: topCenterX, y: topPanelTopY + 196 },
+            { key: 'belt', label: 'Belt', x: topCenterX, y: topPanelTopY + 184 },
             { key: 'ring1', label: 'Ring 1', x: topCenterX + 108, y: topPanelTopY + 196 },
             { key: 'ring2', label: 'Ring 2', x: topCenterX + 138, y: topPanelTopY + 236 },
             { key: 'boots', label: 'Boots', x: topCenterX, y: topPanelTopY + 236 }
@@ -2616,29 +2676,50 @@ class Match3Scene extends Phaser.Scene {
 
         Object.entries(this.player.equipment).forEach(([key, value]) => {
             const equippedItem = this.equippedItems[key] || null;
+            const offhandBlockedByBow = key === 'offhand' && this.isTwoHandedItem(this.equippedItems.mainhand || null);
             if (this.equipmentText[key]) {
-                this.equipmentText[key].setText(value === 'None' ? '' : value);
-                this.equipmentText[key].setColor(equippedItem ? (equippedItem.rarityTextColor || '#ffffff') : '#94a1ab');
+                const slotText = offhandBlockedByBow ? 'Occupied by Bow' : value;
+                this.equipmentText[key].setText(slotText === 'None' ? '' : slotText);
+                this.equipmentText[key].setColor(
+                    offhandBlockedByBow
+                        ? '#d7e26f'
+                        : (equippedItem ? (equippedItem.rarityTextColor || '#ffffff') : '#94a1ab')
+                );
             }
             if (this.equipmentIconText[key]) {
-                this.equipmentIconText[key].setText(equippedItem ? equippedItem.icon : '');
+                this.equipmentIconText[key].setText(offhandBlockedByBow ? '🏹' : (equippedItem ? equippedItem.icon : ''));
             }
             if (this.equipmentSlotFrames[key]) {
-                this.equipmentSlotFrames[key].setStrokeStyle(2, equippedItem ? equippedItem.frameColor : 0x8ea2b3, equippedItem ? 1 : 0.8);
+                this.equipmentSlotFrames[key].setStrokeStyle(
+                    2,
+                    offhandBlockedByBow ? 0xd0e060 : (equippedItem ? equippedItem.frameColor : 0x8ea2b3),
+                    offhandBlockedByBow ? 1 : (equippedItem ? 1 : 0.8)
+                );
             }
             if (this.equipmentSlotGhostIcons[key]) {
-                this.equipmentSlotGhostIcons[key].setVisible(!equippedItem);
+                this.equipmentSlotGhostIcons[key].setVisible(!equippedItem && !offhandBlockedByBow);
             }
             if (this.equipmentSlotShells[key]) {
                 this.equipmentSlotShells[key]
-                    .setFillStyle(equippedItem ? 0x2d3640 : 0x26303a, equippedItem ? 0.98 : 0.9)
-                    .setStrokeStyle(2, equippedItem ? equippedItem.frameColor : 0x6d7d8a, equippedItem ? 1 : 0.95);
+                    .setFillStyle(
+                        offhandBlockedByBow ? 0x334022 : (equippedItem ? 0x2d3640 : 0x26303a),
+                        offhandBlockedByBow ? 0.95 : (equippedItem ? 0.98 : 0.9)
+                    )
+                    .setStrokeStyle(
+                        2,
+                        offhandBlockedByBow ? 0xd0e060 : (equippedItem ? equippedItem.frameColor : 0x6d7d8a),
+                        offhandBlockedByBow ? 1 : (equippedItem ? 1 : 0.95)
+                    );
             }
             if (this.equipmentSlotGlows[key]) {
-                this.equipmentSlotGlows[key].setStrokeStyle(3, equippedItem ? equippedItem.frameColor : 0xffffff, equippedItem ? 0.45 : 0);
+                this.equipmentSlotGlows[key].setStrokeStyle(
+                    3,
+                    offhandBlockedByBow ? 0xd0e060 : (equippedItem ? equippedItem.frameColor : 0xffffff),
+                    offhandBlockedByBow ? 0.35 : (equippedItem ? 0.45 : 0)
+                );
             }
             if (this.equipmentSlotLabels[key]) {
-                this.equipmentSlotLabels[key].setColor(equippedItem ? '#ffe08f' : '#9cb7c7');
+                this.equipmentSlotLabels[key].setColor(offhandBlockedByBow ? '#eaf79b' : (equippedItem ? '#ffe08f' : '#9cb7c7'));
             }
         });
 
@@ -2708,7 +2789,8 @@ class Match3Scene extends Phaser.Scene {
             this.inventoryModalSlotBadge.setBackgroundColor(item.rarityTextColor || '#8bb7ff');
             this.inventoryModalSlotBadge.setColor(item.rarity === 'Legendary' ? '#111111' : '#111111');
         }
-        this.inventoryModalType.setText(`iLvl ${item.itemLevel || 1} ${item.rarity}  |  ${this.getSlotLabel(item.slotGroup)}`);
+        const handlingLabel = item.twoHanded ? '  |  Two-Handed' : '';
+        this.inventoryModalType.setText(`iLvl ${item.itemLevel || 1} ${item.rarity}  |  ${this.getSlotLabel(item.slotGroup)}${handlingLabel}`);
         this.inventoryModalDesc.setText(item.description);
         this.inventoryModalStats.setText(statText || 'No bonus stats');
         if (this.inventoryModalEquipBtn) {
@@ -2739,7 +2821,13 @@ class Match3Scene extends Phaser.Scene {
             this.closeInventoryItemPopup();
             return;
         }
-        const previousEquippedItem = this.equippedItems[targetSlot] || null;
+        const displacedItems = this.getDisplacedItemsForEquip(item, targetSlot);
+        if (!this.canStoreDisplacedItems(displacedItems, 1)) {
+            this.addCombatLog('Not enough inventory space to swap gear.', '#ff8888');
+            this.closeInventoryItemPopup();
+            return;
+        }
+
         const inventoryIndex = this.inventory.findIndex(inventoryItem => inventoryItem.id === item.id);
 
         if (inventoryIndex === -1) {
@@ -2748,14 +2836,17 @@ class Match3Scene extends Phaser.Scene {
         }
 
         this.inventory.splice(inventoryIndex, 1);
-        if (previousEquippedItem) {
-            this.inventory.push(previousEquippedItem);
+        for (let i = 0; i < displacedItems.length; i++) {
+            const displaced = displacedItems[i];
+            if (displaced && displaced.item) {
+                this.inventory.push(displaced.item);
+                this.clearEquippedSlot(displaced.slotKey);
+            }
         }
 
-        this.player.equipment[targetSlot] = item.name;
-        this.equippedItems[targetSlot] = item;
+        this.applyEquippedItemToSlot(item, targetSlot);
         this.updateEquipmentScreen();
-        this.addCombatLog(`Equipped ${item.name} in ${targetSlot}`, '#99ff99');
+        this.addCombatLog(`Equipped ${item.name} in ${targetSlot}${this.isTwoHandedItem(item) ? ' (2H)' : ''}`, '#99ff99');
         this.closeInventoryItemPopup();
     }
 
@@ -2775,8 +2866,11 @@ class Match3Scene extends Phaser.Scene {
         }
 
         this.inventory.push(equippedItem);
-        this.equippedItems[slotKey] = null;
-        this.player.equipment[slotKey] = 'None';
+        this.clearEquippedSlot(slotKey);
+
+        if (slotKey === 'mainhand' && this.player.equipment.offhand === 'Occupied by Bow') {
+            this.player.equipment.offhand = 'None';
+        }
 
         this.updateEquipmentScreen();
         this.addCombatLog(`Removed ${equippedItem.name} from ${slotKey}`, '#ffcc88');
