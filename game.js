@@ -24,51 +24,80 @@ const ITEM_RARITIES = [
 ];
 
 const ITEM_BASES = [
-    { slotGroup: 'helmet', type: 'Helmet', baseName: 'Helm', icon: '🪖', description: 'Headgear built for close combat.', baseStats: { armor: 3 } },
-    { slotGroup: 'chest', type: 'Chest', baseName: 'Cuirass', icon: '🦺', description: 'Body armor that absorbs heavy strikes.', baseStats: { armor: 5, health: 6 } },
-    { slotGroup: 'gloves', type: 'Gloves', baseName: 'Gauntlets', icon: '🧤', description: 'Grip and control for weapon handling.', baseStats: { physical: 2 } },
-    { slotGroup: 'boots', type: 'Boots', baseName: 'Greaves', icon: '🥾', description: 'Footwear built for stability and speed.', baseStats: { ranged: 2, armor: 1 } },
-    { slotGroup: 'belt', type: 'Belt', baseName: 'Warbelt', icon: '🧷', description: 'Carries supplies and reinforces stance.', baseStats: { health: 8 } },
+    // --- Helmets ---
+    { slotGroup: 'helmet', type: 'Helmet', baseName: 'Helm', icon: '🪖', description: 'A sturdy iron helm.', baseType: 'strength', baseStats: { armor: 4 } },
+    { slotGroup: 'helmet', type: 'Helmet', baseName: 'Circlet', icon: '🪖', description: 'A circlet humming with arcane energy.', baseType: 'intelligence', baseStats: { energyShield: 4 } },
+    { slotGroup: 'helmet', type: 'Helmet', baseName: 'Hood', icon: '🪖', description: 'A lightweight hood favoring agility.', baseType: 'dexterity', baseStats: { evasion: 4 } },
+    // --- Chests ---
+    { slotGroup: 'chest', type: 'Chest', baseName: 'Cuirass', icon: '🦺', description: 'Heavy plate that absorbs strikes.', baseType: 'strength', baseStats: { armor: 6, health: 4 } },
+    { slotGroup: 'chest', type: 'Chest', baseName: 'Robe', icon: '🦺', description: 'A flowing robe threaded with mana.', baseType: 'intelligence', baseStats: { energyShield: 6, health: 4 } },
+    { slotGroup: 'chest', type: 'Chest', baseName: 'Vest', icon: '🦺', description: 'Supple leather for nimble fighters.', baseType: 'dexterity', baseStats: { evasion: 6, health: 4 } },
+    // --- Gloves ---
+    { slotGroup: 'gloves', type: 'Gloves', baseName: 'Gauntlets', icon: '🧤', description: 'Iron gauntlets for crushing grip.', baseType: 'strength', baseStats: { armor: 3, physical: 1 } },
+    { slotGroup: 'gloves', type: 'Gloves', baseName: 'Silk Wraps', icon: '🧤', description: 'Enchanted silk that channels spells.', baseType: 'intelligence', baseStats: { energyShield: 3, magic: 1 } },
+    { slotGroup: 'gloves', type: 'Gloves', baseName: 'Bracers', icon: '🧤', description: 'Light bracers for precise strikes.', baseType: 'dexterity', baseStats: { evasion: 3, ranged: 1 } },
+    // --- Boots ---
+    { slotGroup: 'boots', type: 'Boots', baseName: 'Greaves', icon: '🥾', description: 'Plated boots for the front line.', baseType: 'strength', baseStats: { armor: 3 } },
+    { slotGroup: 'boots', type: 'Boots', baseName: 'Slippers', icon: '🥾', description: 'Enchanted slippers of the magi.', baseType: 'intelligence', baseStats: { energyShield: 3 } },
+    { slotGroup: 'boots', type: 'Boots', baseName: 'Striders', icon: '🥾', description: 'Nimble footwear for quick movement.', baseType: 'dexterity', baseStats: { evasion: 3 } },
+    // --- Belts ---
+    { slotGroup: 'belt', type: 'Belt', baseName: 'Warbelt', icon: '🧷', description: 'A heavy belt reinforcing stance.', baseType: 'strength', baseStats: { armor: 2, health: 6 } },
+    { slotGroup: 'belt', type: 'Belt', baseName: 'Sash', icon: '🧷', description: 'A woven sash pulsing with mana.', baseType: 'intelligence', baseStats: { energyShield: 2, health: 6 } },
+    { slotGroup: 'belt', type: 'Belt', baseName: 'Cord', icon: '🧷', description: 'A flexible cord for the agile.', baseType: 'dexterity', baseStats: { evasion: 2, health: 6 } },
+    // --- Weapons (no base type) ---
     { slotGroup: 'mainhand', type: 'Sword', baseName: 'Longsword', icon: '⚔️', description: 'A balanced blade that excels at physical damage.', baseStats: { physical: 5 }, weaponClass: 'sword' },
     { slotGroup: 'mainhand', type: 'Wand', baseName: 'Wand', icon: '🪄', description: 'A conduit for arcane force and focused spellcraft.', baseStats: { magic: 5 }, weaponClass: 'wand' },
     { slotGroup: 'mainhand', type: 'Bow', baseName: 'Longbow', icon: '🏹', description: 'A two-handed bow tuned for ranged damage.', baseStats: { ranged: 6 }, weaponClass: 'bow', twoHanded: true },
-    { slotGroup: 'offhand', type: 'Shield', baseName: 'Buckler', icon: '🛡️', description: 'Defensive off-hand protector.', baseStats: { armor: 4 } },
-    { slotGroup: 'ring', type: 'Ring', baseName: 'Band', icon: '💍', description: 'A ring that channels focused power.', baseStats: { magic: 2 } },
-    { slotGroup: 'necklace', type: 'Necklace', baseName: 'Amulet', icon: '📿', description: 'Necklace etched with ancient sigils.', baseStats: { magic: 3, ranged: 1 } }
+    // --- Offhand ---
+    { slotGroup: 'offhand', type: 'Shield', baseName: 'Buckler', icon: '🛡️', description: 'A sturdy iron shield.', baseType: 'strength', baseStats: { armor: 5 } },
+    { slotGroup: 'offhand', type: 'Shield', baseName: 'Spirit Shield', icon: '🛡️', description: 'A shield woven from pure energy.', baseType: 'intelligence', baseStats: { energyShield: 5 } },
+    { slotGroup: 'offhand', type: 'Shield', baseName: 'Deflector', icon: '🛡️', description: 'A light parrying shield.', baseType: 'dexterity', baseStats: { evasion: 5 } },
+    // --- Rings ---
+    { slotGroup: 'ring', type: 'Ring', baseName: 'Iron Ring', icon: '💍', description: 'A heavy iron band.', baseType: 'strength', baseStats: { armor: 1, physical: 1 } },
+    { slotGroup: 'ring', type: 'Ring', baseName: 'Sapphire Ring', icon: '💍', description: 'A ring set with a glowing sapphire.', baseType: 'intelligence', baseStats: { energyShield: 1, magic: 1 } },
+    { slotGroup: 'ring', type: 'Ring', baseName: 'Jade Ring', icon: '💍', description: 'A ring carved from jade.', baseType: 'dexterity', baseStats: { evasion: 1, ranged: 1 } },
+    // --- Necklaces ---
+    { slotGroup: 'necklace', type: 'Necklace', baseName: 'Gorget', icon: '📿', description: 'A heavy neck guard.', baseType: 'strength', baseStats: { armor: 2, health: 2 } },
+    { slotGroup: 'necklace', type: 'Necklace', baseName: 'Pendant', icon: '📿', description: 'A pendant pulsing with arcane light.', baseType: 'intelligence', baseStats: { energyShield: 2, magic: 2 } },
+    { slotGroup: 'necklace', type: 'Necklace', baseName: 'Talisman', icon: '📿', description: 'A talisman of keen reflexes.', baseType: 'dexterity', baseStats: { evasion: 2, ranged: 2 } }
 ];
 
 const ITEM_PREFIXES = [
-    { name: 'Brutal', stats: { physical: [2, 6] } },
-    { name: 'Arcane', stats: { magic: [2, 6] } },
-    { name: 'Deadeye', stats: { ranged: [2, 6] } },
-    { name: 'Stalwart', stats: { armor: [2, 7] } },
-    { name: 'Vital', stats: { health: [8, 20] } },
-    { name: 'Prosperous', stats: { loot: [4, 14] } },
-    { name: 'Cruel', stats: { physical: [4, 10] } },
-    { name: 'Runic', stats: { magic: [4, 10] } },
-    { name: 'Sharpened', stats: { ranged: [3, 8], physical: [1, 3] } },
-    { name: 'Fortified', stats: { armor: [4, 12], health: [4, 10] } },
-    { name: 'Vampiric', stats: { health: [6, 16], physical: [1, 4] } },
-    { name: 'Gilded', stats: { loot: [6, 20] } },
-    { name: 'Nimble', stats: { ranged: [2, 5], armor: [1, 3] } },
-    { name: 'Sorcerous', stats: { magic: [3, 8], health: [3, 8] } }
+    { name: 'Brutal', stats: { physical: [2, 6] }, tags: ['strength'] },
+    { name: 'Arcane', stats: { magic: [2, 6] }, tags: ['intelligence'] },
+    { name: 'Deadeye', stats: { ranged: [2, 6] }, tags: ['dexterity'] },
+    { name: 'Stalwart', stats: { armor: [2, 7] }, tags: ['strength'] },
+    { name: 'Vital', stats: { health: [8, 20] }, tags: [] },
+    { name: 'Prosperous', stats: { loot: [4, 14] }, tags: [] },
+    { name: 'Cruel', stats: { physical: [4, 10] }, tags: ['strength'] },
+    { name: 'Runic', stats: { magic: [4, 10] }, tags: ['intelligence'] },
+    { name: 'Sharpened', stats: { ranged: [3, 8], physical: [1, 3] }, tags: ['dexterity', 'strength'] },
+    { name: 'Fortified', stats: { armor: [4, 12], health: [4, 10] }, tags: ['strength'] },
+    { name: 'Vampiric', stats: { health: [6, 16], physical: [1, 4] }, tags: ['strength'] },
+    { name: 'Gilded', stats: { loot: [6, 20] }, tags: [] },
+    { name: 'Nimble', stats: { ranged: [2, 5], evasion: [1, 3] }, tags: ['dexterity'] },
+    { name: 'Sorcerous', stats: { magic: [3, 8], energyShield: [2, 6] }, tags: ['intelligence'] },
+    { name: 'Warding', stats: { energyShield: [3, 8] }, tags: ['intelligence'] },
+    { name: 'Evasive', stats: { evasion: [3, 8] }, tags: ['dexterity'] }
 ];
 
 const ITEM_SUFFIXES = [
-    { name: 'of Slaying', stats: { physical: [1, 5], magic: [1, 4] } },
-    { name: 'of Focus', stats: { magic: [2, 7] } },
-    { name: 'of Precision', stats: { ranged: [2, 7] } },
-    { name: 'of Guarding', stats: { armor: [2, 8] } },
-    { name: 'of Vitality', stats: { health: [10, 24] } },
-    { name: 'of Fortune', stats: { loot: [5, 16] } },
-    { name: 'of Carnage', stats: { physical: [4, 12] } },
-    { name: 'of the Magi', stats: { magic: [4, 12] } },
-    { name: 'of the Hawk', stats: { ranged: [4, 10] } },
-    { name: 'of the Fortress', stats: { armor: [5, 14], health: [4, 10] } },
-    { name: 'of Regeneration', stats: { health: [12, 32] } },
-    { name: 'of Plunder', stats: { loot: [8, 22] } },
-    { name: 'of Devastation', stats: { physical: [3, 8], ranged: [2, 6] } },
-    { name: 'of the Archmage', stats: { magic: [3, 9], health: [5, 12] } }
+    { name: 'of Slaying', stats: { physical: [1, 5], magic: [1, 4] }, tags: ['strength', 'intelligence'] },
+    { name: 'of Focus', stats: { magic: [2, 7] }, tags: ['intelligence'] },
+    { name: 'of Precision', stats: { ranged: [2, 7] }, tags: ['dexterity'] },
+    { name: 'of Guarding', stats: { armor: [2, 8] }, tags: ['strength'] },
+    { name: 'of Vitality', stats: { health: [10, 24] }, tags: [] },
+    { name: 'of Fortune', stats: { loot: [5, 16] }, tags: [] },
+    { name: 'of Carnage', stats: { physical: [4, 12] }, tags: ['strength'] },
+    { name: 'of the Magi', stats: { magic: [4, 12] }, tags: ['intelligence'] },
+    { name: 'of the Hawk', stats: { ranged: [4, 10] }, tags: ['dexterity'] },
+    { name: 'of the Fortress', stats: { armor: [5, 14], health: [4, 10] }, tags: ['strength'] },
+    { name: 'of Regeneration', stats: { health: [12, 32] }, tags: [] },
+    { name: 'of Plunder', stats: { loot: [8, 22] }, tags: [] },
+    { name: 'of Devastation', stats: { physical: [3, 8], ranged: [2, 6] }, tags: ['strength', 'dexterity'] },
+    { name: 'of the Archmage', stats: { magic: [3, 9], energyShield: [3, 8] }, tags: ['intelligence'] },
+    { name: 'of Reflexes', stats: { evasion: [4, 10] }, tags: ['dexterity'] },
+    { name: 'of Shielding', stats: { energyShield: [4, 10] }, tags: ['intelligence'] }
 ];
 
 const EQUIPMENT_SLOT_GROUP_BY_KEY = {
@@ -251,6 +280,10 @@ class Match3Scene extends Phaser.Scene {
         };
         this.playerStatsText = null;
         this.playerAvatar = null;
+        this.playerShieldBarBg = null;
+        this.playerShieldBar = null;
+        this.playerShieldLabel = null;
+        this.playerShieldText = null;
         this.playerHealthBarBg = null;
         this.playerHealthBar = null;
         this.enemyStatsText = null;
@@ -1455,7 +1488,9 @@ class Match3Scene extends Phaser.Scene {
             magic: 'Magic',
             ranged: 'Ranged',
             loot: 'Loot Find',
-            armor: 'Armor'
+            armor: 'Armor',
+            energyShield: 'Energy Shield',
+            evasion: 'Evasion'
         };
         return labels[stat] || stat.charAt(0).toUpperCase() + stat.slice(1);
     }
@@ -1467,7 +1502,9 @@ class Match3Scene extends Phaser.Scene {
             magic: 0,
             ranged: 0,
             loot: 0,
-            armor: 0
+            armor: 0,
+            energyShield: 0,
+            evasion: 0
         };
 
         Object.values(this.equippedItems).forEach(item => {
@@ -1522,11 +1559,20 @@ class Match3Scene extends Phaser.Scene {
         return ITEM_RARITIES[0];
     }
 
-    rollAffixes(pool, count, multiplier, usedNames) {
+    rollAffixes(pool, count, multiplier, usedNames, baseType) {
         const affixes = [];
 
+        // Build weighted pool based on base type
+        const weightedPool = [];
+        pool.forEach(affix => {
+            const tags = affix.tags || [];
+            // Matching base type gets 3x weight, neutral (no tags) gets 1x, mismatched gets 1x
+            const weight = (baseType && tags.includes(baseType)) ? 3 : 1;
+            for (let i = 0; i < weight; i++) weightedPool.push(affix);
+        });
+
         while (affixes.length < count && usedNames.size < pool.length) {
-            const affix = Phaser.Utils.Array.GetRandom(pool);
+            const affix = Phaser.Utils.Array.GetRandom(weightedPool);
             if (!affix || usedNames.has(affix.name)) continue;
 
             usedNames.add(affix.name);
@@ -1592,8 +1638,8 @@ class Match3Scene extends Phaser.Scene {
         const suffixCount = Math.floor(rarity.affixes / 2);
         const usedNames = new Set();
 
-        const prefixes = this.rollAffixes(ITEM_PREFIXES, prefixCount, statMultiplier, usedNames);
-        const suffixes = this.rollAffixes(ITEM_SUFFIXES, suffixCount, statMultiplier, usedNames);
+        const prefixes = this.rollAffixes(ITEM_PREFIXES, prefixCount, statMultiplier, usedNames, base.baseType || null);
+        const suffixes = this.rollAffixes(ITEM_SUFFIXES, suffixCount, statMultiplier, usedNames, base.baseType || null);
 
         // Base stats also scale with item level
         const scaledBaseStats = {};
@@ -1624,6 +1670,7 @@ class Match3Scene extends Phaser.Scene {
             name: itemName,
             slotGroup: base.slotGroup,
             type: base.type,
+            baseType: base.baseType || null,
             weaponClass: base.weaponClass || null,
             twoHanded: !!base.twoHanded,
             rarity: rarity.name,
@@ -1917,10 +1964,20 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.add(this.add.text(leftCX, 14, 'Hero', { fontSize: '17px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
         this.playerAvatar = this.add.text(leftCX, 72, PLAYER_AVATAR, { fontSize: '52px' }).setOrigin(0.5);
         this.hudContainer.add(this.playerAvatar);
-        this.hudContainer.add(this.add.text(14, 120, 'HP', { fontSize: '11px', color: '#aaa' }));
-        this.playerHealthBarBg = this.add.rectangle(14, 131, barW, 12, 0x444444).setOrigin(0, 0.5);
+        // --- Energy Shield bar (above HP) ---
+        this.playerShieldLabel = this.add.text(14, 108, 'ES', { fontSize: '9px', color: '#66aaff' });
+        this.hudContainer.add(this.playerShieldLabel);
+        this.playerShieldBarBg = this.add.rectangle(14, 117, barW, 8, 0x333344).setOrigin(0, 0.5);
+        this.hudContainer.add(this.playerShieldBarBg);
+        this.playerShieldBar = this.add.rectangle(14, 117, 0, 8, 0x3388ff).setOrigin(0, 0.5);
+        this.hudContainer.add(this.playerShieldBar);
+        this.playerShieldText = this.add.text(14 + barW / 2, 117, '', { fontSize: '7px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.hudContainer.add(this.playerShieldText);
+        // --- HP bar ---
+        this.hudContainer.add(this.add.text(14, 123, 'HP', { fontSize: '11px', color: '#aaa' }));
+        this.playerHealthBarBg = this.add.rectangle(14, 134, barW, 12, 0x444444).setOrigin(0, 0.5);
         this.hudContainer.add(this.playerHealthBarBg);
-        this.playerHealthBar = this.add.rectangle(14, 131, barW, 12, 0x00cc00).setOrigin(0, 0.5);
+        this.playerHealthBar = this.add.rectangle(14, 134, barW, 12, 0x00cc00).setOrigin(0, 0.5);
         this.hudContainer.add(this.playerHealthBar);
         // --- Enemy panel (right) ---
         this.hudContainer.add(this.add.rectangle(rightCX, panelH / 2 + 4, panelW, panelH, 0x111111, 0.9).setOrigin(0.5));
@@ -1937,7 +1994,7 @@ class Match3Scene extends Phaser.Scene {
         const lmW = barW;
         const lmH = 10;
         const lmX = 14;
-        const lmY = 151;
+        const lmY = 155;
         this.lootMeterLabel = this.add.text(lmX, lmY - 10, 'LOOT', { fontSize: '9px', color: '#ffd966', fontStyle: 'bold' }).setOrigin(0, 0.5);
         this.lootMeterBarBg = this.add.rectangle(lmX, lmY, lmW, lmH, 0x333333).setOrigin(0, 0.5);
         this.lootMeterBar = this.add.rectangle(lmX, lmY, 0, lmH, 0xffd966).setOrigin(0, 0.5);
@@ -3388,6 +3445,7 @@ class Match3Scene extends Phaser.Scene {
 
     updatePlayerUI() {
         const gear = this.getEquippedStatTotals();
+        const charBonuses = this.getCharacterStatBonuses();
 
         if (this.playerHealthBar) {
             const fraction = Phaser.Math.Clamp(this.player.health / 100, 0, 1);
@@ -3401,6 +3459,28 @@ class Match3Scene extends Phaser.Scene {
                 ease: 'Power2'
             });
             this.playerHealthBar.fillColor = targetColor;
+        }
+
+        // Update energy shield bar
+        if (this.playerShieldBar) {
+            const totalES = charBonuses.energyShield + gear.energyShield;
+            const maxES = totalES;
+            const hasShield = maxES > 0;
+            this.playerShieldBarBg.setVisible(hasShield);
+            this.playerShieldBar.setVisible(hasShield);
+            this.playerShieldLabel.setVisible(hasShield);
+            this.playerShieldText.setVisible(hasShield);
+            if (hasShield) {
+                const shieldWidth = 166;
+                this.tweens.killTweensOf(this.playerShieldBar);
+                this.tweens.add({
+                    targets: this.playerShieldBar,
+                    width: shieldWidth,
+                    duration: 300,
+                    ease: 'Power2'
+                });
+                this.playerShieldText.setText(`${maxES}`);
+            }
         }
 
         this.updateLootMeterUI();
@@ -4147,9 +4227,10 @@ class Match3Scene extends Phaser.Scene {
         const gear = this.getEquippedStatTotals();
         const charBonuses = this.getCharacterStatBonuses();
 
-        // Evasion check (DEX)
-        if (Math.random() * 100 < charBonuses.evasionChance) {
-            this.addCombatLog(`Evaded enemy attack! (${charBonuses.evasionChance.toFixed(0)}% evasion)`, '#00ffcc');
+        // Evasion check (DEX + gear evasion)
+        const totalEvasionChance = Math.min(75, charBonuses.evasionChance + gear.evasion * 0.5);
+        if (Math.random() * 100 < totalEvasionChance) {
+            this.addCombatLog(`Evaded enemy attack! (${totalEvasionChance.toFixed(0)}% evasion)`, '#00ffcc');
             this.showCombatMessage('EVADE!', '#00ffcc', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20);
             this.updatePlayerUI();
             return;
@@ -4160,10 +4241,11 @@ class Match3Scene extends Phaser.Scene {
         const armorReduction = Math.floor(totalArmor / 3);
         let mitigatedDamage = Math.max(1, damage - armorReduction);
 
-        // Energy shield absorbs damage first (INT)
+        // Energy shield absorbs damage first (INT + gear)
+        const totalEnergyShield = charBonuses.energyShield + gear.energyShield;
         let shieldAbsorbed = 0;
-        if (charBonuses.energyShield > 0 && mitigatedDamage > 0) {
-            shieldAbsorbed = Math.min(mitigatedDamage, Math.floor(charBonuses.energyShield * 0.3));
+        if (totalEnergyShield > 0 && mitigatedDamage > 0) {
+            shieldAbsorbed = Math.min(mitigatedDamage, Math.floor(totalEnergyShield * 0.3));
             mitigatedDamage -= shieldAbsorbed;
         }
 
