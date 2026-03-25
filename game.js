@@ -2890,8 +2890,6 @@ class Match3Scene extends Phaser.Scene {
             }).setOrigin(0.5).setAlpha(0.52);
             const slotIcon = this.add.text(slot.x, slot.y - 2, '', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
             const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 + 9, slot.label, { fontSize: '9px', color: '#9cb7c7' }).setOrigin(0.5, 0.5);
-            // Keep labels and values in-tile to avoid overlap with nearby slots.
-            const slotValue = this.add.text(slot.x, slot.y + slotSize / 2 - 4, '', { fontSize: '6px', color: '#aaaaaa', align: 'center', wordWrap: { width: slotSize - 10, useAdvancedWrap: true } }).setOrigin(0.5, 1);
 
             const inspectEquippedItem = () => {
                 const equippedItem = this.equippedItems[slot.key];
@@ -2907,7 +2905,7 @@ class Match3Scene extends Phaser.Scene {
             slotBg.on('pointerup', inspectEquippedItem);
             slotImageBg.on('pointerup', inspectEquippedItem);
 
-            this.equipmentText[slot.key] = slotValue;
+            this.equipmentText[slot.key] = null;
             this.equipmentIconText[slot.key] = slotIcon;
             this.equipmentSlotFrames[slot.key] = slotImageBg;
             this.equipmentSlotGhostIcons[slot.key] = slotGhostIcon;
@@ -2915,7 +2913,7 @@ class Match3Scene extends Phaser.Scene {
             this.equipmentSlotGlows[slot.key] = slotGlow;
             this.equipmentSlotLabels[slot.key] = slotLabel;
 
-            this.equipmentScreenGroup.add([slotGlow, slotBg, slotImageBg, slotGhostIcon, slotIcon, slotLabel, slotValue]);
+            this.equipmentScreenGroup.add([slotGlow, slotBg, slotImageBg, slotGhostIcon, slotIcon, slotLabel]);
         });
 
         this.inventoryTiles = [];
@@ -2955,58 +2953,73 @@ class Match3Scene extends Phaser.Scene {
             this.equipmentScreenGroup.add([tileBg, tileInner, tileIcon, tileName]);
         }
 
-        const modalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
+        const modalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.78)
             .setInteractive({ useHandCursor: true });
-        const modalCard = this.add.rectangle(width / 2, height / 2, 370, 360, 0x111111, 1)
-            .setStrokeStyle(2, 0xffffff);
-        const modalTitle = this.add.text(width / 2, height / 2 - 110, 'Item Details', {
-            fontSize: '20px',
-            color: '#ffff00',
+        const modalCard = this.add.rectangle(width / 2, height / 2, 370, 410, 0x111111, 1)
+            .setStrokeStyle(2, 0x555555);
+
+        this.inventoryModalTitle = this.add.text(width / 2, height / 2 - 198, '', {
+            fontSize: '16px',
+            color: '#ffdd44',
             fontStyle: 'bold'
+        }).setOrigin(0.5, 0);
+        this.inventoryModalFrame = this.add.rectangle(width / 2, height / 2 - 162, 46, 46, 0x1f1f1f, 1).setStrokeStyle(2, 0x888888);
+        this.inventoryModalIcon = this.add.text(width / 2, height / 2 - 162, '', { fontSize: '24px' }).setOrigin(0.5);
+        this.inventoryModalName = this.add.text(width / 2, height / 2 - 130, '', {
+            fontSize: '14px',
+            color: '#ffffff',
+            fontStyle: 'bold',
+            wordWrap: { width: 340, useAdvancedWrap: true },
+            align: 'center'
         }).setOrigin(0.5);
-        this.inventoryModalFrame = this.add.rectangle(width / 2, height / 2 - 62, 50, 50, 0x1f1f1f, 1).setStrokeStyle(2, 0x888888);
-        this.inventoryModalIcon = this.add.text(width / 2, height / 2 - 62, '', { fontSize: '26px' }).setOrigin(0.5);
-        this.inventoryModalName = this.add.text(width / 2, height / 2 - 14, '', { fontSize: '16px', color: '#ffffff', fontStyle: 'bold', wordWrap: { width: 340, useAdvancedWrap: true }, align: 'center' }).setOrigin(0.5);
-        this.inventoryModalSlotBadge = this.add.text(width / 2, height / 2 + 12, '', {
+        this.inventoryModalSlotBadge = this.add.text(width / 2, height / 2 - 110, '', {
             fontSize: '11px',
             color: '#111111',
             backgroundColor: '#8bb7ff',
             padding: { left: 7, right: 7, top: 3, bottom: 3 }
         }).setOrigin(0.5);
-        this.inventoryModalType = this.add.text(width / 2, height / 2 + 38, '', {
-            fontSize: '12px',
+        this.inventoryModalType = this.add.text(width / 2, height / 2 - 92, '', {
+            fontSize: '10px',
             color: '#00ffcc',
             align: 'center',
             wordWrap: { width: 340, useAdvancedWrap: true }
         }).setOrigin(0.5);
-        this.inventoryModalDesc = this.add.text(width / 2, height / 2 + 10, '', {
-            fontSize: '12px',
-            color: '#ffffff',
-            align: 'center',
-            wordWrap: { width: 340, useAdvancedWrap: true }
-        }).setOrigin(0.5);
-        this.inventoryModalDesc.y = height / 2 + 78;
-        this.inventoryModalStats = this.add.text(width / 2, height / 2 + 122, '', {
-            fontSize: '12px',
-            color: '#ffd966',
+
+        const modalStatsDivider = this.add.rectangle(width / 2, height / 2 - 78, 340, 1, 0x444444, 1);
+
+        // 8 pre-allocated per-stat comparison lines
+        this.inventoryAffixLines = [];
+        for (let li = 0; li < 8; li++) {
+            const lineObj = this.add.text(width / 2, height / 2 - 68 + li * 18, '', {
+                fontSize: '12px',
+                color: '#ffd966',
+                align: 'center',
+                wordWrap: { width: 340, useAdvancedWrap: true }
+            }).setOrigin(0.5).setVisible(false);
+            this.inventoryAffixLines.push(lineObj);
+        }
+
+        this.inventoryAffixCompareLabel = this.add.text(width / 2, height / 2 + 80, '', {
+            fontSize: '9px',
+            color: '#888888',
             align: 'center',
             wordWrap: { width: 340, useAdvancedWrap: true }
         }).setOrigin(0.5);
 
-        const closeModalBtn = this.add.text(width / 2 - 90, height / 2 + 150, 'Close', {
-            fontSize: '15px',
+        const closeModalBtn = this.add.text(width / 2 - 90, height / 2 + 158, 'Close', {
+            fontSize: '14px',
             color: '#ffffff',
             backgroundColor: '#444444',
             padding: { left: 8, right: 8, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        const removeBtn = this.add.text(width / 2, height / 2 + 150, 'Remove', {
-            fontSize: '15px',
+        const removeBtn = this.add.text(width / 2, height / 2 + 158, 'Unequip', {
+            fontSize: '14px',
             color: '#ffffff',
             backgroundColor: '#a33d3d',
             padding: { left: 8, right: 8, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        const equipBtn = this.add.text(width / 2 + 90, height / 2 + 150, 'Equip', {
-            fontSize: '15px',
+        const equipBtn = this.add.text(width / 2 + 90, height / 2 + 158, 'Equip', {
+            fontSize: '14px',
             color: '#111111',
             backgroundColor: '#00ff99',
             padding: { left: 8, right: 8, top: 4, bottom: 4 }
@@ -3023,14 +3036,15 @@ class Match3Scene extends Phaser.Scene {
         this.inventoryModal = this.add.container(0, 0, [
             modalOverlay,
             modalCard,
-            modalTitle,
+            this.inventoryModalTitle,
             this.inventoryModalFrame,
             this.inventoryModalIcon,
             this.inventoryModalName,
             this.inventoryModalSlotBadge,
             this.inventoryModalType,
-            this.inventoryModalDesc,
-            this.inventoryModalStats,
+            modalStatsDivider,
+            ...this.inventoryAffixLines,
+            this.inventoryAffixCompareLabel,
             closeModalBtn,
             removeBtn,
             equipBtn
@@ -3195,10 +3209,70 @@ class Match3Scene extends Phaser.Scene {
         this.selectedItemSource = source;
         this.selectedEquippedSlot = equippedSlot;
 
-        const statText = Object.entries(item.stats)
-            .map(([key, value]) => `${this.getStatLabel(key)}: +${value}`)
-            .join('   |   ');
+        // Determine comparison item:
+        //   'equipped' view → compare vs empty (all green)
+        //   'inventory' view   → compare vs whatever is currently in the target slot
+        let compareItem = null;
+        if (source === 'inventory') {
+            const targetSlot = this.getEquipTargetSlot(item);
+            if (targetSlot) {
+                compareItem = this.equippedItems[targetSlot] || null;
+            }
+        }
 
+        const itemStats = item.stats || {};
+        const compareStats = (compareItem && compareItem.stats) || {};
+        const allStatKeys = Array.from(new Set([
+            ...Object.keys(itemStats),
+            ...Object.keys(compareStats)
+        ]));
+
+        // Build one line per unique stat type with colored ↑/↓ arrows
+        const statLines = allStatKeys.map(stat => {
+            const newVal = itemStats[stat] || 0;
+            const oldVal = compareStats[stat] || 0;
+            const delta = newVal - oldVal;
+            const label = this.getStatLabel(stat);
+
+            if (!compareItem) {
+                return { text: `${label}:  +${newVal}  ↑`, color: '#4eff8a' };
+            } else if (delta > 0) {
+                return { text: `${label}:  +${newVal}  ↑  (+${delta})`, color: '#4eff8a' };
+            } else if (delta < 0) {
+                return { text: `${label}:  +${newVal}  ↓  (${delta})`, color: '#ff6b6b' };
+            } else {
+                return { text: `${label}:  +${newVal}  =`, color: '#ffd966' };
+            }
+        });
+
+        // Populate pre-allocated line objects
+        if (this.inventoryAffixLines) {
+            this.inventoryAffixLines.forEach((lineObj, i) => {
+                if (i < statLines.length) {
+                    lineObj.setText(statLines[i].text);
+                    lineObj.setColor(statLines[i].color);
+                    lineObj.setVisible(true);
+                } else {
+                    lineObj.setText('');
+                    lineObj.setVisible(false);
+                }
+            });
+        }
+
+        // Footer: what we're comparing against
+        if (this.inventoryAffixCompareLabel) {
+            if (source === 'equipped') {
+                this.inventoryAffixCompareLabel.setText('Currently equipped  —  tap Unequip to remove');
+            } else if (compareItem) {
+                this.inventoryAffixCompareLabel.setText(`Replacing: ${compareItem.name}`);
+            } else {
+                this.inventoryAffixCompareLabel.setText('Filling an empty slot');
+            }
+        }
+
+        if (this.inventoryModalTitle) {
+            this.inventoryModalTitle.setText(source === 'equipped' ? 'Equipped Item' : 'Inspect Item');
+        }
         this.inventoryModalFrame.setStrokeStyle(2, item.frameColor, 1);
         this.inventoryModalIcon.setText(item.icon);
         this.inventoryModalName.setText(item.name);
@@ -3206,12 +3280,10 @@ class Match3Scene extends Phaser.Scene {
         if (this.inventoryModalSlotBadge) {
             this.inventoryModalSlotBadge.setText(`${this.getEmptySlotIcon(item.slotGroup === 'ring' ? 'ring1' : item.slotGroup)}  ${this.getSlotLabel(item.slotGroup)}`);
             this.inventoryModalSlotBadge.setBackgroundColor(item.rarityTextColor || '#8bb7ff');
-            this.inventoryModalSlotBadge.setColor(item.rarity === 'Legendary' ? '#111111' : '#111111');
+            this.inventoryModalSlotBadge.setColor('#111111');
         }
         const handlingLabel = item.twoHanded ? '  |  Two-Handed' : '';
         this.inventoryModalType.setText(`iLvl ${item.itemLevel || 1} ${item.rarity}  |  ${this.getSlotLabel(item.slotGroup)}${handlingLabel}`);
-        this.inventoryModalDesc.setText(item.description);
-        this.inventoryModalStats.setText(statText || 'No bonus stats');
         if (this.inventoryModalEquipBtn) {
             this.inventoryModalEquipBtn.setVisible(source === 'inventory');
         }
