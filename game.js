@@ -4591,6 +4591,21 @@ class Match3Scene extends Phaser.Scene {
                 if (effect === 'gold') {
                     goldGain += 3;
                 }
+                if (effect === 'physical') {
+                    const tileDamage = Math.max(1, 2 + gear.physical);
+                    physicalDamage += tileDamage;
+                    totalEnemyDamage += tileDamage;
+                }
+                if (effect === 'magic') {
+                    const tileDamage = Math.max(1, 2 + gear.magic);
+                    magicDamage += tileDamage;
+                    totalEnemyDamage += tileDamage;
+                }
+                if (effect === 'ranged') {
+                    const tileDamage = Math.max(1, 2 + gear.ranged);
+                    rangedDamage += tileDamage;
+                    totalEnemyDamage += tileDamage;
+                }
                 if (effect === 'health') {
                     const perTileHeal = 3 + Math.floor(gear.health / 80);
                     const tileHeal = Math.max(2, perTileHeal);
