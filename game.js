@@ -405,21 +405,21 @@ class Match3Scene extends Phaser.Scene {
 
     getEnemyPositions(count) {
         const rightCX = 293;
-        if (count === 1) return [{ x: rightCX, y: 68, scale: 1.0, barW: 166, barY: 120 }];
+        if (count === 1) return [{ x: rightCX, y: 68, scale: 1.4, barW: 166, barY: 128 }];
         if (count === 2) return [
-            { x: rightCX - 38, y: 62, scale: 0.62, barW: 70, barY: 100 },
-            { x: rightCX + 38, y: 62, scale: 0.62, barW: 70, barY: 100 }
+            { x: rightCX - 38, y: 62, scale: 0.85, barW: 70, barY: 106 },
+            { x: rightCX + 38, y: 62, scale: 0.85, barW: 70, barY: 106 }
         ];
         if (count === 3) return [
-            { x: rightCX - 50, y: 62, scale: 0.50, barW: 50, barY: 96 },
-            { x: rightCX, y: 62, scale: 0.50, barW: 50, barY: 96 },
-            { x: rightCX + 50, y: 62, scale: 0.50, barW: 50, barY: 96 }
+            { x: rightCX - 50, y: 62, scale: 0.70, barW: 50, barY: 102 },
+            { x: rightCX, y: 62, scale: 0.70, barW: 50, barY: 102 },
+            { x: rightCX + 50, y: 62, scale: 0.70, barW: 50, barY: 102 }
         ];
         return [
-            { x: rightCX - 38, y: 45, scale: 0.46, barW: 56, barY: 78 },
-            { x: rightCX + 38, y: 45, scale: 0.46, barW: 56, barY: 78 },
-            { x: rightCX - 38, y: 100, scale: 0.46, barW: 56, barY: 130 },
-            { x: rightCX + 38, y: 100, scale: 0.46, barW: 56, barY: 130 }
+            { x: rightCX - 38, y: 45, scale: 0.62, barW: 56, barY: 84 },
+            { x: rightCX + 38, y: 45, scale: 0.62, barW: 56, barY: 84 },
+            { x: rightCX - 38, y: 100, scale: 0.62, barW: 56, barY: 136 },
+            { x: rightCX + 38, y: 100, scale: 0.62, barW: 56, barY: 136 }
         ];
     }
 
@@ -541,7 +541,7 @@ class Match3Scene extends Phaser.Scene {
         console.log('Scene created!');
 
         // --- Warrior sprite animations (row 0=idle, 1=attack, 2=hit, 3=death) ---
-        this.anims.create({ key: 'warrior_idle', frames: this.anims.generateFrameNumbers('warrior', { start: 0, end: 5 }), frameRate: 8, repeat: -1 });
+        this.anims.create({ key: 'warrior_idle', frames: this.anims.generateFrameNumbers('warrior', { start: 0, end: 5 }), frameRate: 5, repeat: -1 });
         this.anims.create({ key: 'warrior_attack', frames: this.anims.generateFrameNumbers('warrior', { start: 6, end: 11 }), frameRate: 14, repeat: 0 });
         this.anims.create({ key: 'warrior_hit', frames: this.anims.generateFrameNumbers('warrior', { start: 12, end: 17 }), frameRate: 12, repeat: 0 });
         this.anims.create({ key: 'warrior_death', frames: this.anims.generateFrameNumbers('warrior', { start: 18, end: 23 }), frameRate: 8, repeat: 0 });
@@ -2589,8 +2589,8 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.add(this.add.rectangle(leftCX, panelH / 2 + 4, panelW, panelH, 0x111111, 0.9).setOrigin(0.5));
         this.hudContainer.add(this.add.text(leftCX, 14, 'Hero', { fontSize: '17px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
         // Sprite-based player character
-        this.playerSprite = this.add.sprite(leftCX, 68, 'warrior').setOrigin(0.5, 0.5);
-        this.playerSprite.setScale(0.65);
+        this.playerSprite = this.add.sprite(leftCX, 75, 'warrior').setOrigin(0.5, 0.5);
+        this.playerSprite.setScale(1.1);
         this.playerSprite.play('warrior_idle');
         this.hudContainer.add(this.playerSprite);
         this.playerBodyContainer = this.playerSprite;  // alias for compatibility
