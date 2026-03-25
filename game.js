@@ -4361,7 +4361,17 @@ const config = {
     type: Phaser.AUTO,
     width: 390,
     height: 780,
+    resolution: window.devicePixelRatio || 1,
     backgroundColor: '#2c3e50',
+    render: {
+        antialias: true,
+        pixelArt: false,
+        roundPixels: false
+    },
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
     scene: Match3Scene
 };
 
