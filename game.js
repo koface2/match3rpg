@@ -1360,6 +1360,17 @@ class Match3Scene extends Phaser.Scene {
         return slotLabels[slotKey] || this.getSlotLabel(slotKey);
     }
 
+    getEquipmentSlotText(slotKey, equippedItem, offhandBlockedByBow) {
+        if (offhandBlockedByBow && slotKey === 'offhand') {
+            return '2H LOCK';
+        }
+        if (!equippedItem) return '';
+
+        const baseText = equippedItem.type || equippedItem.baseName || equippedItem.name || '';
+        if (baseText.length <= 11) return baseText;
+        return `${baseText.slice(0, 10)}.`;
+    }
+
     getEmptySlotIcon(slotKey) {
         const icons = {
             helmet: '🪖',
@@ -2845,7 +2856,7 @@ class Match3Scene extends Phaser.Scene {
             { key: 'gloves', label: 'Gloves', x: topCenterX - 108, y: topPanelTopY + 196 },
             { key: 'belt', label: 'Belt', x: topCenterX, y: topPanelTopY + 184 },
             { key: 'ring1', label: 'Ring 1', x: topCenterX + 108, y: topPanelTopY + 196 },
-            { key: 'ring2', label: 'Ring 2', x: topCenterX + 138, y: topPanelTopY + 236 },
+            { key: 'ring2', label: 'Ring 2', x: topCenterX + 146, y: topPanelTopY + 236 },
             { key: 'boots', label: 'Boots', x: topCenterX, y: topPanelTopY + 236 }
         ];
 
@@ -2873,14 +2884,14 @@ class Match3Scene extends Phaser.Scene {
                 .setStrokeStyle(1, 0x8ea2b3, 0.9)
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
-            const slotGhostIcon = this.add.text(slot.x, slot.y - 5, this.getEmptySlotIcon(slot.key), {
+            const slotGhostIcon = this.add.text(slot.x, slot.y - 4, this.getEmptySlotIcon(slot.key), {
                 fontSize: '19px',
                 color: '#778593'
             }).setOrigin(0.5).setAlpha(0.52);
-            const slotIcon = this.add.text(slot.x, slot.y - 6, '', { fontSize: '26px', color: '#ffffff' }).setOrigin(0.5);
-            const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 - 10, slot.label, { fontSize: '11px', color: '#9cb7c7' }).setOrigin(0.5, 0.5);
-            // Keep item names inside each tile so they don't overlap section headers or stat cards.
-            const slotValue = this.add.text(slot.x, slot.y + slotSize / 2 - 9, '', { fontSize: '7px', color: '#aaaaaa', align: 'center', wordWrap: { width: slotSize - 8, useAdvancedWrap: true } }).setOrigin(0.5, 1);
+            const slotIcon = this.add.text(slot.x, slot.y - 2, '', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
+            const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 + 9, slot.label, { fontSize: '9px', color: '#9cb7c7' }).setOrigin(0.5, 0.5);
+            // Keep labels and values in-tile to avoid overlap with nearby slots.
+            const slotValue = this.add.text(slot.x, slot.y + slotSize / 2 - 4, '', { fontSize: '6px', color: '#aaaaaa', align: 'center', wordWrap: { width: slotSize - 10, useAdvancedWrap: true } }).setOrigin(0.5, 1);
 
             const inspectEquippedItem = () => {
                 const equippedItem = this.equippedItems[slot.key];
@@ -3086,8 +3097,8 @@ class Match3Scene extends Phaser.Scene {
             const equippedItem = this.equippedItems[key] || null;
             const offhandBlockedByBow = key === 'offhand' && this.isTwoHandedItem(this.equippedItems.mainhand || null);
             if (this.equipmentText[key]) {
-                const slotText = offhandBlockedByBow ? 'Occupied by Bow' : value;
-                this.equipmentText[key].setText(slotText === 'None' ? '' : slotText);
+                const slotText = this.getEquipmentSlotText(key, equippedItem, offhandBlockedByBow);
+                this.equipmentText[key].setText(slotText);
                 this.equipmentText[key].setColor(
                     offhandBlockedByBow
                         ? '#d7e26f'
@@ -3774,8 +3785,7 @@ class Match3Scene extends Phaser.Scene {
             this.addCombatLog('L-Shape Match!', this.toHexColor(shape.color || 0xffffff));
         });
 
-        // --- Regular tile clearing: only charge skills, no damage/heal ---
-        // Gold tiles charge the loot meter instead
+        // Regular tile clears charge skills. Heart tiles now also heal directly.
         matches.forEach(match => {
             const [x, y] = match.split(',').map(Number);
             const tileType = this.grid[y][x];
@@ -3793,6 +3803,12 @@ class Match3Scene extends Phaser.Scene {
                 // Gold tiles charge loot meter on any match (including 3s)
                 if (effect === 'loot') {
                     lootMeterGain += 3;
+                }
+                if (effect === 'health') {
+                    const perTileHeal = 3 + Math.floor(gear.health / 80);
+                    const tileHeal = Math.max(2, perTileHeal);
+                    healAmount += tileHeal;
+                    totalPlayerHeal += tileHeal;
                 }
             }
             this.grid[y][x] = -1;
@@ -3905,6 +3921,9 @@ class Match3Scene extends Phaser.Scene {
         }
         if (rangedDamage > 0) {
             this.addCombatLog(`Ranged Damage: ${rangedDamage}`, '#00ff00');
+        }
+        if (healAmount > 0) {
+            this.addCombatLog(`Heart Heal: +${healAmount}`, '#ff79bf');
         }
 
         this.addSkillChargeFromMatches(matchCounts);
