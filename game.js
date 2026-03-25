@@ -531,10 +531,20 @@ class Match3Scene extends Phaser.Scene {
         TILE_TYPES.forEach(t => {
             this.load.image('tile_' + t.name, 'assets/' + t.name + '.png');
         });
+        this.load.spritesheet('warrior', 'assets/sprites/warrior_anim.png', {
+            frameWidth: 109,
+            frameHeight: 100
+        });
     }
 
     create() {
         console.log('Scene created!');
+
+        // --- Warrior sprite animations (row 0=idle, 1=attack, 2=hit, 3=death) ---
+        this.anims.create({ key: 'warrior_idle', frames: this.anims.generateFrameNumbers('warrior', { start: 0, end: 5 }), frameRate: 8, repeat: -1 });
+        this.anims.create({ key: 'warrior_attack', frames: this.anims.generateFrameNumbers('warrior', { start: 6, end: 11 }), frameRate: 14, repeat: 0 });
+        this.anims.create({ key: 'warrior_hit', frames: this.anims.generateFrameNumbers('warrior', { start: 12, end: 17 }), frameRate: 12, repeat: 0 });
+        this.anims.create({ key: 'warrior_death', frames: this.anims.generateFrameNumbers('warrior', { start: 18, end: 23 }), frameRate: 8, repeat: 0 });
 
         this.boardContainer = this.add.container(0, 0);
         this.hudContainer = this.add.container(0, 0);
@@ -628,8 +638,8 @@ class Match3Scene extends Phaser.Scene {
                     GRID_OFFSET_Y - 15
                 );
                 // Player attack animation for skill cast
-                if (this.playerBodyContainer && this.playerBodyParts) {
-                    this.playAttackAnimation(this.playerBodyContainer, this.playerBodyParts, PLAYER_BODY.facingRight);
+                if (this.playerSprite) {
+                    this.playPlayerAttackAnim();
                 }
                 if (target.bodyContainer && target.health > 0) {
                     this.time.delayedCall(100, () => this.playHitAnimation(target.bodyContainer));
@@ -2537,6 +2547,33 @@ class Match3Scene extends Phaser.Scene {
         });
     }
 
+    /** Play the warrior sprite attack animation, then return to idle. */
+    playPlayerAttackAnim() {
+        if (!this.playerSprite) return;
+        this.playerSprite.play('warrior_attack');
+        this.playerSprite.once('animationcomplete', () => {
+            if (this.player.health > 0) {
+                this.playerSprite.play('warrior_idle');
+            }
+        });
+    }
+
+    /** Play the warrior sprite hit animation, then return to idle. */
+    playPlayerHitAnim() {
+        if (!this.playerSprite) return;
+        this.playerSprite.play('warrior_hit');
+        // Flash tint
+        this.playerSprite.setTint(0xff4444);
+        this.time.delayedCall(200, () => {
+            if (this.playerSprite) this.playerSprite.clearTint();
+        });
+        this.playerSprite.once('animationcomplete', () => {
+            if (this.player.health > 0) {
+                this.playerSprite.play('warrior_idle');
+            }
+        });
+    }
+
     createPlayerUI() {
         // Portrait layout: player LEFT, enemy RIGHT, both in top half above grid
         const leftCX = 97;
@@ -2551,12 +2588,12 @@ class Match3Scene extends Phaser.Scene {
         // --- Player panel (left) ---
         this.hudContainer.add(this.add.rectangle(leftCX, panelH / 2 + 4, panelW, panelH, 0x111111, 0.9).setOrigin(0.5));
         this.hudContainer.add(this.add.text(leftCX, 14, 'Hero', { fontSize: '17px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
-        // Procedural player character
-        const playerBody = this.buildCharacterBody(PLAYER_BODY, leftCX, 68);
-        this.playerBodyContainer = playerBody.container;
-        this.playerBodyParts = playerBody.parts;
-        this.hudContainer.add(this.playerBodyContainer);
-        this.startIdleAnimation(this.playerBodyContainer, this.playerBodyParts, this.playerIdleTweens);
+        // Sprite-based player character
+        this.playerSprite = this.add.sprite(leftCX, 68, 'warrior').setOrigin(0.5, 0.5);
+        this.playerSprite.setScale(0.65);
+        this.playerSprite.play('warrior_idle');
+        this.hudContainer.add(this.playerSprite);
+        this.playerBodyContainer = this.playerSprite;  // alias for compatibility
         // --- Energy Shield bar (above HP) ---
         this.playerShieldLabel = this.add.text(14, 108, 'ES', { fontSize: '9px', color: '#66aaff' });
         this.hudContainer.add(this.playerShieldLabel);
@@ -4740,8 +4777,8 @@ class Match3Scene extends Phaser.Scene {
                 this.showCombatMessage(`${target.name} -${totalEnemyDamage}`, '#ff5555', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y - 15);
 
                 // Player attack animation
-                if (this.playerBodyContainer && this.playerBodyParts) {
-                    this.playAttackAnimation(this.playerBodyContainer, this.playerBodyParts, PLAYER_BODY.facingRight);
+                if (this.playerSprite) {
+                    this.playPlayerAttackAnim();
                 }
                 // Enemy hit reaction
                 if (target.bodyContainer && target.health > 0) {
@@ -4935,12 +4972,15 @@ class Match3Scene extends Phaser.Scene {
                     this.playAttackAnimation(enemy.bodyContainer, enemy.bodyParts, bodyCfg.facingRight);
                 }
                 // Player hit reaction
-                if (this.playerBodyContainer) {
-                    this.time.delayedCall(100, () => this.playHitAnimation(this.playerBodyContainer));
+                if (this.playerSprite) {
+                    this.time.delayedCall(100, () => this.playPlayerHitAnim());
                 }
 
                 this.updatePlayerUI();
                 if (this.player.health <= 0) {
+                    if (this.playerSprite) {
+                        this.playerSprite.play('warrior_death');
+                    }
                     this.add.text(GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + (GRID_HEIGHT * TILE_SIZE) / 2, 'Game Over', { fontSize: '48px', color: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5);
                     this.isSwapping = true;
                 }
