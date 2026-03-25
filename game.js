@@ -303,11 +303,8 @@ class Match3Scene extends Phaser.Scene {
             },
             talentPoints: 0
         };
-        this.enemy = {
-            health: 200,
-            maxHealth: 200,
-            attack: 12
-        };
+        this.enemies = [];
+        this.encounterSize = 1;
         this.playerStatsText = null;
         this.playerAvatar = null;
         this.playerBodyContainer = null;
@@ -319,15 +316,7 @@ class Match3Scene extends Phaser.Scene {
         this.playerShieldText = null;
         this.playerHealthBarBg = null;
         this.playerHealthBar = null;
-        this.enemyStatsText = null;
-        this.enemyNameText = null;
-        this.enemyAvatar = null;
-        this.enemyBodyContainer = null;
-        this.enemyBodyParts = null;
-        this.enemyIdleTweens = [];
-        this.currentMonsterBodyIndex = 0;
-        this.enemyHealthBarBg = null;
-        this.enemyHealthBar = null;
+        this.enemyEncounterLabel = null;
         this.combatLog = [];
         this.combatLogTexts = [];
         this.maxCombatLogLines = 3;
@@ -342,9 +331,6 @@ class Match3Scene extends Phaser.Scene {
         this.currentScreen = 'game';
         this.combatLogTexts = [];
         this.maxCombatLogLines = 3;
-        const monsterIndex = Phaser.Math.Between(0, MONSTER_AVATARS.length - 1);
-        this.currentMonsterAvatar = MONSTER_AVATARS[monsterIndex];
-        this.currentMonsterName = MONSTER_NAMES[monsterIndex];
 
         this.maxInventorySlots = 12;
         this.itemIdCounter = 0;
@@ -397,6 +383,148 @@ class Match3Scene extends Phaser.Scene {
         this.draggingSkillGemTile = null;
         this.skillGemWasDragged = false;
         this.armedEquipGem = null;
+    }
+
+    // --- Multi-enemy encounter helpers ---
+
+    getEncounterSize(battleNumber) {
+        if (battleNumber <= 2) return 1;
+        if (battleNumber <= 4) return Phaser.Math.Between(1, 2);
+        if (battleNumber <= 7) return Phaser.Math.Between(1, 3);
+        return Phaser.Math.Between(2, 4);
+    }
+
+    getEnemyGroupStats(battleNumber, enemyCount) {
+        const baseHP = 200 + (battleNumber - 1) * 40;
+        const baseAtk = 12 + (battleNumber - 1) * 3;
+        if (enemyCount === 1) return { hp: baseHP, atk: baseAtk };
+        const hpPerEnemy = Math.floor(baseHP * 0.85 / enemyCount);
+        const atkPerEnemy = Math.max(1, Math.floor(baseAtk * 0.9 / enemyCount));
+        return { hp: hpPerEnemy, atk: atkPerEnemy };
+    }
+
+    getEnemyPositions(count) {
+        const rightCX = 293;
+        if (count === 1) return [{ x: rightCX, y: 68, scale: 1.0, barW: 166, barY: 120 }];
+        if (count === 2) return [
+            { x: rightCX - 38, y: 62, scale: 0.62, barW: 70, barY: 100 },
+            { x: rightCX + 38, y: 62, scale: 0.62, barW: 70, barY: 100 }
+        ];
+        if (count === 3) return [
+            { x: rightCX - 50, y: 62, scale: 0.50, barW: 50, barY: 96 },
+            { x: rightCX, y: 62, scale: 0.50, barW: 50, barY: 96 },
+            { x: rightCX + 50, y: 62, scale: 0.50, barW: 50, barY: 96 }
+        ];
+        return [
+            { x: rightCX - 38, y: 45, scale: 0.46, barW: 56, barY: 78 },
+            { x: rightCX + 38, y: 45, scale: 0.46, barW: 56, barY: 78 },
+            { x: rightCX - 38, y: 100, scale: 0.46, barW: 56, barY: 130 },
+            { x: rightCX + 38, y: 100, scale: 0.46, barW: 56, barY: 130 }
+        ];
+    }
+
+    getAliveEnemies() {
+        return this.enemies.filter(e => e.alive);
+    }
+
+    getTargetEnemy() {
+        return this.enemies.find(e => e.alive) || null;
+    }
+
+    allEnemiesDead() {
+        return this.enemies.length > 0 && this.enemies.every(e => !e.alive);
+    }
+
+    destroyAllEnemyUI() {
+        this.enemies.forEach(enemy => {
+            enemy.idleTweens.forEach(t => t.remove());
+            enemy.idleTweens.length = 0;
+            if (enemy.bodyContainer) enemy.bodyContainer.destroy();
+            if (enemy.healthBar) enemy.healthBar.destroy();
+            if (enemy.healthBarBg) enemy.healthBarBg.destroy();
+            if (enemy.nameText) enemy.nameText.destroy();
+            if (enemy.targetMarker) enemy.targetMarker.destroy();
+        });
+        this.enemies = [];
+    }
+
+    buildEnemyGroup(battleNumber, hudContainer) {
+        this.destroyAllEnemyUI();
+        const count = this.encounterSize;
+        const stats = this.getEnemyGroupStats(battleNumber, count);
+        const positions = this.getEnemyPositions(count);
+
+        // Update encounter label
+        if (this.enemyEncounterLabel) {
+            if (count === 1) {
+                this.enemyEncounterLabel.setText('');
+            } else {
+                this.enemyEncounterLabel.setText(`${count} Foes`);
+            }
+        }
+
+        for (let i = 0; i < count; i++) {
+            const monsterIndex = Phaser.Math.Between(0, MONSTER_BODIES.length - 1);
+            const pos = positions[i];
+            const name = MONSTER_NAMES[monsterIndex];
+
+            const body = this.buildCharacterBody(MONSTER_BODIES[monsterIndex], pos.x, pos.y);
+            body.container.setScale(pos.scale);
+            hudContainer.add(body.container);
+            const idleTweens = [];
+            this.startIdleAnimation(body.container, body.parts, idleTweens);
+
+            // Mini HP bar below body
+            const barY = pos.barY;
+            const barH = count === 1 ? 12 : 8;
+            const hpBg = this.add.rectangle(pos.x, barY, pos.barW, barH, 0x444444).setOrigin(0.5, 0.5);
+            hudContainer.add(hpBg);
+            const hpBar = this.add.rectangle(pos.x, barY, pos.barW, barH, 0xff0000).setOrigin(0.5, 0.5);
+            hudContainer.add(hpBar);
+
+            // Small name label (skip for 1 enemy - the main label handles it)
+            let nameLabel = null;
+            if (count > 1) {
+                const nameFontSize = count <= 2 ? '9px' : '7px';
+                nameLabel = this.add.text(pos.x, barY + barH / 2 + 5, name, {
+                    fontSize: nameFontSize, color: '#ccc'
+                }).setOrigin(0.5);
+                hudContainer.add(nameLabel);
+            }
+
+            // Target marker (shown on frontmost alive enemy)
+            const marker = this.add.triangle(pos.x, pos.y - 38 * pos.scale, 0, 8, 4, 0, 8, 8, 0xff4444, 0.9).setOrigin(0.5);
+            marker.setVisible(false);
+            hudContainer.add(marker);
+
+            this.enemies.push({
+                health: stats.hp,
+                maxHealth: stats.hp,
+                attack: stats.atk,
+                name: name,
+                bodyIndex: monsterIndex,
+                bodyContainer: body.container,
+                bodyParts: body.parts,
+                idleTweens: idleTweens,
+                healthBar: hpBar,
+                healthBarBg: hpBg,
+                nameText: nameLabel,
+                targetMarker: marker,
+                alive: true,
+                pos: pos
+            });
+        }
+
+        this.updateEnemyTargetMarkers();
+    }
+
+    updateEnemyTargetMarkers() {
+        const target = this.getTargetEnemy();
+        this.enemies.forEach(e => {
+            if (e.targetMarker) {
+                e.targetMarker.setVisible(e === target && this.enemies.length > 1);
+            }
+        });
     }
 
     preload() {
@@ -490,19 +618,25 @@ class Match3Scene extends Phaser.Scene {
         this.skillCharge[activeSkill.tileEffect] = Math.max(0, currentCharge - threshold);
 
         if (castResult.enemyDamage > 0) {
-            this.enemy.health = Math.max(0, this.enemy.health - castResult.enemyDamage);
-            this.showCombatMessage(
-                `${activeSkill.name} -${castResult.enemyDamage}`,
-                '#ffae57',
-                GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2,
-                GRID_OFFSET_Y - 15
-            );
-            // Player attack animation for skill cast
-            if (this.playerBodyContainer && this.playerBodyParts) {
-                this.playAttackAnimation(this.playerBodyContainer, this.playerBodyParts, PLAYER_BODY.facingRight);
-            }
-            if (this.enemyBodyContainer && this.enemy.health > 0) {
-                this.time.delayedCall(100, () => this.playHitAnimation(this.enemyBodyContainer));
+            const target = this.getTargetEnemy();
+            if (target) {
+                target.health = Math.max(0, target.health - castResult.enemyDamage);
+                this.showCombatMessage(
+                    `${activeSkill.name} -${castResult.enemyDamage}`,
+                    '#ffae57',
+                    GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2,
+                    GRID_OFFSET_Y - 15
+                );
+                // Player attack animation for skill cast
+                if (this.playerBodyContainer && this.playerBodyParts) {
+                    this.playAttackAnimation(this.playerBodyContainer, this.playerBodyParts, PLAYER_BODY.facingRight);
+                }
+                if (target.bodyContainer && target.health > 0) {
+                    this.time.delayedCall(100, () => this.playHitAnimation(target.bodyContainer));
+                }
+                if (target.health <= 0) {
+                    this.handleEnemyDeath(target);
+                }
             }
         }
 
@@ -521,9 +655,7 @@ class Match3Scene extends Phaser.Scene {
             this.addCombatLog(`Skill Gold: +${castResult.lootAmount}`, '#ffee75');
         }
 
-        if (this.enemy.health <= 0) {
-            this.enemy.health = 0;
-            this.handleEnemyDeath();
+        if (this.allEnemiesDead()) {
             if (!this.awaitingRewardChoice) {
                 this.awaitingRewardChoice = true;
                 this.time.delayedCall(850, () => this.showRewardScreen());
@@ -2442,21 +2574,16 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.add(this.playerHealthBar);
         // --- Enemy panel (right) ---
         this.hudContainer.add(this.add.rectangle(rightCX, panelH / 2 + 4, panelW, panelH, 0x111111, 0.9).setOrigin(0.5));
-        this.enemyNameText = this.add.text(rightCX, 14, this.currentMonsterName, { fontSize: '15px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
-        this.hudContainer.add(this.enemyNameText);
-        // Procedural enemy character
-        const monsterIndex = MONSTER_NAMES.indexOf(this.currentMonsterName);
-        this.currentMonsterBodyIndex = Math.max(0, monsterIndex);
-        const enemyBody = this.buildCharacterBody(MONSTER_BODIES[this.currentMonsterBodyIndex], rightCX, 68);
-        this.enemyBodyContainer = enemyBody.container;
-        this.enemyBodyParts = enemyBody.parts;
-        this.hudContainer.add(this.enemyBodyContainer);
-        this.startIdleAnimation(this.enemyBodyContainer, this.enemyBodyParts, this.enemyIdleTweens);
-        this.hudContainer.add(this.add.text(210, 120, 'HP', { fontSize: '11px', color: '#aaa' }));
-        this.enemyHealthBarBg = this.add.rectangle(210, 131, barW, 12, 0x444444).setOrigin(0, 0.5);
-        this.hudContainer.add(this.enemyHealthBarBg);
-        this.enemyHealthBar = this.add.rectangle(210, 131, barW, 12, 0xff0000).setOrigin(0, 0.5);
-        this.hudContainer.add(this.enemyHealthBar);
+        // Encounter label (shows enemy name for solo, foe count for groups)
+        this.enemyEncounterLabel = this.add.text(rightCX, 14, '', { fontSize: '15px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.hudContainer.add(this.enemyEncounterLabel);
+        // Build initial enemy group
+        this.encounterSize = 1;
+        this.buildEnemyGroup(this.battleNumber, this.hudContainer);
+        // Set the encounter label for the first battle
+        if (this.enemies.length === 1) {
+            this.enemyEncounterLabel.setText(`${this.enemies[0].name} Lv.${this.battleNumber}`);
+        }
         // --- Gold display (under player HP bar) ---
         this.goldDisplayIcon = this.add.text(14, 148, '\ud83e\ude99', { fontSize: '14px' }).setOrigin(0, 0.5);
         this.goldDisplayText = this.add.text(32, 148, '0', { fontSize: '13px', color: '#ffd966', fontStyle: 'bold' }).setOrigin(0, 0.5);
@@ -2575,7 +2702,8 @@ class Match3Scene extends Phaser.Scene {
         const gear = this.getEquippedStatTotals();
         const magicFind = gear.magicFind;
         const monsterLevel = this.battleNumber;
-        this.rewardLootInfoText.setText(`Monster Lv.${monsterLevel} | Magic Find: ${magicFind}`);
+        const foeCount = this.encounterSize;
+        this.rewardLootInfoText.setText(`Battle Lv.${monsterLevel} (${foeCount} foe${foeCount > 1 ? 's' : ''}) | Magic Find: ${magicFind}`);
 
         this.rewardChoices = [];
         for (let i = 0; i < 3; i++) {
@@ -2693,30 +2821,22 @@ class Match3Scene extends Phaser.Scene {
     startNextBattle() {
         this.battleNumber += 1;
         this.skillCharge = this.createInitialSkillCharge();
-        const monsterIndex = Phaser.Math.Between(0, MONSTER_AVATARS.length - 1);
-        this.currentMonsterAvatar = MONSTER_AVATARS[monsterIndex];
-        this.currentMonsterName = MONSTER_NAMES[monsterIndex];
 
-        this.enemy.maxHealth = 200 + (this.battleNumber - 1) * 40;
-        this.enemy.health = this.enemy.maxHealth;
-        this.enemy.attack = 12 + (this.battleNumber - 1) * 3;
+        // Determine encounter size
+        this.encounterSize = this.getEncounterSize(this.battleNumber);
 
-        // Rebuild enemy body for new monster
-        this.enemyIdleTweens.forEach(t => t.remove());
-        this.enemyIdleTweens.length = 0;
-        if (this.enemyBodyContainer) {
-            this.enemyBodyContainer.destroy();
-        }
-        this.currentMonsterBodyIndex = monsterIndex;
-        const rightCX = 293;
-        const enemyBody = this.buildCharacterBody(MONSTER_BODIES[this.currentMonsterBodyIndex], rightCX, 68);
-        this.enemyBodyContainer = enemyBody.container;
-        this.enemyBodyParts = enemyBody.parts;
-        this.hudContainer.add(this.enemyBodyContainer);
-        this.startIdleAnimation(this.enemyBodyContainer, this.enemyBodyParts, this.enemyIdleTweens);
+        // Build enemy group (destroys old UI, creates new enemies)
+        this.buildEnemyGroup(this.battleNumber, this.hudContainer);
 
-        if (this.enemyNameText) {
-            this.enemyNameText.setText(`${this.currentMonsterName} Lv.${this.battleNumber}`);
+        // Update encounter label
+        if (this.enemyEncounterLabel) {
+            if (this.encounterSize === 1) {
+                this.enemyEncounterLabel.setText(`${this.enemies[0].name} Lv.${this.battleNumber}`);
+            } else {
+                const names = this.enemies.map(e => e.name);
+                const uniqueNames = [...new Set(names)];
+                this.enemyEncounterLabel.setText(`Lv.${this.battleNumber} - ${this.encounterSize} Foes`);
+            }
         }
 
         this.refillEnergyShield();
@@ -2729,7 +2849,8 @@ class Match3Scene extends Phaser.Scene {
         this.isSwapping = false;
         this.player.talentPoints += 1;
         this.showGameScreen();
-        this.addCombatLog(`A new enemy appears: ${this.currentMonsterName} (Battle ${this.battleNumber})`, '#ffcc66');
+        const enemyNames = this.enemies.map(e => e.name).join(', ');
+        this.addCombatLog(`Battle ${this.battleNumber}: ${enemyNames} appear! (${this.encounterSize} foe${this.encounterSize > 1 ? 's' : ''})`, '#ffcc66');
         this.addCombatLog(`Talent point earned! (${this.player.talentPoints} available)`, '#ffd700');
     }
 
@@ -3998,19 +4119,25 @@ class Match3Scene extends Phaser.Scene {
     }
 
     updateEnemyUI() {
-        if (this.enemyHealthBar) {
-            const fraction = Phaser.Math.Clamp(this.enemy.health / this.enemy.maxHealth, 0, 1);
-            const targetWidth = 166 * fraction;
+        this.enemies.forEach(enemy => {
+            if (!enemy.healthBar) return;
+            if (!enemy.alive) {
+                enemy.healthBar.width = 0;
+                return;
+            }
+            const fraction = Phaser.Math.Clamp(enemy.health / enemy.maxHealth, 0, 1);
+            const maxBarW = enemy.pos.barW;
+            const targetWidth = maxBarW * fraction;
             const targetColor = (fraction > 0.5 ? 0xff5555 : (fraction > 0.25 ? 0xffcc00 : 0xff0000));
-            this.tweens.killTweensOf(this.enemyHealthBar);
+            this.tweens.killTweensOf(enemy.healthBar);
             this.tweens.add({
-                targets: this.enemyHealthBar,
+                targets: enemy.healthBar,
                 width: targetWidth,
                 duration: 300,
                 ease: 'Power2'
             });
-            this.enemyHealthBar.fillColor = targetColor;
-        }
+            enemy.healthBar.fillColor = targetColor;
+        });
     }
 
     showCombatMessage(text, color, x, y) {
@@ -4025,36 +4152,51 @@ class Match3Scene extends Phaser.Scene {
         });
     }
 
-    handleEnemyDeath() {
-        const centerX = GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2;
-        const centerY = 210;
+    handleEnemyDeath(enemy) {
+        if (!enemy) return;
+        enemy.alive = false;
 
-        // Stop enemy idle tweens
-        this.enemyIdleTweens.forEach(t => t.remove());
-        this.enemyIdleTweens.length = 0;
+        // Stop this enemy's idle tweens
+        enemy.idleTweens.forEach(t => t.remove());
+        enemy.idleTweens.length = 0;
 
-        if (this.enemyBodyContainer) {
+        if (enemy.bodyContainer) {
             this.tweens.add({
-                targets: this.enemyBodyContainer,
-                y: this.enemyBodyContainer.y + 40,
+                targets: enemy.bodyContainer,
+                y: enemy.bodyContainer.y + 20,
                 angle: 90,
-                alpha: 0.4,
+                alpha: 0,
                 duration: 600,
                 ease: 'Power2',
             });
         }
 
-        const deathAnim = this.add.text(centerX, centerY, '💀', { fontSize: '80px', color: '#ff0000', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5);
+        // Mini skull on enemy position
+        const skullX = enemy.pos ? enemy.pos.x : (GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2);
+        const skullY = enemy.pos ? enemy.pos.y : 210;
+        const skullSize = this.enemies.length > 1 ? '32px' : '80px';
+        const deathAnim = this.add.text(skullX, skullY, '💀', { fontSize: skullSize, color: '#ff0000', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5);
+        this.hudContainer.add(deathAnim);
         this.time.delayedCall(200, () => {
             this.tweens.add({
                 targets: deathAnim,
-                y: centerY + 80,
+                y: skullY + 30,
                 alpha: 0,
                 duration: 900,
                 ease: 'Power2',
                 onComplete: () => deathAnim.destroy()
             });
         });
+
+        // Update target markers
+        this.updateEnemyTargetMarkers();
+
+        // Update encounter label with remaining count
+        const aliveCount = this.getAliveEnemies().length;
+        if (this.enemyEncounterLabel && this.encounterSize > 1 && aliveCount > 0) {
+            this.enemyEncounterLabel.setText(`Lv.${this.battleNumber} - ${aliveCount} remaining`);
+        }
+        this.addCombatLog(`${enemy.name} defeated!`, '#66ff66');
     }
 
     showVictoryPopup() {
@@ -4577,21 +4719,26 @@ class Match3Scene extends Phaser.Scene {
         this.spawnComboBonusChargeParticles(comboChargeSources);
 
         if (totalEnemyDamage > 0) {
-            this.enemy.health = Math.max(0, this.enemy.health - totalEnemyDamage);
-            this.showCombatMessage(`Enemy -${totalEnemyDamage}`, '#ff5555', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y - 15);
+            const target = this.getTargetEnemy();
+            if (target) {
+                target.health = Math.max(0, target.health - totalEnemyDamage);
+                this.showCombatMessage(`${target.name} -${totalEnemyDamage}`, '#ff5555', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y - 15);
 
-            // Player attack animation
-            if (this.playerBodyContainer && this.playerBodyParts) {
-                this.playAttackAnimation(this.playerBodyContainer, this.playerBodyParts, PLAYER_BODY.facingRight);
-            }
-            // Enemy hit reaction
-            if (this.enemyBodyContainer && this.enemy.health > 0) {
-                this.time.delayedCall(100, () => this.playHitAnimation(this.enemyBodyContainer));
+                // Player attack animation
+                if (this.playerBodyContainer && this.playerBodyParts) {
+                    this.playAttackAnimation(this.playerBodyContainer, this.playerBodyParts, PLAYER_BODY.facingRight);
+                }
+                // Enemy hit reaction
+                if (target.bodyContainer && target.health > 0) {
+                    this.time.delayedCall(100, () => this.playHitAnimation(target.bodyContainer));
+                }
+
+                if (target.health <= 0) {
+                    this.handleEnemyDeath(target);
+                }
             }
 
-            if (this.enemy.health <= 0) {
-                this.enemy.health = 0;
-                this.handleEnemyDeath();
+            if (this.allEnemiesDead()) {
                 if (!this.awaitingRewardChoice) {
                     this.awaitingRewardChoice = true;
                     this.time.delayedCall(850, () => this.showRewardScreen());
@@ -4605,7 +4752,6 @@ class Match3Scene extends Phaser.Scene {
             this.showCombatMessage(`Hero +${totalPlayerHeal}`, '#55ff55', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + 20);
         }
 
-        this.enemy.health = Math.max(0, this.enemy.health);
         this.player.health = Math.min(500, this.player.health);
 
         document.getElementById('score').textContent = `Score: ${this.score}`;
@@ -4715,7 +4861,7 @@ class Match3Scene extends Phaser.Scene {
                 } else {
                     this.isSwapping = false;
                     // Enemy attacks only after player's turn is fully complete
-                    if (this.enemy.health > 0) {
+                    if (!this.allEnemiesDead()) {
                         this.time.delayedCall(200, () => {
                             this.enemyAttack();
                         });
@@ -4726,59 +4872,65 @@ class Match3Scene extends Phaser.Scene {
     }
 
     enemyAttack() {
-        if (this.enemy.health <= 0 || this.awaitingRewardChoice) return;
+        const alive = this.getAliveEnemies();
+        if (alive.length === 0 || this.awaitingRewardChoice) return;
+
         const gear = this.getEquippedStatTotals();
         const charBonuses = this.getCharacterStatBonuses();
-
-        // Evasion check (DEX + gear evasion)
-        const totalEvasionChance = Math.min(75, charBonuses.evasionChance + gear.evasion * 0.3);
-        if (Math.random() * 100 < totalEvasionChance) {
-            this.addCombatLog(`Evaded enemy attack! (${totalEvasionChance.toFixed(0)}% evasion)`, '#00ffcc');
-            this.showCombatMessage('EVADE!', '#00ffcc', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20);
-            // Enemy still swings on evade
-            if (this.enemyBodyContainer && this.enemyBodyParts) {
-                const bodyCfg = MONSTER_BODIES[this.currentMonsterBodyIndex];
-                this.playAttackAnimation(this.enemyBodyContainer, this.enemyBodyParts, bodyCfg.facingRight);
-            }
-            this.updatePlayerUI();
-            return;
-        }
-
-        const damage = this.enemy.attack;
         const totalArmor = gear.armor + charBonuses.armorBonus;
         const armorReduction = Math.floor(totalArmor / 4);
-        let remainingDamage = Math.max(1, damage - armorReduction);
+        const totalEvasionChance = Math.min(75, charBonuses.evasionChance + gear.evasion * 0.3);
 
-        // Energy shield pool absorbs damage first, overflow goes to health
-        let shieldAbsorbed = 0;
-        if (this.player.currentShield > 0 && remainingDamage > 0) {
-            shieldAbsorbed = Math.min(remainingDamage, this.player.currentShield);
-            this.player.currentShield -= shieldAbsorbed;
-            remainingDamage -= shieldAbsorbed;
-        }
+        alive.forEach((enemy, idx) => {
+            this.time.delayedCall(idx * 300, () => {
+                if (this.player.health <= 0) return;
 
-        this.player.health -= remainingDamage;
-        if (this.player.health < 0) this.player.health = 0;
-        const shieldMsg = shieldAbsorbed > 0 ? `, ${shieldAbsorbed} absorbed by shield` : '';
-        this.addCombatLog(`Enemy Attack: -${remainingDamage} HP (${armorReduction} blocked${shieldMsg})`, '#ff6666');
-        const totalTaken = remainingDamage + shieldAbsorbed;
-        this.showCombatMessage(`Hero -${totalTaken}`, '#ff4444', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20);
+                // Evasion check per attack
+                if (Math.random() * 100 < totalEvasionChance) {
+                    this.addCombatLog(`Evaded ${enemy.name}'s attack! (${totalEvasionChance.toFixed(0)}%)`, '#00ffcc');
+                    this.showCombatMessage('EVADE!', '#00ffcc', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20 - idx * 18);
+                    if (enemy.bodyContainer && enemy.bodyParts) {
+                        const bodyCfg = MONSTER_BODIES[enemy.bodyIndex];
+                        this.playAttackAnimation(enemy.bodyContainer, enemy.bodyParts, bodyCfg.facingRight);
+                    }
+                    this.updatePlayerUI();
+                    return;
+                }
 
-        // Enemy attack animation
-        if (this.enemyBodyContainer && this.enemyBodyParts) {
-            const bodyCfg = MONSTER_BODIES[this.currentMonsterBodyIndex];
-            this.playAttackAnimation(this.enemyBodyContainer, this.enemyBodyParts, bodyCfg.facingRight);
-        }
-        // Player hit reaction
-        if (this.playerBodyContainer) {
-            this.time.delayedCall(100, () => this.playHitAnimation(this.playerBodyContainer));
-        }
+                const damage = enemy.attack;
+                let remainingDamage = Math.max(1, damage - armorReduction);
 
-        this.updatePlayerUI();
-        if (this.player.health <= 0) {
-            this.add.text(GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + (GRID_HEIGHT * TILE_SIZE) / 2, 'Game Over', { fontSize: '48px', color: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5);
-            this.isSwapping = true;
-        }
+                let shieldAbsorbed = 0;
+                if (this.player.currentShield > 0 && remainingDamage > 0) {
+                    shieldAbsorbed = Math.min(remainingDamage, this.player.currentShield);
+                    this.player.currentShield -= shieldAbsorbed;
+                    remainingDamage -= shieldAbsorbed;
+                }
+
+                this.player.health -= remainingDamage;
+                if (this.player.health < 0) this.player.health = 0;
+                const shieldMsg = shieldAbsorbed > 0 ? `, ${shieldAbsorbed} shielded` : '';
+                this.addCombatLog(`${enemy.name}: -${remainingDamage} HP (${armorReduction} blocked${shieldMsg})`, '#ff6666');
+                const totalTaken = remainingDamage + shieldAbsorbed;
+                this.showCombatMessage(`-${totalTaken}`, '#ff4444', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20 - idx * 18);
+
+                // Enemy attack animation
+                if (enemy.bodyContainer && enemy.bodyParts) {
+                    const bodyCfg = MONSTER_BODIES[enemy.bodyIndex];
+                    this.playAttackAnimation(enemy.bodyContainer, enemy.bodyParts, bodyCfg.facingRight);
+                }
+                // Player hit reaction
+                if (this.playerBodyContainer) {
+                    this.time.delayedCall(100, () => this.playHitAnimation(this.playerBodyContainer));
+                }
+
+                this.updatePlayerUI();
+                if (this.player.health <= 0) {
+                    this.add.text(GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + (GRID_HEIGHT * TILE_SIZE) / 2, 'Game Over', { fontSize: '48px', color: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5);
+                    this.isSwapping = true;
+                }
+            });
+        });
     }
 
     isValidPlacement(x, y, type) {
