@@ -355,7 +355,7 @@ class Match3Scene extends Phaser.Scene {
         return [
             { activeId: 'cleave', supportIds: ['focus', 'brutality', null] },
             { activeId: 'arc-burst', supportIds: ['echo', null, null] },
-            { activeId: 'rejuvenate', supportIds: ['vitality', null, null] }
+            { activeId: 'multishot', supportIds: ['vitality', null, null] }
         ];
     }
 
@@ -1344,6 +1344,22 @@ class Match3Scene extends Phaser.Scene {
         return slotGroup.charAt(0).toUpperCase() + slotGroup.slice(1);
     }
 
+    getEquipSlotDisplayLabel(slotKey) {
+        const slotLabels = {
+            helmet: 'Helmet',
+            necklace: 'Necklace',
+            chest: 'Chest',
+            belt: 'Belt',
+            gloves: 'Gloves',
+            boots: 'Boots',
+            mainhand: 'Main Hand',
+            offhand: 'Off Hand',
+            ring1: 'Ring 1',
+            ring2: 'Ring 2'
+        };
+        return slotLabels[slotKey] || this.getSlotLabel(slotKey);
+    }
+
     getEmptySlotIcon(slotKey) {
         const icons = {
             helmet: '🪖',
@@ -1745,25 +1761,49 @@ class Match3Scene extends Phaser.Scene {
 
     getRewardCompareData(item) {
         const targetSlot = this.getEquipTargetSlot(item);
-        const equippedItem = targetSlot ? (this.equippedItems[targetSlot] || null) : null;
+        const displacedItems = targetSlot ? this.getDisplacedItemsForEquip(item, targetSlot) : [];
 
-        if (!equippedItem) {
+        const targetSlotLabel = targetSlot
+            ? this.getEquipSlotDisplayLabel(targetSlot)
+            : this.getSlotLabel(item.slotGroup || '');
+
+        if (!targetSlot) {
             return {
                 targetSlot,
+                targetSlotLabel,
                 equippedName: 'None equipped',
+                equippedSummary: `Current ${targetSlotLabel}: None`,
                 compareLines: ['New slot item']
             };
         }
 
+        if (!displacedItems || displacedItems.length === 0) {
+            return {
+                targetSlot,
+                targetSlotLabel,
+                equippedName: 'None equipped',
+                equippedSummary: `Current ${targetSlotLabel}: None`,
+                compareLines: ['New slot item']
+            };
+        }
+
+        const equippedStats = {};
+        displacedItems.forEach(entry => {
+            const stats = (entry && entry.item && entry.item.stats) || {};
+            Object.entries(stats).forEach(([stat, value]) => {
+                equippedStats[stat] = (equippedStats[stat] || 0) + value;
+            });
+        });
+
         const statKeys = new Set([
             ...Object.keys(item.stats || {}),
-            ...Object.keys(equippedItem.stats || {})
+            ...Object.keys(equippedStats)
         ]);
 
         const compareLines = Array.from(statKeys)
             .map(stat => {
                 const nextValue = (item.stats && item.stats[stat]) || 0;
-                const currentValue = (equippedItem.stats && equippedItem.stats[stat]) || 0;
+                const currentValue = equippedStats[stat] || 0;
                 const delta = nextValue - currentValue;
                 return {
                     stat,
@@ -1775,9 +1815,18 @@ class Match3Scene extends Phaser.Scene {
             .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
             .slice(0, 3);
 
+        const replacedSlotsLabel = displacedItems
+            .map(entry => this.getEquipSlotDisplayLabel(entry.slotKey))
+            .join(' + ');
+        const equippedName = displacedItems
+            .map(entry => entry.item.name)
+            .join(' + ');
+
         return {
             targetSlot,
-            equippedName: equippedItem.name,
+            targetSlotLabel,
+            equippedName,
+            equippedSummary: `Current ${replacedSlotsLabel}: ${equippedName}`,
             compareLines: compareLines.length > 0 ? compareLines : [{ text: 'No stat change', delta: 0 }]
         };
     }
@@ -2019,7 +2068,7 @@ class Match3Scene extends Phaser.Scene {
             card.rarity.setText(`iLvl ${item.itemLevel || 1} ${item.rarity} ${item.type}`);
             card.rarity.setColor(item.rarityTextColor || '#ffffff');
             card.stats.setText(statText || 'No stats');
-            card.equippedLabel.setText(`Replacing ${compareData.targetSlot || item.slotGroup}: ${compareData.equippedName}`);
+            card.equippedLabel.setText(compareData.equippedSummary || `Current ${compareData.targetSlotLabel}: ${compareData.equippedName}`);
             card.compare.setText(compareText);
             card.compare.setColor(hasNegative ? '#ff9d9d' : (hasPositive ? '#8aff8a' : '#dddddd'));
 
