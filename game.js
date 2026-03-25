@@ -532,8 +532,8 @@ class Match3Scene extends Phaser.Scene {
             this.load.image('tile_' + t.name, 'assets/' + t.name + '.png');
         });
         this.load.spritesheet('warrior', 'assets/sprites/warrior_anim.png', {
-            frameWidth: 109,
-            frameHeight: 100
+            frameWidth: 155,
+            frameHeight: 130
         });
     }
 
@@ -2589,25 +2589,25 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.add(this.add.rectangle(leftCX, panelH / 2 + 4, panelW, panelH, 0x111111, 0.9).setOrigin(0.5));
         this.hudContainer.add(this.add.text(leftCX, 14, 'Hero', { fontSize: '17px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
         // Sprite-based player character
-        this.playerSprite = this.add.sprite(leftCX, 75, 'warrior').setOrigin(0.5, 0.5);
-        this.playerSprite.setScale(1.1);
+        this.playerSprite = this.add.sprite(leftCX, 80, 'warrior').setOrigin(0.5, 0.5);
+        this.playerSprite.setScale(1.3);
         this.playerSprite.play('warrior_idle');
         this.hudContainer.add(this.playerSprite);
         this.playerBodyContainer = this.playerSprite;  // alias for compatibility
         // --- Energy Shield bar (above HP) ---
-        this.playerShieldLabel = this.add.text(14, 108, 'ES', { fontSize: '9px', color: '#66aaff' });
+        this.playerShieldLabel = this.add.text(14, 148, 'ES', { fontSize: '9px', color: '#66aaff' });
         this.hudContainer.add(this.playerShieldLabel);
-        this.playerShieldBarBg = this.add.rectangle(14, 117, barW, 8, 0x333344).setOrigin(0, 0.5);
+        this.playerShieldBarBg = this.add.rectangle(14, 157, barW, 8, 0x333344).setOrigin(0, 0.5);
         this.hudContainer.add(this.playerShieldBarBg);
-        this.playerShieldBar = this.add.rectangle(14, 117, 0, 8, 0x3388ff).setOrigin(0, 0.5);
+        this.playerShieldBar = this.add.rectangle(14, 157, 0, 8, 0x3388ff).setOrigin(0, 0.5);
         this.hudContainer.add(this.playerShieldBar);
-        this.playerShieldText = this.add.text(14 + barW / 2, 117, '', { fontSize: '7px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.playerShieldText = this.add.text(14 + barW / 2, 157, '', { fontSize: '7px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
         this.hudContainer.add(this.playerShieldText);
         // --- HP bar ---
-        this.hudContainer.add(this.add.text(14, 123, 'HP', { fontSize: '11px', color: '#aaa' }));
-        this.playerHealthBarBg = this.add.rectangle(14, 134, barW, 12, 0x444444).setOrigin(0, 0.5);
+        this.hudContainer.add(this.add.text(14, 163, 'HP', { fontSize: '11px', color: '#aaa' }));
+        this.playerHealthBarBg = this.add.rectangle(14, 174, barW, 12, 0x444444).setOrigin(0, 0.5);
         this.hudContainer.add(this.playerHealthBarBg);
-        this.playerHealthBar = this.add.rectangle(14, 134, barW, 12, 0x00cc00).setOrigin(0, 0.5);
+        this.playerHealthBar = this.add.rectangle(14, 174, barW, 12, 0x00cc00).setOrigin(0, 0.5);
         this.hudContainer.add(this.playerHealthBar);
         // --- Enemy panel (right) ---
         this.hudContainer.add(this.add.rectangle(rightCX, panelH / 2 + 4, panelW, panelH, 0x111111, 0.9).setOrigin(0.5));
