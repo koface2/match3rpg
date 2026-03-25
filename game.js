@@ -662,7 +662,7 @@ class Match3Scene extends Phaser.Scene {
             scaleX: rowLength >= 5 ? 3.3 : 2.5,
             scaleY: rowLength >= 5 ? 3.3 : 2.5,
             alpha: 0,
-            duration: rowLength >= 5 ? 1100 : 900,
+            duration: rowLength >= 5 ? 1650 : 1350,
             ease: 'Cubic.easeOut',
             onComplete: () => ring.destroy()
         });
@@ -672,7 +672,7 @@ class Match3Scene extends Phaser.Scene {
             scaleX: rowLength >= 5 ? 1.9 : 1.5,
             scaleY: rowLength >= 5 ? 1.9 : 1.5,
             alpha: 0,
-            duration: rowLength >= 5 ? 930 : 760,
+            duration: rowLength >= 5 ? 1450 : 1180,
             ease: 'Quad.easeOut',
             onComplete: () => pulse.destroy()
         });
@@ -681,10 +681,102 @@ class Match3Scene extends Phaser.Scene {
             targets: text,
             y: centerY - 42,
             alpha: 0,
-            duration: 1200,
+            duration: rowLength >= 5 ? 1700 : 1500,
             ease: 'Quad.easeOut',
             onComplete: () => text.destroy()
         });
+    }
+
+    spawnLShapeMatchEffect(shape, delay = 0) {
+        if (!shape || !shape.tiles || shape.tiles.length < 5) return;
+
+        const play = () => {
+            const color = shape.color || 0xffffff;
+            const cornerX = GRID_OFFSET_X + shape.corner.x * TILE_SIZE + TILE_SIZE / 2;
+            const cornerY = GRID_OFFSET_Y + shape.corner.y * TILE_SIZE + TILE_SIZE / 2;
+
+            const center = shape.tiles.reduce((acc, tile) => {
+                acc.x += GRID_OFFSET_X + tile.x * TILE_SIZE + TILE_SIZE / 2;
+                acc.y += GRID_OFFSET_Y + tile.y * TILE_SIZE + TILE_SIZE / 2;
+                return acc;
+            }, { x: 0, y: 0 });
+            center.x /= shape.tiles.length;
+            center.y /= shape.tiles.length;
+
+            const cornerPulse = this.add.circle(cornerX, cornerY, 10, color, 0.35).setDepth(1098);
+            const cornerRing = this.add.circle(cornerX, cornerY, 9, color, 0)
+                .setStrokeStyle(3, color, 0.95)
+                .setDepth(1099);
+            const label = this.add.text(center.x, center.y - 10, 'L MATCH!', {
+                fontSize: '18px',
+                color: '#ffffff',
+                fontStyle: 'bold',
+                stroke: this.toHexColor(color),
+                strokeThickness: 6
+            }).setOrigin(0.5).setDepth(1100);
+
+            if (this.skillChargeFxContainer) {
+                this.skillChargeFxContainer.add([cornerPulse, cornerRing, label]);
+            }
+
+            shape.tiles.forEach((tile, index) => {
+                const tileX = GRID_OFFSET_X + tile.x * TILE_SIZE + TILE_SIZE / 2;
+                const tileY = GRID_OFFSET_Y + tile.y * TILE_SIZE + TILE_SIZE / 2;
+                const marker = this.add.rectangle(tileX, tileY, TILE_SIZE - 12, TILE_SIZE - 12, color, 0)
+                    .setStrokeStyle(2, color, 0.95)
+                    .setDepth(1097);
+
+                if (this.skillChargeFxContainer) {
+                    this.skillChargeFxContainer.add(marker);
+                }
+
+                this.tweens.add({
+                    targets: marker,
+                    scaleX: 1.22,
+                    scaleY: 1.22,
+                    alpha: 0,
+                    duration: 520,
+                    delay: index * 55,
+                    ease: 'Quad.easeOut',
+                    onComplete: () => marker.destroy()
+                });
+            });
+
+            this.tweens.add({
+                targets: cornerPulse,
+                scaleX: 2.4,
+                scaleY: 2.4,
+                alpha: 0,
+                duration: 980,
+                ease: 'Cubic.easeOut',
+                onComplete: () => cornerPulse.destroy()
+            });
+
+            this.tweens.add({
+                targets: cornerRing,
+                scaleX: 3.0,
+                scaleY: 3.0,
+                alpha: 0,
+                duration: 1100,
+                ease: 'Cubic.easeOut',
+                onComplete: () => cornerRing.destroy()
+            });
+
+            this.tweens.add({
+                targets: label,
+                y: center.y - 56,
+                alpha: 0,
+                duration: 1250,
+                ease: 'Quad.easeOut',
+                onComplete: () => label.destroy()
+            });
+        };
+
+        if (delay > 0) {
+            this.time.delayedCall(delay, play);
+        } else {
+            play();
+        }
     }
 
     spawnComboBonusChargeParticles(comboSources) {
@@ -3448,7 +3540,7 @@ class Match3Scene extends Phaser.Scene {
         const matchData = this.findMatchData();
         if (matchData.matched.length > 0) {
             this.time.delayedCall(800, () => {
-                this.clearMatches(matchData.matched, matchData.runs);
+                this.clearMatches(matchData.matched, matchData.runs, matchData.lShapes);
                 this.applyGravity();
             });
         } else {
@@ -3492,6 +3584,7 @@ class Match3Scene extends Phaser.Scene {
                     runs.push({
                         length: count,
                         orientation: 'horizontal',
+                        type,
                         effect: tileType ? tileType.effect : null,
                         color: tileType ? tileType.color : 0xffffff,
                         tiles
@@ -3528,6 +3621,7 @@ class Match3Scene extends Phaser.Scene {
                     runs.push({
                         length: count,
                         orientation: 'vertical',
+                        type,
                         effect: tileType ? tileType.effect : null,
                         color: tileType ? tileType.color : 0xffffff,
                         tiles
@@ -3538,17 +3632,76 @@ class Match3Scene extends Phaser.Scene {
             }
         }
 
+        const lShapes = this.findLShapeMatches(runs);
+
         return {
             matched: Array.from(matched),
-            runs
+            runs,
+            lShapes
         };
+    }
+
+    isRunEndpoint(run, x, y) {
+        if (!run || !run.tiles || run.tiles.length === 0) return false;
+        const first = run.tiles[0];
+        const last = run.tiles[run.tiles.length - 1];
+        return (first.x === x && first.y === y) || (last.x === x && last.y === y);
+    }
+
+    findLShapeMatches(runs) {
+        const horizontalRuns = runs.filter(run => run.orientation === 'horizontal' && run.length >= 3 && run.type >= 0);
+        const verticalRuns = runs.filter(run => run.orientation === 'vertical' && run.length >= 3 && run.type >= 0);
+        const lShapes = [];
+        const seen = new Set();
+
+        horizontalRuns.forEach(hRun => {
+            const hStartX = hRun.tiles[0].x;
+            const hEndX = hRun.tiles[hRun.tiles.length - 1].x;
+            const hY = hRun.tiles[0].y;
+
+            verticalRuns.forEach(vRun => {
+                if (vRun.type !== hRun.type) return;
+
+                const vX = vRun.tiles[0].x;
+                const vStartY = vRun.tiles[0].y;
+                const vEndY = vRun.tiles[vRun.tiles.length - 1].y;
+
+                const intersects = vX >= hStartX && vX <= hEndX && hY >= vStartY && hY <= vEndY;
+                if (!intersects) return;
+
+                // L-shapes share a corner tile that is an endpoint on both runs.
+                if (!this.isRunEndpoint(hRun, vX, hY) || !this.isRunEndpoint(vRun, vX, hY)) return;
+
+                const tileMap = new Map();
+                hRun.tiles.forEach(tile => tileMap.set(`${tile.x},${tile.y}`, tile));
+                vRun.tiles.forEach(tile => tileMap.set(`${tile.x},${tile.y}`, tile));
+                const tiles = Array.from(tileMap.values());
+
+                const signature = tiles
+                    .map(tile => `${tile.x},${tile.y}`)
+                    .sort()
+                    .join('|');
+
+                if (seen.has(signature)) return;
+                seen.add(signature);
+
+                lShapes.push({
+                    effect: hRun.effect,
+                    color: hRun.color,
+                    corner: { x: vX, y: hY },
+                    tiles
+                });
+            });
+        });
+
+        return lShapes;
     }
 
     findMatches() {
         return this.findMatchData().matched;
     }
 
-    clearMatches(matches, comboRuns = []) {
+    clearMatches(matches, comboRuns = [], lShapeCombos = []) {
         const gear = this.getEquippedStatTotals();
         let totalEnemyDamage = 0;
         let totalPlayerHeal = 0;
@@ -3566,6 +3719,11 @@ class Match3Scene extends Phaser.Scene {
         };
         const matchedTilesForEffects = [];
         const comboChargeSources = [];
+
+        lShapeCombos.forEach((shape, index) => {
+            this.spawnLShapeMatchEffect(shape, index * 90);
+            this.addCombatLog('L-Shape Match!', this.toHexColor(shape.color || 0xffffff));
+        });
 
         // --- Regular tile clearing: only charge skills, no damage/heal ---
         // Gold tiles charge the loot meter instead
@@ -3828,7 +3986,7 @@ class Match3Scene extends Phaser.Scene {
                 const matchData = this.findMatchData();
                 if (matchData.matched.length > 0) {
                     this.time.delayedCall(800, () => {
-                        this.clearMatches(matchData.matched, matchData.runs);
+                        this.clearMatches(matchData.matched, matchData.runs, matchData.lShapes);
                         this.applyGravity();
                     });
                 } else {
