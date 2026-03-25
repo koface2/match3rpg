@@ -2078,18 +2078,22 @@ class Match3Scene extends Phaser.Scene {
                 align: 'center',
                 wordWrap: { width: cardWidth - 10, useAdvancedWrap: true }
             }).setOrigin(0.5);
-            const equippedLabel = this.add.text(centerX, centerY + 52, '', {
+            const equippedLabel = this.add.text(centerX, centerY + 44, '', {
                 fontSize: '8px',
                 color: '#bbbbbb',
                 align: 'center',
                 wordWrap: { width: cardWidth - 10, useAdvancedWrap: true }
             }).setOrigin(0.5);
-            const compare = this.add.text(centerX, centerY + 78, '', {
-                fontSize: '9px',
-                color: '#8aff8a',
-                align: 'center',
-                wordWrap: { width: cardWidth - 10, useAdvancedWrap: true }
-            }).setOrigin(0.5);
+            const compareLines = [];
+            for (let li = 0; li < 5; li++) {
+                const cl = this.add.text(centerX, centerY + 56 + li * 11, '', {
+                    fontSize: '9px',
+                    color: '#8aff8a',
+                    align: 'center',
+                    wordWrap: { width: cardWidth - 10, useAdvancedWrap: true }
+                }).setOrigin(0.5);
+                compareLines.push(cl);
+            }
 
             const equipBtn = this.add.text(centerX - 28, centerY + 108, 'Equip', {
                 fontSize: '11px',
@@ -2105,8 +2109,8 @@ class Match3Scene extends Phaser.Scene {
                 padding: { left: 5, right: 5, top: 3, bottom: 3 }
             }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-            this.rewardScreenGroup.add([cardBg, icon, name, rarity, stats, equippedLabel, compare, equipBtn, stashBtn]);
-            this.rewardCards.push({ cardBg, icon, name, rarity, stats, equippedLabel, compare, equipBtn, stashBtn });
+            this.rewardScreenGroup.add([cardBg, icon, name, rarity, stats, equippedLabel, ...compareLines, equipBtn, stashBtn]);
+            this.rewardCards.push({ cardBg, icon, name, rarity, stats, equippedLabel, compareLines, equipBtn, stashBtn });
         }
     }
 
@@ -2142,9 +2146,35 @@ class Match3Scene extends Phaser.Scene {
                 .map(([key, value]) => `${this.getStatLabel(key)} +${value}`)
                 .join('\n');
             const compareData = this.getRewardCompareData(item);
-            const compareText = compareData.compareLines.map(line => line.text || line).join('\n');
-            const hasNegative = compareData.compareLines.some(line => typeof line === 'object' && line.delta < 0);
-            const hasPositive = compareData.compareLines.some(line => typeof line === 'object' && line.delta > 0);
+
+            // Build per-stat comparison lines with ↑/↓ arrows and individual colors
+            const targetSlot = compareData.targetSlot;
+            const displacedItems = targetSlot ? this.getDisplacedItemsForEquip(item, targetSlot) : [];
+            const equippedStats = {};
+            displacedItems.forEach(entry => {
+                const s = (entry && entry.item && entry.item.stats) || {};
+                Object.entries(s).forEach(([stat, value]) => {
+                    equippedStats[stat] = (equippedStats[stat] || 0) + value;
+                });
+            });
+            const itemStats = item.stats || {};
+            const allStatKeys = Array.from(new Set([...Object.keys(itemStats), ...Object.keys(equippedStats)]));
+            const hasEquipped = displacedItems.length > 0 && displacedItems.some(e => e && e.item);
+            const perStatLines = allStatKeys.map(stat => {
+                const newVal = itemStats[stat] || 0;
+                const oldVal = equippedStats[stat] || 0;
+                const delta = newVal - oldVal;
+                const label = this.getStatLabel(stat);
+                if (!hasEquipped) {
+                    return { text: `${label}: +${newVal}`, color: '#cccccc' };
+                } else if (delta > 0) {
+                    return { text: `${label}: +${newVal} ↑ (+${delta})`, color: '#4eff8a' };
+                } else if (delta < 0) {
+                    return { text: `${label}: +${newVal} ↓ (${delta})`, color: '#ff6b6b' };
+                } else {
+                    return { text: `${label}: +${newVal} =`, color: '#ffd966' };
+                }
+            });
 
             card.cardBg.setStrokeStyle(3, item.frameColor, 1);
             card.icon.setText(item.icon);
@@ -2154,8 +2184,16 @@ class Match3Scene extends Phaser.Scene {
             card.rarity.setColor(item.rarityTextColor || '#ffffff');
             card.stats.setText(statText || 'No stats');
             card.equippedLabel.setText(compareData.equippedSummary || `Current ${compareData.targetSlotLabel}: ${compareData.equippedName}`);
-            card.compare.setText(compareText);
-            card.compare.setColor(hasNegative ? '#ff9d9d' : (hasPositive ? '#8aff8a' : '#dddddd'));
+            card.compareLines.forEach((lineObj, i) => {
+                if (i < perStatLines.length) {
+                    lineObj.setText(perStatLines[i].text);
+                    lineObj.setColor(perStatLines[i].color);
+                    lineObj.setVisible(true);
+                } else {
+                    lineObj.setText('');
+                    lineObj.setVisible(false);
+                }
+            });
 
             card.equipBtn.removeAllListeners('pointerup');
             card.stashBtn.removeAllListeners('pointerup');
@@ -2926,10 +2964,10 @@ class Match3Scene extends Phaser.Scene {
             { key: 'helmet', label: 'Helmet', x: topCenterX, y: topPanelTopY + 28 },
             { key: 'necklace', label: 'Necklace', x: topCenterX - 84, y: topPanelTopY + 80 },
             { key: 'mainhand', label: 'Main Hand', x: topCenterX - 108, y: topPanelTopY + 134 },
-            { key: 'chest', label: 'Chest', x: topCenterX, y: topPanelTopY + 126 },
+            { key: 'chest', label: 'Chest', x: topCenterX, y: topPanelTopY + 104 },
             { key: 'offhand', label: 'Off Hand', x: topCenterX + 108, y: topPanelTopY + 134 },
             { key: 'gloves', label: 'Gloves', x: topCenterX - 108, y: topPanelTopY + 196 },
-            { key: 'belt', label: 'Belt', x: topCenterX, y: topPanelTopY + 184 },
+            { key: 'belt', label: 'Belt', x: topCenterX, y: topPanelTopY + 160 },
             { key: 'ring1', label: 'Ring 1', x: topCenterX + 108, y: topPanelTopY + 196 },
             { key: 'ring2', label: 'Ring 2', x: topCenterX + 146, y: topPanelTopY + 236 },
             { key: 'boots', label: 'Boots', x: topCenterX, y: topPanelTopY + 236 }
