@@ -613,6 +613,27 @@ class Match3Scene extends Phaser.Scene {
                 return;
             }
 
+            if (tile.effect === 'health') {
+                const target = this.getHealthBarParticleTarget();
+                if (target) {
+                    const particleCount = Phaser.Math.Between(2, 3);
+                    for (let i = 0; i < particleCount; i++) {
+                        const startX = tile.x + Phaser.Math.Between(-8, 8);
+                        const startY = tile.y + Phaser.Math.Between(-8, 8);
+                        const delay = tileIndex * 22 + i * 65;
+                        this.launchHeartParticle(
+                            startX,
+                            startY,
+                            target.x,
+                            target.y,
+                            delay,
+                            () => this.flashHealthBar()
+                        );
+                    }
+                }
+                return;
+            }
+
             const targets = this.getSkillCardChargeTargets(tile.effect);
             if (targets.length === 0) return;
 
@@ -659,6 +680,83 @@ class Match3Scene extends Phaser.Scene {
             duration: 120,
             yoyo: true,
             ease: 'Quad.easeOut'
+        });
+    }
+
+    getHealthBarParticleTarget() {
+        if (!this.playerHealthBar) return null;
+        const x = this.playerHealthBar.x + 83;
+        const y = this.playerHealthBar.y;
+        return { x, y };
+    }
+
+    launchHeartParticle(startX, startY, targetX, targetY, delay, onHit) {
+        const heart = this.add.text(startX, startY, '♥', {
+            fontSize: `${Phaser.Math.Between(10, 16)}px`,
+            color: '#ff69b4'
+        }).setOrigin(0.5).setDepth(1095).setAlpha(0.95);
+
+        const glow = this.add.text(startX, startY, '♥', {
+            fontSize: `${Phaser.Math.Between(18, 24)}px`,
+            color: '#ff1493'
+        }).setOrigin(0.5).setDepth(1094).setAlpha(0.25);
+
+        if (this.skillChargeFxContainer) {
+            this.skillChargeFxContainer.add([glow, heart]);
+        }
+
+        const midX = (startX + targetX) / 2 + Phaser.Math.Between(-25, 25);
+        const midY = Math.min(startY, targetY) - Phaser.Math.Between(40, 100);
+
+        this.tweens.addCounter({
+            from: 0,
+            to: 1,
+            delay,
+            duration: Phaser.Math.Between(750, 1050),
+            ease: 'Cubic.easeInOut',
+            onUpdate: tween => {
+                const t = tween.getValue();
+                const oneMinusT = 1 - t;
+                const x = oneMinusT * oneMinusT * startX + 2 * oneMinusT * t * midX + t * t * targetX;
+                const y = oneMinusT * oneMinusT * startY + 2 * oneMinusT * t * midY + t * t * targetY;
+
+                heart.setPosition(x, y);
+                glow.setPosition(x, y);
+                heart.setScale(1 - (t * 0.3));
+                glow.setScale(1.1 - (t * 0.5));
+                glow.setAlpha(0.25 * (1 - t));
+            },
+            onComplete: () => {
+                heart.destroy();
+                glow.destroy();
+                if (onHit) onHit();
+            }
+        });
+    }
+
+    flashHealthBar() {
+        if (!this.playerHealthBar) return;
+
+        const flash = this.add.rectangle(
+            this.playerHealthBar.x + 83,
+            this.playerHealthBar.y,
+            this.playerHealthBar.width,
+            this.playerHealthBar.height + 2,
+            0xff69b4,
+            0.55
+        ).setOrigin(0.5).setDepth(1092);
+
+        if (this.skillChargeFxContainer) {
+            this.skillChargeFxContainer.add(flash);
+        }
+
+        this.tweens.add({
+            targets: flash,
+            alpha: 0,
+            scaleY: 1.5,
+            duration: 280,
+            ease: 'Quad.easeOut',
+            onComplete: () => flash.destroy()
         });
     }
 
