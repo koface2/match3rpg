@@ -367,6 +367,12 @@ class Match3Scene extends Phaser.Scene {
         this.armedEquipGem = null;
     }
 
+    preload() {
+        TILE_TYPES.forEach(t => {
+            this.load.image('tile_' + t.name, 'assets/' + t.name + '.png');
+        });
+    }
+
     create() {
         console.log('Scene created!');
 
@@ -3713,13 +3719,20 @@ class Match3Scene extends Phaser.Scene {
                 rect.on('drag', (pointer) => this.handleDrag(pointer, x, y));
                 rect.on('dragend', (pointer) => this.handleDragEnd(pointer, x, y));
 
-                // Icon text on tile
-                const icon = this.add.text(posX, posY, tileInfo.icon, {
-                    fontSize: '32px',
-                    color: '#000000',
-                    stroke: '#ffffff',
-                    strokeThickness: 4
-                }).setOrigin(0.5);
+                // Tile image icon (falls back to emoji text if image not loaded)
+                let icon;
+                if (this.textures.exists('tile_' + tileInfo.name)) {
+                    icon = this.add.image(posX, posY, 'tile_' + tileInfo.name)
+                        .setDisplaySize(TILE_SIZE - 8, TILE_SIZE - 8)
+                        .setOrigin(0.5);
+                } else {
+                    icon = this.add.text(posX, posY, tileInfo.icon, {
+                        fontSize: '32px',
+                        color: '#000000',
+                        stroke: '#ffffff',
+                        strokeThickness: 4
+                    }).setOrigin(0.5);
+                }
 
                 this.tileSprites[y][x] = { rect, icon, x, y, type };
                 this.boardContainer.add(rect);
