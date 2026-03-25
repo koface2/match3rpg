@@ -252,6 +252,7 @@ class Match3Scene extends Phaser.Scene {
         this.score = 0;
         this.player = {
             health: 100,
+            currentShield: 0,
             physical: 0,
             magic: 0,
             ranged: 0,
@@ -377,6 +378,7 @@ class Match3Scene extends Phaser.Scene {
         this.createGrid();
         this.renderGrid();
         this.createPlayerUI();
+        this.refillEnergyShield();
         this.createCombatLog();
         this.createRewardScreen();
         this.createSkillBar();
@@ -1537,13 +1539,23 @@ class Match3Scene extends Phaser.Scene {
         const dex = this.player.dexterity;
         return {
             physicalDamageBonus: Math.floor(str / 2),
-            armorBonus: Math.floor(str / 3),
+            armorBonus: Math.floor(str / 5),
             magicDamageBonus: Math.floor(int / 2),
-            energyShield: Math.floor(int * 1.5),
+            energyShield: Math.floor(int * 0.5),
             rangedDamageBonus: Math.floor(dex / 2),
-            critChance: Math.min(75, dex * 0.5),
-            evasionChance: Math.min(50, dex * 0.5)
+            critChance: Math.min(75, dex * 0.3),
+            evasionChance: Math.min(50, dex * 0.3)
         };
+    }
+
+    getMaxEnergyShield() {
+        const gear = this.getEquippedStatTotals();
+        const charBonuses = this.getCharacterStatBonuses();
+        return charBonuses.energyShield + gear.energyShield;
+    }
+
+    refillEnergyShield() {
+        this.player.currentShield = this.getMaxEnergyShield();
     }
 
     getRarityByName(name) {
@@ -2221,6 +2233,7 @@ class Match3Scene extends Phaser.Scene {
             this.enemyNameText.setText(`${this.currentMonsterName} Lv.${this.battleNumber}`);
         }
 
+        this.refillEnergyShield();
         this.createGrid();
         this.renderGrid();
         this.updateSkillBarUI();
@@ -3468,15 +3481,16 @@ class Match3Scene extends Phaser.Scene {
 
         // Update energy shield bar
         if (this.playerShieldBar) {
-            const totalES = charBonuses.energyShield + gear.energyShield;
-            const maxES = totalES;
+            const maxES = this.getMaxEnergyShield();
+            const currentES = this.player.currentShield;
             const hasShield = maxES > 0;
             this.playerShieldBarBg.setVisible(hasShield);
             this.playerShieldBar.setVisible(hasShield);
             this.playerShieldLabel.setVisible(hasShield);
             this.playerShieldText.setVisible(hasShield);
             if (hasShield) {
-                const shieldWidth = 166;
+                const fraction = Phaser.Math.Clamp(currentES / maxES, 0, 1);
+                const shieldWidth = 166 * fraction;
                 this.tweens.killTweensOf(this.playerShieldBar);
                 this.tweens.add({
                     targets: this.playerShieldBar,
@@ -3484,7 +3498,7 @@ class Match3Scene extends Phaser.Scene {
                     duration: 300,
                     ease: 'Power2'
                 });
-                this.playerShieldText.setText(`${maxES}`);
+                this.playerShieldText.setText(`${currentES} / ${maxES}`);
             }
         }
 
@@ -4233,7 +4247,7 @@ class Match3Scene extends Phaser.Scene {
         const charBonuses = this.getCharacterStatBonuses();
 
         // Evasion check (DEX + gear evasion)
-        const totalEvasionChance = Math.min(75, charBonuses.evasionChance + gear.evasion * 0.5);
+        const totalEvasionChance = Math.min(75, charBonuses.evasionChance + gear.evasion * 0.3);
         if (Math.random() * 100 < totalEvasionChance) {
             this.addCombatLog(`Evaded enemy attack! (${totalEvasionChance.toFixed(0)}% evasion)`, '#00ffcc');
             this.showCombatMessage('EVADE!', '#00ffcc', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20);
@@ -4243,22 +4257,23 @@ class Match3Scene extends Phaser.Scene {
 
         const damage = this.enemy.attack;
         const totalArmor = gear.armor + charBonuses.armorBonus;
-        const armorReduction = Math.floor(totalArmor / 3);
-        let mitigatedDamage = Math.max(1, damage - armorReduction);
+        const armorReduction = Math.floor(totalArmor / 4);
+        let remainingDamage = Math.max(1, damage - armorReduction);
 
-        // Energy shield absorbs damage first (INT + gear)
-        const totalEnergyShield = charBonuses.energyShield + gear.energyShield;
+        // Energy shield pool absorbs damage first, overflow goes to health
         let shieldAbsorbed = 0;
-        if (totalEnergyShield > 0 && mitigatedDamage > 0) {
-            shieldAbsorbed = Math.min(mitigatedDamage, Math.floor(totalEnergyShield * 0.3));
-            mitigatedDamage -= shieldAbsorbed;
+        if (this.player.currentShield > 0 && remainingDamage > 0) {
+            shieldAbsorbed = Math.min(remainingDamage, this.player.currentShield);
+            this.player.currentShield -= shieldAbsorbed;
+            remainingDamage -= shieldAbsorbed;
         }
 
-        this.player.health -= mitigatedDamage;
+        this.player.health -= remainingDamage;
         if (this.player.health < 0) this.player.health = 0;
-        const shieldMsg = shieldAbsorbed > 0 ? `, ${shieldAbsorbed} shielded` : '';
-        this.addCombatLog(`Enemy Attack: -${mitigatedDamage} (${armorReduction} blocked${shieldMsg})`, '#ff6666');
-        this.showCombatMessage(`Hero -${mitigatedDamage}`, '#ff4444', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20);
+        const shieldMsg = shieldAbsorbed > 0 ? `, ${shieldAbsorbed} absorbed by shield` : '';
+        this.addCombatLog(`Enemy Attack: -${remainingDamage} HP (${armorReduction} blocked${shieldMsg})`, '#ff6666');
+        const totalTaken = remainingDamage + shieldAbsorbed;
+        this.showCombatMessage(`Hero -${totalTaken}`, '#ff4444', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20);
         this.updatePlayerUI();
         if (this.player.health <= 0) {
             this.add.text(GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + (GRID_HEIGHT * TILE_SIZE) / 2, 'Game Over', { fontSize: '48px', color: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5);
