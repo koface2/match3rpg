@@ -16,6 +16,35 @@ const MONSTER_AVATARS = ['👹', '👺', '🧟', '👾', '🤖', '🐉', '🕷�
 const MONSTER_NAMES = ['Ogre', 'Oni', 'Zombie', 'Ghost', 'Robot', 'Dragon', 'Spider', 'Squid'];
 const PLAYER_AVATAR = '👸';
 
+// Body configs for procedural character rendering
+const PLAYER_BODY = {
+    head: 0xffe0bd, headSize: 9, eyeColor: 0x2244aa,
+    torso: 0x3366cc, torsoW: 14, torsoH: 16,
+    armColor: 0x3366cc, legColor: 0x553311,
+    skinColor: 0xffe0bd, hairColor: 0xcc8833, hairStyle: 'long',
+    weaponColor: 0xaaaaaa, shieldColor: 0x886633,
+    facingRight: true
+};
+
+const MONSTER_BODIES = [
+    // Ogre — big green brute
+    { head: 0x558833, headSize: 11, eyeColor: 0xff2200, torso: 0x556b2f, torsoW: 18, torsoH: 18, armColor: 0x558833, legColor: 0x443322, skinColor: 0x558833, hairColor: 0x000000, hairStyle: 'horns', weaponColor: 0x664422, shieldColor: 0, facingRight: false },
+    // Oni — red demon
+    { head: 0xcc2222, headSize: 10, eyeColor: 0xffff00, torso: 0x881111, torsoW: 16, torsoH: 16, armColor: 0xcc2222, legColor: 0x442222, skinColor: 0xcc2222, hairColor: 0x222222, hairStyle: 'horns', weaponColor: 0x888888, shieldColor: 0, facingRight: false },
+    // Zombie — pale shambler
+    { head: 0x88aa77, headSize: 9, eyeColor: 0xccff00, torso: 0x555544, torsoW: 14, torsoH: 17, armColor: 0x88aa77, legColor: 0x444433, skinColor: 0x88aa77, hairColor: 0x333322, hairStyle: 'messy', weaponColor: 0, shieldColor: 0, facingRight: false },
+    // Ghost — translucent purple
+    { head: 0x9966cc, headSize: 10, eyeColor: 0xffffff, torso: 0x7744aa, torsoW: 16, torsoH: 20, armColor: 0x9966cc, legColor: 0x7744aa, skinColor: 0x9966cc, hairColor: 0xbb88ee, hairStyle: 'none', weaponColor: 0, shieldColor: 0, facingRight: false },
+    // Robot — metallic grey
+    { head: 0x888899, headSize: 10, eyeColor: 0x00ffff, torso: 0x666677, torsoW: 16, torsoH: 18, armColor: 0x777788, legColor: 0x555566, skinColor: 0x888899, hairColor: 0x999999, hairStyle: 'antenna', weaponColor: 0x44aaff, shieldColor: 0, facingRight: false },
+    // Dragon — golden scales
+    { head: 0xcc8811, headSize: 11, eyeColor: 0xff3300, torso: 0xaa7711, torsoW: 18, torsoH: 20, armColor: 0xcc8811, legColor: 0x886611, skinColor: 0xcc8811, hairColor: 0xff4400, hairStyle: 'spikes', weaponColor: 0, shieldColor: 0, facingRight: false },
+    // Spider — dark chitinous
+    { head: 0x333333, headSize: 8, eyeColor: 0xff0000, torso: 0x222222, torsoW: 16, torsoH: 12, armColor: 0x333333, legColor: 0x222222, skinColor: 0x333333, hairColor: 0x111111, hairStyle: 'none', weaponColor: 0, shieldColor: 0, facingRight: false },
+    // Squid — deep sea blue
+    { head: 0x446688, headSize: 10, eyeColor: 0x66ffcc, torso: 0x335577, torsoW: 14, torsoH: 18, armColor: 0x446688, legColor: 0x335577, skinColor: 0x446688, hairColor: 0x557799, hairStyle: 'tentacles', weaponColor: 0, shieldColor: 0, facingRight: false }
+];
+
 const ITEM_RARITIES = [
     { name: 'Normal', weight: 60, affixes: 0, statMultiplier: 1.0, frameColor: 0xa3a3a3, textColor: '#d0d0d0' },
     { name: 'Magic', weight: 25, affixes: 2, statMultiplier: 1.15, frameColor: 0x5aa9ff, textColor: '#8ec5ff' },
@@ -281,6 +310,9 @@ class Match3Scene extends Phaser.Scene {
         };
         this.playerStatsText = null;
         this.playerAvatar = null;
+        this.playerBodyContainer = null;
+        this.playerBodyParts = null;
+        this.playerIdleTweens = [];
         this.playerShieldBarBg = null;
         this.playerShieldBar = null;
         this.playerShieldLabel = null;
@@ -290,6 +322,10 @@ class Match3Scene extends Phaser.Scene {
         this.enemyStatsText = null;
         this.enemyNameText = null;
         this.enemyAvatar = null;
+        this.enemyBodyContainer = null;
+        this.enemyBodyParts = null;
+        this.enemyIdleTweens = [];
+        this.currentMonsterBodyIndex = 0;
         this.enemyHealthBarBg = null;
         this.enemyHealthBar = null;
         this.combatLog = [];
@@ -461,6 +497,13 @@ class Match3Scene extends Phaser.Scene {
                 GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2,
                 GRID_OFFSET_Y - 15
             );
+            // Player attack animation for skill cast
+            if (this.playerBodyContainer && this.playerBodyParts) {
+                this.playAttackAnimation(this.playerBodyContainer, this.playerBodyParts, PLAYER_BODY.facingRight);
+            }
+            if (this.enemyBodyContainer && this.enemy.health > 0) {
+                this.time.delayedCall(100, () => this.playHitAnimation(this.enemyBodyContainer));
+            }
         }
 
         if (castResult.healAmount > 0) {
@@ -2146,6 +2189,222 @@ class Match3Scene extends Phaser.Scene {
         this.player.equipment[slotKey] = 'None';
     }
 
+    // -----------------------------------------------------------------------
+    // Procedural character rendering
+    // -----------------------------------------------------------------------
+    buildCharacterBody(cfg, cx, cy) {
+        const container = this.add.container(cx, cy);
+        const parts = {};
+        const facing = cfg.facingRight ? 1 : -1;
+
+        // Legs
+        const legSpacing = 4;
+        parts.leftLeg = this.add.rectangle(-legSpacing * facing, 20, 5, 14, cfg.legColor).setOrigin(0.5, 0);
+        parts.rightLeg = this.add.rectangle(legSpacing * facing, 20, 5, 14, cfg.legColor).setOrigin(0.5, 0);
+        container.add([parts.leftLeg, parts.rightLeg]);
+
+        // Torso
+        parts.torso = this.add.rectangle(0, 4, cfg.torsoW, cfg.torsoH, cfg.torso).setOrigin(0.5, 0);
+        container.add(parts.torso);
+
+        // Arms
+        parts.backArm = this.add.rectangle(-8 * facing, 6, 5, 14, cfg.armColor).setOrigin(0.5, 0);
+        parts.frontArm = this.add.rectangle(8 * facing, 6, 5, 14, cfg.armColor).setOrigin(0.5, 0);
+        container.add([parts.backArm, parts.frontArm]);
+
+        // Weapon in front hand
+        if (cfg.weaponColor) {
+            parts.weapon = this.add.rectangle(12 * facing, 4, 3, 22, cfg.weaponColor).setOrigin(0.5, 0);
+            container.add(parts.weapon);
+        }
+        // Shield in back hand
+        if (cfg.shieldColor) {
+            parts.shield = this.add.ellipse(-12 * facing, 10, 10, 12, cfg.shieldColor).setOrigin(0.5);
+            container.add(parts.shield);
+        }
+
+        // Head
+        parts.head = this.add.circle(0, 0, cfg.headSize, cfg.head).setOrigin(0.5, 1);
+        container.add(parts.head);
+
+        // Eyes
+        const eyeOffX = 3 * facing;
+        parts.leftEye = this.add.circle(eyeOffX - 2, -cfg.headSize + 3, 1.5, cfg.eyeColor);
+        parts.rightEye = this.add.circle(eyeOffX + 2, -cfg.headSize + 3, 1.5, cfg.eyeColor);
+        container.add([parts.leftEye, parts.rightEye]);
+
+        // Hair / head decoration
+        if (cfg.hairStyle === 'long') {
+            parts.hair = this.add.ellipse(0, -cfg.headSize * 2 + 4, cfg.headSize * 2 + 4, cfg.headSize + 4, cfg.hairColor).setOrigin(0.5, 0.3);
+            const hairBack = this.add.rectangle(-4 * facing, -cfg.headSize + 6, 6, 10, cfg.hairColor).setOrigin(0.5, 0);
+            container.add([parts.hair, hairBack]);
+            container.sendToBack(hairBack);
+            container.sendToBack(parts.hair);
+        } else if (cfg.hairStyle === 'horns') {
+            const lh = this.add.triangle(-5 * facing, -cfg.headSize * 2 + 2, 0, 10, 4, 0, 8, 10, cfg.hairColor);
+            const rh = this.add.triangle(5 * facing, -cfg.headSize * 2 + 2, 0, 10, 4, 0, 8, 10, cfg.hairColor);
+            container.add([lh, rh]);
+        } else if (cfg.hairStyle === 'messy') {
+            for (let i = -2; i <= 2; i++) {
+                const strand = this.add.rectangle(i * 3, -cfg.headSize * 2 + 2, 2, Phaser.Math.Between(4, 8), cfg.hairColor).setOrigin(0.5, 1);
+                container.add(strand);
+            }
+        } else if (cfg.hairStyle === 'antenna') {
+            const ant = this.add.rectangle(0, -cfg.headSize * 2 - 2, 2, 8, cfg.hairColor).setOrigin(0.5, 1);
+            const tip = this.add.circle(0, -cfg.headSize * 2 - 4, 3, 0x00ffff);
+            container.add([ant, tip]);
+        } else if (cfg.hairStyle === 'spikes') {
+            for (let i = -2; i <= 2; i++) {
+                const spike = this.add.triangle(i * 4, -cfg.headSize * 2, 0, 8, 3, 0, 6, 8, cfg.hairColor);
+                container.add(spike);
+            }
+        } else if (cfg.hairStyle === 'tentacles') {
+            for (let i = -1; i <= 1; i++) {
+                const tent = this.add.rectangle(i * 5, 22 + Math.abs(i) * 3, 3, 12, cfg.skinColor).setOrigin(0.5, 0);
+                container.add(tent);
+                if (parts.tentacles) parts.tentacles.push(tent); else parts.tentacles = [tent];
+            }
+        }
+
+        container.setScale(1);
+        return { container, parts };
+    }
+
+    startIdleAnimation(bodyContainer, bodyParts, tweensArray) {
+        // Stop any existing idle tweens
+        tweensArray.forEach(t => t.remove());
+        tweensArray.length = 0;
+
+        // Gentle body sway
+        tweensArray.push(this.tweens.add({
+            targets: bodyContainer,
+            angle: { from: -1.5, to: 1.5 },
+            duration: 1800,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        }));
+
+        // Subtle breathing (torso scale)
+        if (bodyParts.torso) {
+            tweensArray.push(this.tweens.add({
+                targets: bodyParts.torso,
+                scaleY: { from: 1.0, to: 1.04 },
+                duration: 1200,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            }));
+        }
+
+        // Arm bob
+        if (bodyParts.frontArm) {
+            tweensArray.push(this.tweens.add({
+                targets: bodyParts.frontArm,
+                angle: { from: -3, to: 3 },
+                duration: 2000,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            }));
+        }
+        if (bodyParts.backArm) {
+            tweensArray.push(this.tweens.add({
+                targets: bodyParts.backArm,
+                angle: { from: 2, to: -2 },
+                duration: 2200,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            }));
+        }
+
+        // Tentacles wave (for squid)
+        if (bodyParts.tentacles) {
+            bodyParts.tentacles.forEach((t, i) => {
+                tweensArray.push(this.tweens.add({
+                    targets: t,
+                    angle: { from: -8, to: 8 },
+                    duration: 1000 + i * 200,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                }));
+            });
+        }
+    }
+
+    playAttackAnimation(bodyContainer, bodyParts, facingRight, onComplete) {
+        const dir = facingRight ? 1 : -1;
+
+        // Lunge forward
+        this.tweens.add({
+            targets: bodyContainer,
+            x: bodyContainer.x + 12 * dir,
+            duration: 100,
+            yoyo: true,
+            ease: 'Power2'
+        });
+
+        // Swing front arm
+        if (bodyParts.frontArm) {
+            this.tweens.add({
+                targets: bodyParts.frontArm,
+                angle: -45 * dir,
+                duration: 100,
+                yoyo: true,
+                ease: 'Power2'
+            });
+        }
+
+        // Weapon swing
+        if (bodyParts.weapon) {
+            this.tweens.add({
+                targets: bodyParts.weapon,
+                angle: -60 * dir,
+                duration: 120,
+                yoyo: true,
+                ease: 'Power2'
+            });
+        }
+
+        // Body tilt for emphasis
+        this.tweens.add({
+            targets: bodyContainer,
+            angle: 8 * dir,
+            duration: 100,
+            yoyo: true,
+            ease: 'Power2',
+            onComplete: () => {
+                if (onComplete) onComplete();
+            }
+        });
+    }
+
+    playHitAnimation(bodyContainer) {
+        // Flash red and shake when hit
+        const origX = bodyContainer.x;
+        this.tweens.add({
+            targets: bodyContainer,
+            x: origX - 4,
+            duration: 40,
+            yoyo: true,
+            repeat: 3,
+            ease: 'Linear',
+            onComplete: () => bodyContainer.setX(origX)
+        });
+
+        // Tint all children red briefly via alpha flash
+        const flash = this.add.rectangle(0, 10, 30, 50, 0xff0000, 0.4).setOrigin(0.5);
+        bodyContainer.add(flash);
+        this.tweens.add({
+            targets: flash,
+            alpha: 0,
+            duration: 250,
+            onComplete: () => flash.destroy()
+        });
+    }
+
     createPlayerUI() {
         // Portrait layout: player LEFT, enemy RIGHT, both in top half above grid
         const leftCX = 97;
@@ -2160,8 +2419,12 @@ class Match3Scene extends Phaser.Scene {
         // --- Player panel (left) ---
         this.hudContainer.add(this.add.rectangle(leftCX, panelH / 2 + 4, panelW, panelH, 0x111111, 0.9).setOrigin(0.5));
         this.hudContainer.add(this.add.text(leftCX, 14, 'Hero', { fontSize: '17px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
-        this.playerAvatar = this.add.text(leftCX, 72, PLAYER_AVATAR, { fontSize: '52px' }).setOrigin(0.5);
-        this.hudContainer.add(this.playerAvatar);
+        // Procedural player character
+        const playerBody = this.buildCharacterBody(PLAYER_BODY, leftCX, 68);
+        this.playerBodyContainer = playerBody.container;
+        this.playerBodyParts = playerBody.parts;
+        this.hudContainer.add(this.playerBodyContainer);
+        this.startIdleAnimation(this.playerBodyContainer, this.playerBodyParts, this.playerIdleTweens);
         // --- Energy Shield bar (above HP) ---
         this.playerShieldLabel = this.add.text(14, 108, 'ES', { fontSize: '9px', color: '#66aaff' });
         this.hudContainer.add(this.playerShieldLabel);
@@ -2181,8 +2444,14 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.add(this.add.rectangle(rightCX, panelH / 2 + 4, panelW, panelH, 0x111111, 0.9).setOrigin(0.5));
         this.enemyNameText = this.add.text(rightCX, 14, this.currentMonsterName, { fontSize: '15px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
         this.hudContainer.add(this.enemyNameText);
-        this.enemyAvatar = this.add.text(rightCX, 72, this.currentMonsterAvatar, { fontSize: '52px' }).setOrigin(0.5);
-        this.hudContainer.add(this.enemyAvatar);
+        // Procedural enemy character
+        const monsterIndex = MONSTER_NAMES.indexOf(this.currentMonsterName);
+        this.currentMonsterBodyIndex = Math.max(0, monsterIndex);
+        const enemyBody = this.buildCharacterBody(MONSTER_BODIES[this.currentMonsterBodyIndex], rightCX, 68);
+        this.enemyBodyContainer = enemyBody.container;
+        this.enemyBodyParts = enemyBody.parts;
+        this.hudContainer.add(this.enemyBodyContainer);
+        this.startIdleAnimation(this.enemyBodyContainer, this.enemyBodyParts, this.enemyIdleTweens);
         this.hudContainer.add(this.add.text(210, 120, 'HP', { fontSize: '11px', color: '#aaa' }));
         this.enemyHealthBarBg = this.add.rectangle(210, 131, barW, 12, 0x444444).setOrigin(0, 0.5);
         this.hudContainer.add(this.enemyHealthBarBg);
@@ -2432,12 +2701,19 @@ class Match3Scene extends Phaser.Scene {
         this.enemy.health = this.enemy.maxHealth;
         this.enemy.attack = 12 + (this.battleNumber - 1) * 3;
 
-        if (this.enemyAvatar) {
-            this.enemyAvatar.setText(this.currentMonsterAvatar);
-            this.enemyAvatar.setAlpha(1);
-            this.enemyAvatar.setAngle(0);
-            this.enemyAvatar.setY(72);
+        // Rebuild enemy body for new monster
+        this.enemyIdleTweens.forEach(t => t.remove());
+        this.enemyIdleTweens.length = 0;
+        if (this.enemyBodyContainer) {
+            this.enemyBodyContainer.destroy();
         }
+        this.currentMonsterBodyIndex = monsterIndex;
+        const rightCX = 293;
+        const enemyBody = this.buildCharacterBody(MONSTER_BODIES[this.currentMonsterBodyIndex], rightCX, 68);
+        this.enemyBodyContainer = enemyBody.container;
+        this.enemyBodyParts = enemyBody.parts;
+        this.hudContainer.add(this.enemyBodyContainer);
+        this.startIdleAnimation(this.enemyBodyContainer, this.enemyBodyParts, this.enemyIdleTweens);
 
         if (this.enemyNameText) {
             this.enemyNameText.setText(`${this.currentMonsterName} Lv.${this.battleNumber}`);
@@ -3753,10 +4029,14 @@ class Match3Scene extends Phaser.Scene {
         const centerX = GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2;
         const centerY = 210;
 
-        if (this.enemyAvatar) {
+        // Stop enemy idle tweens
+        this.enemyIdleTweens.forEach(t => t.remove());
+        this.enemyIdleTweens.length = 0;
+
+        if (this.enemyBodyContainer) {
             this.tweens.add({
-                targets: this.enemyAvatar,
-                y: this.enemyAvatar.y + 40,
+                targets: this.enemyBodyContainer,
+                y: this.enemyBodyContainer.y + 40,
                 angle: 90,
                 alpha: 0.4,
                 duration: 600,
@@ -4300,6 +4580,15 @@ class Match3Scene extends Phaser.Scene {
             this.enemy.health = Math.max(0, this.enemy.health - totalEnemyDamage);
             this.showCombatMessage(`Enemy -${totalEnemyDamage}`, '#ff5555', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y - 15);
 
+            // Player attack animation
+            if (this.playerBodyContainer && this.playerBodyParts) {
+                this.playAttackAnimation(this.playerBodyContainer, this.playerBodyParts, PLAYER_BODY.facingRight);
+            }
+            // Enemy hit reaction
+            if (this.enemyBodyContainer && this.enemy.health > 0) {
+                this.time.delayedCall(100, () => this.playHitAnimation(this.enemyBodyContainer));
+            }
+
             if (this.enemy.health <= 0) {
                 this.enemy.health = 0;
                 this.handleEnemyDeath();
@@ -4446,6 +4735,11 @@ class Match3Scene extends Phaser.Scene {
         if (Math.random() * 100 < totalEvasionChance) {
             this.addCombatLog(`Evaded enemy attack! (${totalEvasionChance.toFixed(0)}% evasion)`, '#00ffcc');
             this.showCombatMessage('EVADE!', '#00ffcc', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20);
+            // Enemy still swings on evade
+            if (this.enemyBodyContainer && this.enemyBodyParts) {
+                const bodyCfg = MONSTER_BODIES[this.currentMonsterBodyIndex];
+                this.playAttackAnimation(this.enemyBodyContainer, this.enemyBodyParts, bodyCfg.facingRight);
+            }
             this.updatePlayerUI();
             return;
         }
@@ -4469,6 +4763,17 @@ class Match3Scene extends Phaser.Scene {
         this.addCombatLog(`Enemy Attack: -${remainingDamage} HP (${armorReduction} blocked${shieldMsg})`, '#ff6666');
         const totalTaken = remainingDamage + shieldAbsorbed;
         this.showCombatMessage(`Hero -${totalTaken}`, '#ff4444', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20);
+
+        // Enemy attack animation
+        if (this.enemyBodyContainer && this.enemyBodyParts) {
+            const bodyCfg = MONSTER_BODIES[this.currentMonsterBodyIndex];
+            this.playAttackAnimation(this.enemyBodyContainer, this.enemyBodyParts, bodyCfg.facingRight);
+        }
+        // Player hit reaction
+        if (this.playerBodyContainer) {
+            this.time.delayedCall(100, () => this.playHitAnimation(this.playerBodyContainer));
+        }
+
         this.updatePlayerUI();
         if (this.player.health <= 0) {
             this.add.text(GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + (GRID_HEIGHT * TILE_SIZE) / 2, 'Game Over', { fontSize: '48px', color: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5);
