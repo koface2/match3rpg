@@ -3723,7 +3723,7 @@ class Match3Scene extends Phaser.Scene {
                 let icon;
                 if (this.textures.exists('tile_' + tileInfo.name)) {
                     icon = this.add.image(posX, posY, 'tile_' + tileInfo.name)
-                        .setDisplaySize(TILE_SIZE - 8, TILE_SIZE - 8)
+                        .setDisplaySize(TILE_SIZE - 4, TILE_SIZE - 4)
                         .setOrigin(0.5);
                 } else {
                     icon = this.add.text(posX, posY, tileInfo.icon, {
