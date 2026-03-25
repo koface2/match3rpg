@@ -9,7 +9,7 @@ const TILE_TYPES = [
     { name: 'magic', color: 0x0000ff, icon: '📖', effect: 'magic' },
     { name: 'ranged', color: 0x00ff00, icon: '🏹', effect: 'ranged' },
     { name: 'physical', color: 0xff0000, icon: '⚔️', effect: 'physical' },
-    { name: 'loot', color: 0xffff00, icon: '🪙', effect: 'loot' }
+    { name: 'gold', color: 0xffff00, icon: '🪙', effect: 'gold' }
 ];
 
 const MONSTER_AVATARS = ['👹', '👺', '🧟', '👾', '🤖', '🐉', '🕷️', '🦑'];
@@ -68,13 +68,13 @@ const ITEM_PREFIXES = [
     { name: 'Deadeye', stats: { ranged: [2, 6] }, tags: ['dexterity'] },
     { name: 'Stalwart', stats: { armor: [2, 7] }, tags: ['strength'] },
     { name: 'Vital', stats: { health: [8, 20] }, tags: [] },
-    { name: 'Prosperous', stats: { loot: [4, 14] }, tags: [] },
+    { name: 'Prosperous', stats: { magicFind: [4, 14] }, tags: [] },
     { name: 'Cruel', stats: { physical: [4, 10] }, tags: ['strength'] },
     { name: 'Runic', stats: { magic: [4, 10] }, tags: ['intelligence'] },
     { name: 'Sharpened', stats: { ranged: [3, 8], physical: [1, 3] }, tags: ['dexterity', 'strength'] },
     { name: 'Fortified', stats: { armor: [4, 12], health: [4, 10] }, tags: ['strength'] },
     { name: 'Vampiric', stats: { health: [6, 16], physical: [1, 4] }, tags: ['strength'] },
-    { name: 'Gilded', stats: { loot: [6, 20] }, tags: [] },
+    { name: 'Gilded', stats: { magicFind: [6, 20] }, tags: [] },
     { name: 'Nimble', stats: { ranged: [2, 5], evasion: [1, 3] }, tags: ['dexterity'] },
     { name: 'Sorcerous', stats: { magic: [3, 8], energyShield: [2, 6] }, tags: ['intelligence'] },
     { name: 'Warding', stats: { energyShield: [3, 8] }, tags: ['intelligence'] },
@@ -87,13 +87,13 @@ const ITEM_SUFFIXES = [
     { name: 'of Precision', stats: { ranged: [2, 7] }, tags: ['dexterity'] },
     { name: 'of Guarding', stats: { armor: [2, 8] }, tags: ['strength'] },
     { name: 'of Vitality', stats: { health: [10, 24] }, tags: [] },
-    { name: 'of Fortune', stats: { loot: [5, 16] }, tags: [] },
+    { name: 'of Fortune', stats: { magicFind: [5, 16] }, tags: [] },
     { name: 'of Carnage', stats: { physical: [4, 12] }, tags: ['strength'] },
     { name: 'of the Magi', stats: { magic: [4, 12] }, tags: ['intelligence'] },
     { name: 'of the Hawk', stats: { ranged: [4, 10] }, tags: ['dexterity'] },
     { name: 'of the Fortress', stats: { armor: [5, 14], health: [4, 10] }, tags: ['strength'] },
     { name: 'of Regeneration', stats: { health: [12, 32] }, tags: [] },
-    { name: 'of Plunder', stats: { loot: [8, 22] }, tags: [] },
+    { name: 'of Plunder', stats: { magicFind: [8, 22] }, tags: [] },
     { name: 'of Devastation', stats: { physical: [3, 8], ranged: [2, 6] }, tags: ['strength', 'dexterity'] },
     { name: 'of the Archmage', stats: { magic: [3, 9], energyShield: [3, 8] }, tags: ['intelligence'] },
     { name: 'of Reflexes', stats: { evasion: [4, 10] }, tags: ['dexterity'] },
@@ -153,11 +153,11 @@ const ACTIVE_SKILL_GEMS = [
     {
         id: 'gold-rush',
         name: 'Gold Rush',
-        tileEffect: 'loot',
+        tileEffect: 'gold',
         baseThreshold: 4,
-        mode: 'loot',
+        mode: 'gold',
         basePower: 16,
-        scalingStat: 'loot'
+        scalingStat: 'magicFind'
     }
 ];
 
@@ -208,7 +208,7 @@ const SUPPORT_SKILL_GEMS = [
         short: 'Prs',
         thresholdDelta: 0,
         powerMultiplier: 0,
-        lootFlat: 12,
+        goldFlat: 12,
         healFlat: 0,
         extraHitChance: 0
     }
@@ -256,7 +256,7 @@ class Match3Scene extends Phaser.Scene {
             physical: 0,
             magic: 0,
             ranged: 0,
-            loot: 0,
+            gold: 0,
             strength: 10,
             intelligence: 10,
             dexterity: 10,
@@ -341,12 +341,8 @@ class Match3Scene extends Phaser.Scene {
         this.skillCharge = this.createInitialSkillCharge();
         this.skillChargeFxContainer = null;
 
-        this.lootMeter = 0;
-        this.lootMeterMax = 100;
-        this.lootMeterBarBg = null;
-        this.lootMeterBar = null;
-        this.lootMeterText = null;
-        this.lootMeterLabel = null;
+        this.goldDisplayText = null;
+        this.goldDisplayIcon = null;
 
         this.skillsScreenGroup = null;
         this.skillsActiveSlotUI = [];
@@ -406,7 +402,7 @@ class Match3Scene extends Phaser.Scene {
             magic: 0,
             ranged: 0,
             health: 0,
-            loot: 0
+            gold: 0
         };
     }
 
@@ -478,8 +474,8 @@ class Match3Scene extends Phaser.Scene {
         }
 
         if (castResult.lootAmount > 0) {
-            this.player.loot += castResult.lootAmount;
-            this.addCombatLog(`Skill Loot Bonus: +${castResult.lootAmount}`, '#ffee75');
+            this.player.gold += castResult.lootAmount;
+            this.addCombatLog(`Skill Gold: +${castResult.lootAmount}`, '#ffee75');
         }
 
         if (this.enemy.health <= 0) {
@@ -595,8 +591,8 @@ class Match3Scene extends Phaser.Scene {
         const flashedSlots = new Set();
 
         matchedTiles.forEach((tile, tileIndex) => {
-            if (tile.effect === 'loot') {
-                const target = this.getLootMeterParticleTarget();
+            if (tile.effect === 'gold') {
+                const target = this.getGoldDisplayParticleTarget();
                 if (target) {
                     const particleCount = Phaser.Math.Between(2, 3);
                     for (let i = 0; i < particleCount; i++) {
@@ -610,7 +606,7 @@ class Match3Scene extends Phaser.Scene {
                             target.y,
                             tile.color,
                             delay,
-                            () => this.flashLootMeterCharge(tile.color)
+                            () => this.flashGoldDisplay(tile.color)
                         );
                     }
                 }
@@ -646,37 +642,23 @@ class Match3Scene extends Phaser.Scene {
         });
     }
 
-    getLootMeterParticleTarget() {
-        if (!this.lootMeterBarBg) return null;
-
-        const x = this.lootMeterBarBg.x + Math.max(10, this.lootMeterBarBg.width * 0.5);
-        const y = this.lootMeterBarBg.y;
+    getGoldDisplayParticleTarget() {
+        if (!this.goldDisplayText) return null;
+        const x = this.goldDisplayText.x;
+        const y = this.goldDisplayText.y;
         return { x, y };
     }
 
-    flashLootMeterCharge(color) {
-        if (!this.lootMeterBarBg) return;
-
-        const flash = this.add.rectangle(
-            this.lootMeterBarBg.x + this.lootMeterBarBg.width / 2,
-            this.lootMeterBarBg.y,
-            this.lootMeterBarBg.width,
-            this.lootMeterBarBg.height + 2,
-            color,
-            0.55
-        ).setOrigin(0.5).setDepth(1092);
-
-        if (this.skillChargeFxContainer) {
-            this.skillChargeFxContainer.add(flash);
-        }
+    flashGoldDisplay(color) {
+        if (!this.goldDisplayText) return;
 
         this.tweens.add({
-            targets: flash,
-            alpha: 0,
-            scaleY: 1.7,
-            duration: 320,
-            ease: 'Quad.easeOut',
-            onComplete: () => flash.destroy()
+            targets: this.goldDisplayText,
+            scaleX: 1.3,
+            scaleY: 1.3,
+            duration: 120,
+            yoyo: true,
+            ease: 'Quad.easeOut'
         });
     }
 
@@ -997,7 +979,7 @@ class Match3Scene extends Phaser.Scene {
             const activeSkill = this.getActiveSkillById(gem.id);
             if (!activeSkill) return 'Unknown active gem.';
             const tileData = this.getTileDataForEffect(activeSkill.tileEffect);
-            const modeLabel = activeSkill.mode === 'damage' ? 'Deals damage' : (activeSkill.mode === 'heal' ? 'Restores health' : 'Generates loot');
+            const modeLabel = activeSkill.mode === 'damage' ? 'Deals damage' : (activeSkill.mode === 'heal' ? 'Restores health' : 'Generates gold');
             return `${modeLabel}. Charges from ${tileData ? tileData.name : activeSkill.tileEffect} matches. Base trigger threshold: ${activeSkill.baseThreshold}. Base power: ${activeSkill.basePower}.`;
         }
 
@@ -1011,9 +993,9 @@ class Match3Scene extends Phaser.Scene {
             ? `+${Math.round(support.powerMultiplier * 100)}% power`
             : 'No power bonus';
         const healText = support.healFlat ? `+${support.healFlat} flat healing` : null;
-        const lootText = support.lootFlat ? `+${support.lootFlat} flat loot` : null;
+        const goldText = support.goldFlat ? `+${support.goldFlat} flat gold` : null;
         const echoText = support.extraHitChance ? `${Math.round(support.extraHitChance * 100)}% chance for echo hit` : null;
-        return [thresholdText, powerText, healText, lootText, echoText].filter(Boolean).join('. ') + '.';
+        return [thresholdText, powerText, healText, goldText, echoText].filter(Boolean).join('. ') + '.';
     }
 
     openSkillGemPopup(gem, inventoryIndex) {
@@ -1301,7 +1283,7 @@ class Match3Scene extends Phaser.Scene {
         }, 0);
 
         const bonusHeal = supports.reduce((sum, gem) => sum + (gem.healFlat || 0), 0);
-        const bonusLoot = supports.reduce((sum, gem) => sum + (gem.lootFlat || 0), 0);
+        const bonusGold = supports.reduce((sum, gem) => sum + (gem.goldFlat || 0), 0);
         const supportNames = supports.length > 0 ? ` [${supports.map(s => s.name).join(', ')}]` : '';
 
         const result = {
@@ -1326,10 +1308,10 @@ class Match3Scene extends Phaser.Scene {
             );
         }
 
-        if (activeSkill.mode === 'loot') {
-            result.lootAmount += rolledPower + bonusLoot;
+        if (activeSkill.mode === 'gold') {
+            result.lootAmount += rolledPower + bonusGold;
             this.addCombatLog(
-                `${activeSkill.name} cast loot +${rolledPower + bonusLoot}${supportNames}`,
+                `${activeSkill.name} gold +${rolledPower + bonusGold}${supportNames}`,
                 '#ffe88a'
             );
         }
@@ -1500,7 +1482,7 @@ class Match3Scene extends Phaser.Scene {
             physical: 'Physical',
             magic: 'Magic',
             ranged: 'Ranged',
-            loot: 'Loot Find',
+            magicFind: 'Magic Find',
             armor: 'Armor',
             energyShield: 'Energy Shield',
             evasion: 'Evasion'
@@ -1514,7 +1496,7 @@ class Match3Scene extends Phaser.Scene {
             physical: 0,
             magic: 0,
             ranged: 0,
-            loot: 0,
+            magicFind: 0,
             armor: 0,
             energyShield: 0,
             evasion: 0
@@ -1622,6 +1604,102 @@ class Match3Scene extends Phaser.Scene {
 
     generateItem(forcedRarity = null) {
         return this.generateLoot(this.battleNumber * 10, forcedRarity);
+    }
+
+    /**
+     * Generate a reward item using magic find and monster level to determine rarity.
+     */
+    generateRewardItem(monsterLevel, magicFind, forcedRarity = null) {
+        const base = Phaser.Utils.Array.GetRandom(ITEM_BASES);
+        const rarity = forcedRarity
+            ? this.getRarityByName(forcedRarity)
+            : this.rollRarityWithMagicFind(monsterLevel, magicFind);
+
+        const itemLevel = Math.max(1, monsterLevel);
+        const levelScale = 1 + (itemLevel - 1) * 0.12;
+        const statMultiplier = rarity.statMultiplier * levelScale;
+
+        const prefixCount = Math.ceil(rarity.affixes / 2);
+        const suffixCount = Math.floor(rarity.affixes / 2);
+        const usedNames = new Set();
+
+        const prefixes = this.rollAffixes(ITEM_PREFIXES, prefixCount, statMultiplier, usedNames, base.baseType || null);
+        const suffixes = this.rollAffixes(ITEM_SUFFIXES, suffixCount, statMultiplier, usedNames, base.baseType || null);
+
+        const scaledBaseStats = {};
+        Object.entries(base.baseStats).forEach(([stat, value]) => {
+            scaledBaseStats[stat] = Math.max(1, Math.round(value * levelScale));
+        });
+
+        const totalStats = {};
+        this.mergeStats(totalStats, scaledBaseStats);
+        prefixes.forEach(prefix => this.mergeStats(totalStats, prefix.stats));
+        suffixes.forEach(suffix => this.mergeStats(totalStats, suffix.stats));
+
+        const primaryPrefix = prefixes.length > 0 ? `${prefixes[0].name} ` : '';
+        const primarySuffix = suffixes.length > 0 ? ` ${suffixes[0].name}` : '';
+        const rarityFlavor = rarity.name === 'Legendary' ? 'Mythic ' : '';
+        const itemName = `${primaryPrefix}${rarityFlavor}${base.baseName}${primarySuffix}`.trim();
+
+        const affixSummary = [
+            ...prefixes.map(prefix => `Prefix: ${prefix.name}`),
+            ...suffixes.map(suffix => `Affix: ${suffix.name}`)
+        ].join(' | ');
+
+        const itemId = `itm-${Date.now()}-${this.itemIdCounter++}`;
+
+        return {
+            id: itemId,
+            name: itemName,
+            slotGroup: base.slotGroup,
+            type: base.type,
+            baseType: base.baseType || null,
+            weaponClass: base.weaponClass || null,
+            twoHanded: !!base.twoHanded,
+            rarity: rarity.name,
+            itemLevel,
+            icon: base.icon,
+            frameColor: rarity.frameColor,
+            rarityTextColor: rarity.textColor,
+            description: `${base.description} ${affixSummary}`.trim(),
+            stats: totalStats,
+            prefixes,
+            suffixes
+        };
+    }
+
+    /**
+     * Roll rarity based on magic find + monster level.
+     * Higher monster level and more magic find shift weights toward rare/legendary.
+     */
+    rollRarityWithMagicFind(monsterLevel, magicFind) {
+        const mf = Math.max(0, magicFind);
+        const ml = Math.max(1, monsterLevel);
+
+        // Monster level provides a base boost, magic find amplifies rarer drops
+        const weights = {
+            Normal:    Math.max(5, 70 - ml * 2 - mf * 0.4),
+            Magic:     Math.min(50, 15 + ml * 1.5 + mf * 0.2),
+            Rare:      Math.min(35, Math.max(0, (ml - 2) * 1.5 + mf * 0.25)),
+            Legendary: Math.min(20, Math.max(0, (ml - 5) * 0.8 + mf * 0.15))
+        };
+
+        const weightedTable = ITEM_RARITIES.map(r => ({
+            name: r.name,
+            weight: weights[r.name] || r.weight
+        }));
+
+        const totalWeight = weightedTable.reduce((sum, r) => sum + r.weight, 0);
+        let roll = Phaser.Math.Between(1, Math.round(totalWeight));
+
+        for (let i = 0; i < weightedTable.length; i++) {
+            roll -= weightedTable[i].weight;
+            if (roll <= 0) {
+                return this.getRarityByName(weightedTable[i].name);
+            }
+        }
+
+        return ITEM_RARITIES[0];
     }
 
     /**
@@ -1754,7 +1832,7 @@ class Match3Scene extends Phaser.Scene {
 
     tryDropLootItem(lootAmount) {
         const gear = this.getEquippedStatTotals();
-        const dropChance = Phaser.Math.Clamp(0.10 + lootAmount / 90 + gear.loot / 120, 0, 0.85);
+        const dropChance = Phaser.Math.Clamp(0.10 + lootAmount / 90 + gear.magicFind / 120, 0, 0.85);
 
         if (Math.random() > dropChance) return;
 
@@ -1766,15 +1844,14 @@ class Match3Scene extends Phaser.Scene {
 
     rollRarityWithLootBonus() {
         const gear = this.getEquippedStatTotals();
-        const lootPower = this.player.loot + gear.loot;
-        const tierShift = Math.floor(lootPower / 120);
-        const meterBonus = Math.floor(this.lootMeter / 20);
+        const magicFindPower = gear.magicFind;
+        const tierShift = Math.floor(magicFindPower / 120);
 
         const weights = {
-            Normal: Math.max(5, 60 - tierShift * 5 - meterBonus * 6),
-            Magic: Math.min(50, 25 + tierShift * 2 + meterBonus * 2),
-            Rare: Math.min(40, 12 + tierShift * 2 + meterBonus * 3),
-            Legendary: Math.min(25, 3 + tierShift + meterBonus * 2)
+            Normal: Math.max(5, 60 - tierShift * 5),
+            Magic: Math.min(50, 25 + tierShift * 2),
+            Rare: Math.min(40, 12 + tierShift * 2),
+            Legendary: Math.min(25, 3 + tierShift)
         };
 
         const weightedTable = ITEM_RARITIES.map(rarity => ({
@@ -1802,7 +1879,7 @@ class Match3Scene extends Phaser.Scene {
             physical: 1.4,
             magic: 1.4,
             ranged: 1.3,
-            loot: 0.5,
+            magicFind: 0.5,
             armor: 1.0
         };
 
@@ -2013,16 +2090,10 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.add(this.enemyHealthBarBg);
         this.enemyHealthBar = this.add.rectangle(210, 131, barW, 12, 0xff0000).setOrigin(0, 0.5);
         this.hudContainer.add(this.enemyHealthBar);
-        // --- Loot Meter (under player HP bar) ---
-        const lmW = barW;
-        const lmH = 10;
-        const lmX = 14;
-        const lmY = 155;
-        this.lootMeterLabel = this.add.text(lmX, lmY - 10, 'LOOT', { fontSize: '9px', color: '#ffd966', fontStyle: 'bold' }).setOrigin(0, 0.5);
-        this.lootMeterBarBg = this.add.rectangle(lmX, lmY, lmW, lmH, 0x333333).setOrigin(0, 0.5);
-        this.lootMeterBar = this.add.rectangle(lmX, lmY, 0, lmH, 0xffd966).setOrigin(0, 0.5);
-        this.lootMeterText = this.add.text(lmX + lmW / 2, lmY, '0%', { fontSize: '8px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
-        this.hudContainer.add([this.lootMeterLabel, this.lootMeterBarBg, this.lootMeterBar, this.lootMeterText]);
+        // --- Gold display (under player HP bar) ---
+        this.goldDisplayIcon = this.add.text(14, 148, '\ud83e\ude99', { fontSize: '14px' }).setOrigin(0, 0.5);
+        this.goldDisplayText = this.add.text(32, 148, '0', { fontSize: '13px', color: '#ffd966', fontStyle: 'bold' }).setOrigin(0, 0.5);
+        this.hudContainer.add([this.goldDisplayIcon, this.goldDisplayText]);
 
         this.createEquipmentScreen();
         this.createSkillsScreen();
@@ -2135,15 +2206,13 @@ class Match3Scene extends Phaser.Scene {
         this.closeInventoryItemPopup();
 
         const gear = this.getEquippedStatTotals();
-        const lootPower = this.player.loot + gear.loot;
-        const meterPct = Math.floor((this.lootMeter / this.lootMeterMax) * 100);
-        // lootScore combines battle progression, loot meter, and gear loot stat
-        const lootScore = this.battleNumber * 10 + this.lootMeter * 0.5 + Math.floor(lootPower / 10);
-        this.rewardLootInfoText.setText(`Loot Score: ${Math.floor(lootScore)} | Meter: ${meterPct}%`);
+        const magicFind = gear.magicFind;
+        const monsterLevel = this.battleNumber;
+        this.rewardLootInfoText.setText(`Monster Lv.${monsterLevel} | Magic Find: ${magicFind}`);
 
         this.rewardChoices = [];
         for (let i = 0; i < 3; i++) {
-            this.rewardChoices.push(this.generateLoot(lootScore));
+            this.rewardChoices.push(this.generateRewardItem(monsterLevel, magicFind));
         }
 
         this.rewardCards.forEach((card, index) => {
@@ -2257,7 +2326,6 @@ class Match3Scene extends Phaser.Scene {
     startNextBattle() {
         this.battleNumber += 1;
         this.skillCharge = this.createInitialSkillCharge();
-        this.lootMeter = 0;
         const monsterIndex = Phaser.Math.Between(0, MONSTER_AVATARS.length - 1);
         this.currentMonsterAvatar = MONSTER_AVATARS[monsterIndex];
         this.currentMonsterName = MONSTER_NAMES[monsterIndex];
@@ -3546,35 +3614,12 @@ class Match3Scene extends Phaser.Scene {
             }
         }
 
-        this.updateLootMeterUI();
+        this.updateGoldDisplay();
     }
 
-    addLootMeter(amount) {
-        this.lootMeter = Math.min(this.lootMeterMax, this.lootMeter + amount);
-        this.updateLootMeterUI();
-    }
-
-    updateLootMeterUI() {
-        if (!this.lootMeterBar) return;
-        const fraction = Phaser.Math.Clamp(this.lootMeter / this.lootMeterMax, 0, 1);
-        const targetWidth = 160 * fraction;
-        this.tweens.killTweensOf(this.lootMeterBar);
-        this.tweens.add({
-            targets: this.lootMeterBar,
-            width: targetWidth,
-            duration: 350,
-            ease: 'Power2'
-        });
-        const pct = Math.floor(fraction * 100);
-        if (this.lootMeterText) {
-            this.lootMeterText.setText(`${pct}%`);
-        }
-        if (pct >= 75) {
-            this.lootMeterBar.fillColor = 0xff7f11;
-        } else if (pct >= 40) {
-            this.lootMeterBar.fillColor = 0xffd166;
-        } else {
-            this.lootMeterBar.fillColor = 0xffd966;
+    updateGoldDisplay() {
+        if (this.goldDisplayText) {
+            this.goldDisplayText.setText(`${this.player.gold}`);
         }
     }
 
@@ -3991,13 +4036,13 @@ class Match3Scene extends Phaser.Scene {
         let magicDamage = 0;
         let rangedDamage = 0;
         let healAmount = 0;
-        let lootMeterGain = 0;
+        let goldGain = 0;
         const matchCounts = {
             physical: 0,
             magic: 0,
             ranged: 0,
             health: 0,
-            loot: 0
+            gold: 0
         };
         const matchedTilesForEffects = [];
         const comboChargeSources = [];
@@ -4022,9 +4067,9 @@ class Match3Scene extends Phaser.Scene {
                 if (matchCounts[effect] !== undefined) {
                     matchCounts[effect] += 1;
                 }
-                // Gold tiles charge loot meter on any match (including 3s)
-                if (effect === 'loot') {
-                    lootMeterGain += 3;
+                // Gold tiles give gold on any match (including 3s)
+                if (effect === 'gold') {
+                    goldGain += 3;
                 }
                 if (effect === 'health') {
                     const perTileHeal = 3 + Math.floor(gear.health / 80);
@@ -4037,7 +4082,7 @@ class Match3Scene extends Phaser.Scene {
             this.score += 10;
         });
 
-        // --- 4 and 5-row combos: crit damage / heal / loot boost ---
+        // --- 4 and 5-row combos: crit damage / heal / gold boost ---
         comboRuns.forEach(run => {
             if (!run || !run.effect || !run.tiles || run.tiles.length === 0) return;
             if (run.length < 4) return;
@@ -4105,11 +4150,11 @@ class Match3Scene extends Phaser.Scene {
                     this.addCombatLog(`${comboLabel} ♥ Heal: +${critHeal}`, '#ff69b4');
                     break;
                 }
-                case 'loot': {
-                    const baseLoot = is5 ? 25 : 12;
-                    lootMeterGain += baseLoot;
-                    this.spawnComboTierEffect(center.x, center.y, run.color, run.length, baseLoot);
-                    this.addCombatLog(`${comboLabel} 🪙 Loot Meter +${baseLoot}`, '#ffd966');
+                case 'gold': {
+                    const baseGold = is5 ? 25 : 12;
+                    goldGain += baseGold;
+                    this.spawnComboTierEffect(center.x, center.y, run.color, run.length, baseGold);
+                    this.addCombatLog(`${comboLabel} 🪙 Gold +${baseGold}`, '#ffd966');
                     break;
                 }
             }
@@ -4129,10 +4174,11 @@ class Match3Scene extends Phaser.Scene {
             });
         });
 
-        // Apply loot meter gains
-        if (lootMeterGain > 0) {
-            this.addLootMeter(lootMeterGain);
-            this.addCombatLog(`Loot Meter +${lootMeterGain}`, '#ffd966');
+        // Apply gold gains
+        if (goldGain > 0) {
+            this.player.gold += goldGain;
+            this.addCombatLog(`Gold +${goldGain}`, '#ffd966');
+            this.updateGoldDisplay();
         }
 
         if (physicalDamage > 0) {
