@@ -2671,32 +2671,37 @@ class Match3Scene extends Phaser.Scene {
             const cardBg = this.add.rectangle(centerX, centerY, cardWidth, cardHeight, 0x2a2a2a, 1).setStrokeStyle(2, 0x999999);
             const icon = this.add.text(centerX, centerY - 100, '', { fontSize: '28px' }).setOrigin(0.5);
             const name = this.add.text(centerX, centerY - 66, '', {
-                fontSize: '11px',
+                fontSize: '13px',
+                fontFamily: 'Georgia, Verdana, sans-serif',
                 color: '#ffffff',
                 fontStyle: 'bold',
                 align: 'center',
                 wordWrap: { width: cardWidth - 10, useAdvancedWrap: true }
             }).setOrigin(0.5);
             const rarity = this.add.text(centerX, centerY - 32, '', {
-                fontSize: '10px',
+                fontSize: '11px',
+                fontFamily: 'Georgia, Verdana, sans-serif',
                 color: '#ffffff'
             }).setOrigin(0.5);
             const stats = this.add.text(centerX, centerY + 0, '', {
-                fontSize: '9px',
+                fontSize: '11px',
+                fontFamily: 'Verdana, Georgia, sans-serif',
                 color: '#ffd966',
                 align: 'center',
                 wordWrap: { width: cardWidth - 10, useAdvancedWrap: true }
             }).setOrigin(0.5);
             const equippedLabel = this.add.text(centerX, centerY + 44, '', {
-                fontSize: '8px',
+                fontSize: '10px',
+                fontFamily: 'Verdana, Georgia, sans-serif',
                 color: '#bbbbbb',
                 align: 'center',
                 wordWrap: { width: cardWidth - 10, useAdvancedWrap: true }
             }).setOrigin(0.5);
             const compareLines = [];
             for (let li = 0; li < 5; li++) {
-                const cl = this.add.text(centerX, centerY + 56 + li * 11, '', {
-                    fontSize: '9px',
+                const cl = this.add.text(centerX, centerY + 56 + li * 12, '', {
+                    fontSize: '10px',
+                    fontFamily: 'Verdana, Georgia, sans-serif',
                     color: '#8aff8a',
                     align: 'center',
                     wordWrap: { width: cardWidth - 10, useAdvancedWrap: true }
@@ -2705,14 +2710,16 @@ class Match3Scene extends Phaser.Scene {
             }
 
             const equipBtn = this.add.text(centerX - 28, centerY + 108, 'Equip', {
-                fontSize: '11px',
+                fontSize: '12px',
+                fontFamily: 'Verdana, Georgia, sans-serif',
                 color: '#111111',
                 backgroundColor: '#5aff9c',
                 padding: { left: 5, right: 5, top: 3, bottom: 3 }
             }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
             const stashBtn = this.add.text(centerX + 30, centerY + 108, 'Stash', {
-                fontSize: '11px',
+                fontSize: '12px',
+                fontFamily: 'Verdana, Georgia, sans-serif',
                 color: '#ffffff',
                 backgroundColor: '#3b5ccc',
                 padding: { left: 5, right: 5, top: 3, bottom: 3 }
@@ -3609,7 +3616,7 @@ class Match3Scene extends Phaser.Scene {
                 color: '#778593'
             }).setOrigin(0.5).setAlpha(0.52);
             const slotIcon = this.add.text(slot.x, slot.y - 2, '', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
-            const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 + 9, slot.label, { fontSize: '9px', color: '#9cb7c7' }).setOrigin(0.5, 0.5);
+            const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 + 9, slot.label, { fontSize: '10px', fontFamily: 'Verdana, Georgia, sans-serif', color: '#9cb7c7' }).setOrigin(0.5, 0.5);
 
             const inspectEquippedItem = () => {
                 const equippedItem = this.equippedItems[slot.key];
@@ -3658,7 +3665,8 @@ class Match3Scene extends Phaser.Scene {
                 .setStrokeStyle(1, 0x444444);
             const tileIcon = this.add.text(cellX + inventoryCellSize / 2, cellY + 20, '', { fontSize: '22px' }).setOrigin(0.5);
             const tileName = this.add.text(cellX + inventoryCellSize / 2, cellY + 48, '', {
-                fontSize: '8px',
+                fontSize: '9px',
+                fontFamily: 'Verdana, Georgia, sans-serif',
                 color: '#ffffff',
                 align: 'center',
                 wordWrap: { width: inventoryCellSize - 6, useAdvancedWrap: true }
@@ -3679,27 +3687,31 @@ class Match3Scene extends Phaser.Scene {
             .setStrokeStyle(2, 0x555555);
 
         this.inventoryModalTitle = this.add.text(width / 2, height / 2 - 198, '', {
-            fontSize: '16px',
+            fontSize: '18px',
+            fontFamily: 'Georgia, Verdana, sans-serif',
             color: '#ffdd44',
             fontStyle: 'bold'
         }).setOrigin(0.5, 0);
         this.inventoryModalFrame = this.add.rectangle(width / 2, height / 2 - 162, 46, 46, 0x1f1f1f, 1).setStrokeStyle(2, 0x888888);
         this.inventoryModalIcon = this.add.text(width / 2, height / 2 - 162, '', { fontSize: '24px' }).setOrigin(0.5);
         this.inventoryModalName = this.add.text(width / 2, height / 2 - 130, '', {
-            fontSize: '14px',
+            fontSize: '16px',
+            fontFamily: 'Georgia, Verdana, sans-serif',
             color: '#ffffff',
             fontStyle: 'bold',
             wordWrap: { width: 340, useAdvancedWrap: true },
             align: 'center'
         }).setOrigin(0.5);
         this.inventoryModalSlotBadge = this.add.text(width / 2, height / 2 - 110, '', {
-            fontSize: '11px',
+            fontSize: '12px',
+            fontFamily: 'Verdana, Georgia, sans-serif',
             color: '#111111',
             backgroundColor: '#8bb7ff',
             padding: { left: 7, right: 7, top: 3, bottom: 3 }
         }).setOrigin(0.5);
         this.inventoryModalType = this.add.text(width / 2, height / 2 - 92, '', {
-            fontSize: '10px',
+            fontSize: '12px',
+            fontFamily: 'Verdana, Georgia, sans-serif',
             color: '#00ffcc',
             align: 'center',
             wordWrap: { width: 340, useAdvancedWrap: true }
@@ -3710,8 +3722,9 @@ class Match3Scene extends Phaser.Scene {
         // 8 pre-allocated per-stat comparison lines
         this.inventoryAffixLines = [];
         for (let li = 0; li < 8; li++) {
-            const lineObj = this.add.text(width / 2, height / 2 - 68 + li * 18, '', {
-                fontSize: '12px',
+            const lineObj = this.add.text(width / 2, height / 2 - 68 + li * 20, '', {
+                fontSize: '13px',
+                fontFamily: 'Verdana, Georgia, sans-serif',
                 color: '#ffd966',
                 align: 'center',
                 wordWrap: { width: 340, useAdvancedWrap: true }
@@ -3719,27 +3732,31 @@ class Match3Scene extends Phaser.Scene {
             this.inventoryAffixLines.push(lineObj);
         }
 
-        this.inventoryAffixCompareLabel = this.add.text(width / 2, height / 2 + 80, '', {
-            fontSize: '9px',
+        this.inventoryAffixCompareLabel = this.add.text(width / 2, height / 2 + 92, '', {
+            fontSize: '11px',
+            fontFamily: 'Verdana, Georgia, sans-serif',
             color: '#888888',
             align: 'center',
             wordWrap: { width: 340, useAdvancedWrap: true }
         }).setOrigin(0.5);
 
-        const closeModalBtn = this.add.text(width / 2 - 90, height / 2 + 158, 'Close', {
+        const closeModalBtn = this.add.text(width / 2 - 90, height / 2 + 164, 'Close', {
             fontSize: '14px',
+            fontFamily: 'Verdana, Georgia, sans-serif',
             color: '#ffffff',
             backgroundColor: '#444444',
             padding: { left: 8, right: 8, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        const removeBtn = this.add.text(width / 2, height / 2 + 158, 'Unequip', {
+        const removeBtn = this.add.text(width / 2, height / 2 + 164, 'Unequip', {
             fontSize: '14px',
+            fontFamily: 'Verdana, Georgia, sans-serif',
             color: '#ffffff',
             backgroundColor: '#a33d3d',
             padding: { left: 8, right: 8, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        const equipBtn = this.add.text(width / 2 + 90, height / 2 + 158, 'Equip', {
+        const equipBtn = this.add.text(width / 2 + 90, height / 2 + 164, 'Equip', {
             fontSize: '14px',
+            fontFamily: 'Verdana, Georgia, sans-serif',
             color: '#111111',
             backgroundColor: '#00ff99',
             padding: { left: 8, right: 8, top: 4, bottom: 4 }
