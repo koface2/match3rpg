@@ -2561,6 +2561,7 @@ class Match3Scene extends Phaser.Scene {
     /** Play the warrior sprite hit animation, then return to idle. */
     playPlayerHitAnim() {
         if (!this.playerSprite) return;
+        if (this.player.health <= 0) return;  // Don't override death animation
         this.playerSprite.play('warrior_hit');
         // Flash tint
         this.playerSprite.setTint(0xff4444);
