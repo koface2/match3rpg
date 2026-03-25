@@ -41,9 +41,9 @@ const ITEM_BASES = [
     { slotGroup: 'boots', type: 'Boots', baseName: 'Slippers', icon: '🥾', description: 'Enchanted slippers of the magi.', baseType: 'intelligence', baseStats: { energyShield: 3 } },
     { slotGroup: 'boots', type: 'Boots', baseName: 'Striders', icon: '🥾', description: 'Nimble footwear for quick movement.', baseType: 'dexterity', baseStats: { evasion: 3 } },
     // --- Belts ---
-    { slotGroup: 'belt', type: 'Belt', baseName: 'Warbelt', icon: '🧷', description: 'A heavy belt reinforcing stance.', baseType: 'strength', baseStats: { armor: 2, health: 6 } },
-    { slotGroup: 'belt', type: 'Belt', baseName: 'Sash', icon: '🧷', description: 'A woven sash pulsing with mana.', baseType: 'intelligence', baseStats: { energyShield: 2, health: 6 } },
-    { slotGroup: 'belt', type: 'Belt', baseName: 'Cord', icon: '🧷', description: 'A flexible cord for the agile.', baseType: 'dexterity', baseStats: { evasion: 2, health: 6 } },
+    { slotGroup: 'belt', type: 'Belt', baseName: 'Warbelt', icon: '�', description: 'A heavy belt reinforcing stance.', baseType: 'strength', baseStats: { armor: 2, health: 6 } },
+    { slotGroup: 'belt', type: 'Belt', baseName: 'Sash', icon: '🥋', description: 'A woven sash pulsing with mana.', baseType: 'intelligence', baseStats: { energyShield: 2, health: 6 } },
+    { slotGroup: 'belt', type: 'Belt', baseName: 'Cord', icon: '🥋', description: 'A flexible cord for the agile.', baseType: 'dexterity', baseStats: { evasion: 2, health: 6 } },
     // --- Weapons (no base type) ---
     { slotGroup: 'mainhand', type: 'Sword', baseName: 'Longsword', icon: '⚔️', description: 'A balanced blade that excels at physical damage.', baseStats: { physical: 5 }, weaponClass: 'sword' },
     { slotGroup: 'mainhand', type: 'Wand', baseName: 'Wand', icon: '🪄', description: 'A conduit for arcane force and focused spellcraft.', baseStats: { magic: 5 }, weaponClass: 'wand' },
@@ -1369,7 +1369,12 @@ class Match3Scene extends Phaser.Scene {
     }
 
     generateStarterInventory() {
-        return [];
+        const items = [];
+        const count = Phaser.Math.Between(3, 5);
+        for (let i = 0; i < count; i++) {
+            items.push(this.generateLoot(5));
+        }
+        return items;
     }
 
     getSlotLabel(slotGroup) {
@@ -1409,7 +1414,7 @@ class Match3Scene extends Phaser.Scene {
             helmet: '🪖',
             necklace: '📿',
             chest: '🦺',
-            belt: '🧷',
+            belt: '�',
             mainhand: '🗡️',
             offhand: '🛡️',
             gloves: '🧤',
@@ -3292,7 +3297,7 @@ class Match3Scene extends Phaser.Scene {
             const label = this.getStatLabel(stat);
 
             if (!compareItem) {
-                return { text: `${label}:  +${newVal}  ↑`, color: '#4eff8a' };
+                return { text: `${label}:  +${newVal}`, color: '#cccccc' };
             } else if (delta > 0) {
                 return { text: `${label}:  +${newVal}  ↑  (+${delta})`, color: '#4eff8a' };
             } else if (delta < 0) {
