@@ -1273,15 +1273,6 @@ class Match3Scene extends Phaser.Scene {
         for (let i = 0; i < 3; i++) {
             const centerX = edgePad + (totalSpan / 2) * i; // 0=left, 1=center, 2=right
 
-            // Glow effect graphics (drawn behind icon, rises from bottom as charge fills)
-            const glowGfx = this.add.graphics();
-            glowGfx.setDepth(0);
-
-            // Dark circle background behind icon
-            const circleBg = this.add.circle(centerX, barY, iconRadius + 4, 0x111111, 0.85)
-                .setStrokeStyle(2, 0x3b3b3b, 0.6)
-                .setOrigin(0.5);
-
             // Skill icon image
             const skillIcon = this.add.image(centerX, barY, 'skill_cleave')
                 .setOrigin(0.5)
@@ -1342,11 +1333,11 @@ class Match3Scene extends Phaser.Scene {
             });
 
             this.skillSlotUI.push({
-                bg, circleBg, glowGfx, skillIcon, skillIconText,
+                bg, skillIcon, skillIconText,
                 iconDiameter, iconRadius, centerX, centerY: barY,
-                nameLabel, threshold
+                nameLabel, threshold, pulseTween: null
             });
-            this.skillBarContainer.add([glowGfx, circleBg, bg, skillIcon, skillIconText, nameLabel, threshold]);
+            this.skillBarContainer.add([bg, skillIcon, skillIconText, nameLabel, threshold]);
         }
 
         // --- Skill Info Popup (hidden by default) ---
@@ -1435,77 +1426,50 @@ class Match3Scene extends Phaser.Scene {
             const thresholdVal = this.getSkillTriggerThreshold(loadout);
             const currentCharge = this.skillCharge[activeSkill.tileEffect] || 0;
             const isReady = currentCharge >= thresholdVal;
-            const chargeRatio = Math.min(1, currentCharge / thresholdVal);
-
-            // Update circle background stroke based on charge
-            const strokeColor = isReady ? borderColor : 0x3b3b3b;
-            const strokeAlpha = isReady ? 1 : 0.6;
-            slotUI.circleBg.setStrokeStyle(isReady ? 3 : 2, strokeColor, strokeAlpha);
-
-            // Draw rising glow effect
-            const gfx = slotUI.glowGfx;
-            gfx.clear();
-            if (chargeRatio > 0) {
-                const cx = slotUI.centerX;
-                const cy = slotUI.centerY;
-                const r = slotUI.iconRadius + 4;
-
-                // The glow rises from the bottom of the circle
-                // We draw filled arcs using many thin horizontal slices
-                const totalSlices = 40;
-                const fillSlices = Math.max(1, Math.round(totalSlices * chargeRatio));
-
-                for (let s = 0; s < fillSlices; s++) {
-                    const sliceFraction = s / totalSlices; // 0 = bottom, 1 = top
-                    const y = cy + r - (s / totalSlices) * (2 * r);
-                    const dy = y - cy;
-                    const halfWidth = Math.sqrt(Math.max(0, r * r - dy * dy));
-
-                    // Alpha: strongest at bottom, fading toward the fill line
-                    const baseAlpha = isReady ? 0.7 : 0.15 + 0.45 * chargeRatio;
-                    const fadeAlpha = baseAlpha * (1 - sliceFraction * 0.6);
-
-                    gfx.fillStyle(borderColor, fadeAlpha);
-                    gfx.fillRect(cx - halfWidth, y, halfWidth * 2, (2 * r) / totalSlices + 1);
-                }
-
-                // If ready, add outer glow halo
-                if (isReady) {
-                    for (let ring = 0; ring < 4; ring++) {
-                        const ringR = r + 3 + ring * 3;
-                        const ringAlpha = 0.3 - ring * 0.07;
-                        gfx.lineStyle(2, borderColor, ringAlpha);
-                        gfx.strokeCircle(cx, cy, ringR);
-                    }
-                }
-
-                // Mask: clear outside the circle by drawing with clear composite
-                // Since Phaser graphics doesn't support easy circle masks inline,
-                // we'll use a geometry mask
-                if (!slotUI.glowMask) {
-                    const maskShape = this.make.graphics();
-                    maskShape.fillStyle(0xffffff);
-                    maskShape.fillCircle(cx, cy, r);
-                    slotUI.glowMask = maskShape.createGeometryMask();
-                    gfx.setMask(slotUI.glowMask);
-                }
-            }
 
             // Skill icon: use image for skills with art, emoji for others
             const skillIconMap = { 'cleave': 'skill_cleave', 'minute-missles': 'skill_minutemissles', 'multishot': 'skill_multishot' };
             const imageKey = skillIconMap[activeSkill.id];
+            const iconTarget = imageKey ? slotUI.skillIcon : slotUI.skillIconText;
+
             if (imageKey) {
                 slotUI.skillIcon.setTexture(imageKey);
                 const iconScale = slotUI.iconDiameter / slotUI.skillIcon.width;
                 slotUI.skillIcon.setScale(iconScale);
                 slotUI.skillIcon.setVisible(true);
-                slotUI.skillIcon.setAlpha(isReady ? 1 : 0.5 + chargeRatio * 0.3);
+                slotUI.skillIcon.setAlpha(1);
                 slotUI.skillIconText.setVisible(false);
             } else {
                 slotUI.skillIcon.setVisible(false);
                 slotUI.skillIconText.setText(tileData ? tileData.icon : '◆');
                 slotUI.skillIconText.setVisible(true);
-                slotUI.skillIconText.setAlpha(isReady ? 1 : 0.5 + chargeRatio * 0.3);
+                slotUI.skillIconText.setAlpha(1);
+            }
+
+            // Pulse effect when charged
+            if (isReady && !slotUI.pulseTween) {
+                slotUI.pulseTween = this.tweens.add({
+                    targets: iconTarget,
+                    scaleX: iconTarget.scaleX * 1.12,
+                    scaleY: iconTarget.scaleY * 1.12,
+                    alpha: 0.85,
+                    duration: 600,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
+            } else if (!isReady && slotUI.pulseTween) {
+                slotUI.pulseTween.stop();
+                slotUI.pulseTween = null;
+                // Reset scale
+                if (imageKey) {
+                    const iconScale = slotUI.iconDiameter / slotUI.skillIcon.width;
+                    slotUI.skillIcon.setScale(iconScale);
+                    slotUI.skillIcon.setAlpha(1);
+                } else {
+                    slotUI.skillIconText.setScale(1);
+                    slotUI.skillIconText.setAlpha(1);
+                }
             }
 
             slotUI.threshold.setText(`${tileData ? tileData.icon : ''} ${currentCharge}/${thresholdVal}`);
@@ -1514,7 +1478,7 @@ class Match3Scene extends Phaser.Scene {
             // Update name label
             slotUI.nameLabel.setText(activeSkill.name);
             slotUI.nameLabel.setColor(this.toHexColor(borderColor));
-            slotUI.nameLabel.setAlpha(isReady ? 1 : 0.7);
+            slotUI.nameLabel.setAlpha(1);
         });
 
         this.refreshSkillsScreenUI();
