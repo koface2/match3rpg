@@ -252,27 +252,83 @@ const SUPPORT_SKILL_GEMS = [
 // col/row are the original grid coordinates from the tree designer (used to
 // compute pixel positions on the talent screen).
 // prereqs: node IDs that must be allocated before this node unlocks.
-// deps:    additional dependency nodes whose paths must exist first.
+// ---------------------------------------------------------------------------
+// Talent tree from talent-tree-config.json. Each node grants a stat bonus.
+// Any node can be allocated as long as the player has a talent point.
 // ---------------------------------------------------------------------------
 const TALENT_TREE_NODES = [
-    { id: 1,  name: 'Strength',       icon: '⚔️', stat: 'strength',     amount: 3, shortDesc: '+3 STR',      col: 12, row: 5, prereqs: [],   deps: []   },
-    { id: 2,  name: 'Dexterity',      icon: '🏹', stat: 'dexterity',    amount: 3, shortDesc: '+3 DEX',      col: 13, row: 6, prereqs: [],   deps: []   },
-    { id: 3,  name: 'Intelligence',   icon: '📖', stat: 'intelligence', amount: 3, shortDesc: '+3 INT',      col: 11, row: 6, prereqs: [],   deps: []   },
-    { id: 11, name: 'Physical Dmg',   icon: '💥', stat: 'physical',     amount: 5, shortDesc: '+5 Physical', col: 12, row: 3, prereqs: [1],  deps: []   },
-    { id: 13, name: 'Strength II',    icon: '⚔️', stat: 'strength',     amount: 3, shortDesc: '+3 STR',      col: 12, row: 4, prereqs: [1],  deps: [11] },
-    { id: 14, name: 'Intelligence II',icon: '📖', stat: 'intelligence', amount: 3, shortDesc: '+3 INT',      col: 10, row: 7, prereqs: [3],  deps: [15] },
-    { id: 15, name: 'Magic Dmg',      icon: '✨', stat: 'magic',        amount: 5, shortDesc: '+5 Magic',    col:  9, row: 8, prereqs: [3],  deps: []   },
-    { id: 16, name: 'Ranged Dmg',     icon: '🎯', stat: 'ranged',       amount: 5, shortDesc: '+5 Ranged',  col: 15, row: 8, prereqs: [2],  deps: []   },
-    { id: 17, name: 'Dexterity II',   icon: '🏹', stat: 'dexterity',    amount: 3, shortDesc: '+3 DEX',      col: 14, row: 7, prereqs: [2],  deps: [16] }
+    // --- Starting nodes (center) ---
+    { id: 1,  name: 'Strength',       icon: '⚔️', stat: 'strength',       value: 10, shortDesc: '+10 STR',       x: 180, y: 430, color: 0xff4747 },
+    { id: 2,  name: 'Dexterity',      icon: '🏹', stat: 'dexterity',      value: 10, shortDesc: '+10 DEX',       x: 210, y: 460, color: 0x0fb836 },
+    { id: 3,  name: 'Intelligence',   icon: '📖', stat: 'intelligence',   value: 10, shortDesc: '+10 INT',       x: 150, y: 460, color: 0x1131d1 },
+    // --- Strength inner branch (up from center) ---
+    { id: 13, name: 'Strength',       icon: '⚔️', stat: 'strength',       value: 10, shortDesc: '+10 STR',       x: 180, y: 400, color: 0xff4747 },
+    { id: 11, name: 'Physical Dmg',   icon: '💥', stat: 'physicalDamage', value: 4,  shortDesc: '+4% Phys Dmg',  x: 180, y: 370, color: 0xff4747 },
+    { id: 26, name: 'Strength',       icon: '⚔️', stat: 'strength',       value: 10, shortDesc: '+10 STR',       x: 180, y: 340, color: 0xff4747 },
+    { id: 27, name: 'Armour',         icon: '🛡️', stat: 'armor',          value: 4,  shortDesc: '+4% Armour',    x: 180, y: 310, color: 0xff4747 },
+    // --- Left branch from Armour (Physical + Red Tile Chance) ---
+    { id: 31, name: 'Strength',       icon: '⚔️', stat: 'strength',       value: 10, shortDesc: '+10 STR',       x: 150, y: 310, color: 0xff4747 },
+    { id: 32, name: 'Physical Dmg',   icon: '💥', stat: 'physicalDamage', value: 4,  shortDesc: '+4% Phys Dmg',  x: 120, y: 310, color: 0xff4747 },
+    { id: 33, name: 'Red Tile Chance', icon: '🔴', stat: 'redTileChance', value: 1,  shortDesc: '+1% Red Tile',  x: 90,  y: 310, color: 0xff4747 },
+    // --- Up branch from Armour (Red Tile → See Red keystone) ---
+    { id: 50, name: 'Red Tile Chance', icon: '🔴', stat: 'redTileChance', value: 1,  shortDesc: '+1% Red Tile',  x: 210, y: 280, color: 0xff4747 },
+    { id: 57, name: 'Red Tile Chance', icon: '🔴', stat: 'redTileChance', value: 1,  shortDesc: '+1% Red Tile',  x: 240, y: 250, color: 0xff4747 },
+    { id: 58, name: 'Red Tile Chance', icon: '🔴', stat: 'redTileChance', value: 1,  shortDesc: '+1% Red Tile',  x: 270, y: 220, color: 0xff4747 },
+    { id: 59, name: 'See Red',        icon: '👁️', stat: 'seeRed',        value: 1,  shortDesc: '2x Red Dmg',   x: 300, y: 250, color: 0xff4747, isKeystone: true },
+    // --- Right branch from Armour (Health → Block Chance) ---
+    { id: 34, name: 'Health',         icon: '❤️', stat: 'health',         value: 2,  shortDesc: '+2% Health',    x: 210, y: 310, color: 0xff4747 },
+    { id: 35, name: 'Armour',         icon: '🛡️', stat: 'armor',          value: 4,  shortDesc: '+4% Armour',    x: 240, y: 310, color: 0xff4747 },
+    { id: 36, name: 'Strength',       icon: '⚔️', stat: 'strength',       value: 10, shortDesc: '+10 STR',       x: 270, y: 310, color: 0xff4747 },
+    { id: 38, name: 'Block Chance',   icon: '🔰', stat: 'blockChance',   value: 2,  shortDesc: '+2% Block',     x: 300, y: 310, color: 0xff4747 },
+    { id: 39, name: 'Strength',       icon: '⚔️', stat: 'strength',       value: 10, shortDesc: '+10 STR',       x: 330, y: 310, color: 0xff4747 },
+    { id: 40, name: 'Block Chance',   icon: '🔰', stat: 'blockChance',   value: 2,  shortDesc: '+2% Block',     x: 360, y: 310, color: 0xff4747 },
+    // --- Health right-side path ---
+    { id: 42, name: 'Health',         icon: '❤️', stat: 'health',         value: 2,  shortDesc: '+2% Health',    x: 270, y: 340, color: 0xff4747 },
+    { id: 44, name: 'Strength',       icon: '⚔️', stat: 'strength',       value: 10, shortDesc: '+10 STR',       x: 270, y: 370, color: 0xff4747 },
+    { id: 43, name: 'Health',         icon: '❤️', stat: 'health',         value: 2,  shortDesc: '+2% Health',    x: 270, y: 400, color: 0xff4747 },
+    { id: 47, name: 'Health',         icon: '❤️', stat: 'health',         value: 2,  shortDesc: '+2% Health',    x: 240, y: 370, color: 0xff4747 },
+    { id: 46, name: 'Health',         icon: '❤️', stat: 'health',         value: 2,  shortDesc: '+2% Health',    x: 210, y: 400, color: 0xff4747 },
+    { id: 54, name: 'Juggernaut',     icon: '🏋️', stat: 'juggernaut',    value: 1,  shortDesc: '2x Gear HP',   x: 233, y: 423, color: 0xff4747, isKeystone: true },
+    // --- Intelligence branch (down-left) ---
+    { id: 14, name: 'Intelligence',   icon: '📖', stat: 'intelligence',   value: 10, shortDesc: '+10 INT',       x: 120, y: 490, color: 0x1131d1 },
+    { id: 15, name: 'Magic Dmg',      icon: '✨', stat: 'magicDamage',    value: 4,  shortDesc: '+4% Magic Dmg', x: 90,  y: 520, color: 0x1131d1 },
+    { id: 60, name: 'Intelligence',   icon: '📖', stat: 'intelligence',   value: 10, shortDesc: '+10 INT',       x: 60,  y: 550, color: 0x1131d1 },
+    { id: 61, name: 'Energy Shield',  icon: '💠', stat: 'energyShield',  value: 4,  shortDesc: '+4% E.Shield',  x: 30,  y: 580, color: 0x1131d1 },
+    // --- Dexterity branch (down-right) ---
+    { id: 19, name: 'Dexterity',      icon: '🏹', stat: 'dexterity',      value: 10, shortDesc: '+10 DEX',       x: 240, y: 490, color: 0x0fb836 },
+    { id: 18, name: 'Ranged Dmg',     icon: '🎯', stat: 'rangedDamage',  value: 4,  shortDesc: '+4% Range Dmg', x: 270, y: 520, color: 0x0fb836 },
+    { id: 62, name: 'Dexterity',      icon: '🏹', stat: 'dexterity',      value: 10, shortDesc: '+10 DEX',       x: 300, y: 550, color: 0x0fb836 },
+    { id: 64, name: 'Evasion',        icon: '💨', stat: 'evasion',        value: 4,  shortDesc: '+4% Evasion',   x: 330, y: 580, color: 0x0fb836 },
+    // --- Dexterity loop (right side going up, back to Health) ---
+    { id: 68, name: 'Health',         icon: '❤️', stat: 'health',         value: 2,  shortDesc: '+2% Health',    x: 330, y: 550, color: 0xff4747 },
+    { id: 66, name: 'Evasion',        icon: '💨', stat: 'evasion',        value: 4,  shortDesc: '+4% Evasion',   x: 330, y: 520, color: 0x0fb836 },
+    { id: 67, name: 'Dexterity',      icon: '🏹', stat: 'dexterity',      value: 10, shortDesc: '+10 DEX',       x: 330, y: 490, color: 0x0fb836 },
+    { id: 69, name: 'Health',         icon: '❤️', stat: 'health',         value: 2,  shortDesc: '+2% Health',    x: 330, y: 460, color: 0xff4747 },
+    { id: 70, name: 'Dexterity',      icon: '🏹', stat: 'dexterity',      value: 10, shortDesc: '+10 DEX',       x: 300, y: 430, color: 0x0fb836 }
 ];
 
 const TALENT_TREE_CONNECTIONS = [
-    { from: 1,  to: 11 },
-    { from: 11, to: 13 },
-    { from: 3,  to: 15 },
-    { from: 15, to: 14 },
-    { from: 2,  to: 16 },
-    { from: 16, to: 17 }
+    // Strength inner branch
+    { from: 1,  to: 13 }, { from: 13, to: 11 }, { from: 11, to: 26 }, { from: 26, to: 27 },
+    // Left branch from Armour
+    { from: 27, to: 31 }, { from: 31, to: 32 }, { from: 32, to: 33 },
+    // Up branch from Armour (Red Tile → See Red)
+    { from: 27, to: 50 }, { from: 50, to: 57 }, { from: 57, to: 58 }, { from: 58, to: 59 },
+    // Right branch from Armour (Health/Block)
+    { from: 27, to: 34 }, { from: 34, to: 35 }, { from: 35, to: 36 },
+    { from: 36, to: 38 }, { from: 38, to: 39 }, { from: 39, to: 40 },
+    // Health right-side path
+    { from: 36, to: 42 }, { from: 42, to: 44 }, { from: 44, to: 43 },
+    { from: 43, to: 47 }, { from: 47, to: 46 },
+    // Juggernaut
+    { from: 46, to: 54 },
+    // Intelligence branch
+    { from: 3,  to: 14 }, { from: 14, to: 15 }, { from: 15, to: 60 }, { from: 60, to: 61 },
+    // Dexterity branch
+    { from: 2,  to: 19 }, { from: 19, to: 18 }, { from: 18, to: 62 }, { from: 62, to: 64 },
+    // Dexterity loop back to Health
+    { from: 64, to: 68 }, { from: 68, to: 66 }, { from: 66, to: 67 },
+    { from: 67, to: 69 }, { from: 69, to: 70 }, { from: 70, to: 43 }
 ];
 
 class Match3Scene extends Phaser.Scene {
@@ -341,7 +397,6 @@ class Match3Scene extends Phaser.Scene {
         this.inventory = this.generateStarterInventory();
         this.equippedItems = {};
         this.allocatedTalents = new Set();
-        this.talentStatBonuses = { physical: 0, magic: 0, ranged: 0 };
         this.inventoryTiles = [];
         this.selectedInventoryItem = null;
         this.selectedItemSource = null;
@@ -685,7 +740,7 @@ class Match3Scene extends Phaser.Scene {
         }
 
         if (castResult.healAmount > 0) {
-            this.player.health = Math.min(500, this.player.health + castResult.healAmount);
+            this.player.health = Math.min(this.getMaxHealth(), this.player.health + castResult.healAmount);
             this.showCombatMessage(
                 `${activeSkill.name} +${castResult.healAmount}`,
                 '#8dff9b',
@@ -1829,13 +1884,53 @@ class Match3Scene extends Phaser.Scene {
             });
         });
 
-        if (this.talentStatBonuses) {
-            Object.entries(this.talentStatBonuses).forEach(([stat, bonus]) => {
-                if (bonus > 0 && totals[stat] !== undefined) totals[stat] += bonus;
-            });
+        // Juggernaut keystone: double health from gear
+        const tb = this.getTalentPercentBonuses();
+        if (tb.juggernaut) {
+            totals.health *= 2;
         }
 
         return totals;
+    }
+
+    getTalentPercentBonuses() {
+        const b = {
+            physicalDamage: 0, magicDamage: 0, rangedDamage: 0,
+            armor: 0, health: 0, energyShield: 0, evasion: 0,
+            blockChance: 0, redTileChance: 0,
+            juggernaut: false, seeRed: false
+        };
+        this.allocatedTalents.forEach(nodeId => {
+            const node = TALENT_TREE_NODES.find(n => n.id === nodeId);
+            if (!node) return;
+            switch (node.stat) {
+                case 'physicalDamage': b.physicalDamage += node.value; break;
+                case 'magicDamage':    b.magicDamage += node.value; break;
+                case 'rangedDamage':   b.rangedDamage += node.value; break;
+                case 'armor':          b.armor += node.value; break;
+                case 'health':         b.health += node.value; break;
+                case 'energyShield':   b.energyShield += node.value; break;
+                case 'evasion':        b.evasion += node.value; break;
+                case 'blockChance':    b.blockChance += node.value; break;
+                case 'redTileChance':  b.redTileChance += node.value; break;
+                case 'juggernaut':     b.juggernaut = true; break;
+                case 'seeRed':         b.seeRed = true; break;
+            }
+        });
+        return b;
+    }
+
+    getMaxHealth() {
+        const tb = this.getTalentPercentBonuses();
+        return Math.floor(500 * (1 + tb.health / 100));
+    }
+
+    getRandomTileType() {
+        const tb = this.getTalentPercentBonuses();
+        if (tb.redTileChance > 0 && Math.random() * 100 < tb.redTileChance) {
+            return 3; // physical tile index
+        }
+        return Phaser.Math.Between(0, TILE_TYPES.length - 1);
     }
 
     getCharacterStatBonuses() {
@@ -1856,7 +1951,9 @@ class Match3Scene extends Phaser.Scene {
     getMaxEnergyShield() {
         const gear = this.getEquippedStatTotals();
         const charBonuses = this.getCharacterStatBonuses();
-        return charBonuses.energyShield + gear.energyShield;
+        const baseES = charBonuses.energyShield + gear.energyShield;
+        const tb = this.getTalentPercentBonuses();
+        return Math.floor(baseES * (1 + tb.energyShield / 100));
     }
 
     refillEnergyShield() {
@@ -3034,38 +3131,11 @@ class Match3Scene extends Phaser.Scene {
         this.refreshTalentScreenUI();
     }
 
-    getTalentNodeScreenPos(node) {
-        if (!node) return { x: 0, y: 0 };
-        return {
-            x: 39 + (node.col - 9) * 52,
-            y: 115 + (node.row - 3) * 82
-        };
-    }
-
-    isTalentAvailable(node) {
-        if (!node) return false;
-        return node.prereqs.every(id => this.allocatedTalents.has(id))
-            && node.deps.every(id => this.allocatedTalents.has(id));
-    }
-
     allocateTalent(nodeId) {
         const node = TALENT_TREE_NODES.find(n => n.id === nodeId);
         if (!node) return;
 
-        if (this.allocatedTalents.has(nodeId)) {
-            this.addCombatLog(`${node.name} already learned.`, '#888888');
-            return;
-        }
-
-        if (!this.isTalentAvailable(node)) {
-            const missingIds = [...node.prereqs, ...node.deps].filter(id => !this.allocatedTalents.has(id));
-            const missingNames = missingIds.map(id => {
-                const n = TALENT_TREE_NODES.find(n2 => n2.id === id);
-                return n ? n.name : '?';
-            });
-            this.addCombatLog(`Requires: ${missingNames.join(', ')}`, '#ff8888');
-            return;
-        }
+        if (this.allocatedTalents.has(nodeId)) return;
 
         if (this.player.talentPoints <= 0) {
             this.addCombatLog('No talent points — defeat an enemy to earn one!', '#ff8888');
@@ -3075,10 +3145,9 @@ class Match3Scene extends Phaser.Scene {
         this.player.talentPoints -= 1;
         this.allocatedTalents.add(nodeId);
 
+        // Flat attribute stats apply directly to the player
         if (node.stat === 'strength' || node.stat === 'intelligence' || node.stat === 'dexterity') {
-            this.player[node.stat] = (this.player[node.stat] || 0) + node.amount;
-        } else {
-            this.talentStatBonuses[node.stat] = (this.talentStatBonuses[node.stat] || 0) + node.amount;
+            this.player[node.stat] = (this.player[node.stat] || 0) + node.value;
         }
 
         this.addCombatLog(`Learned ${node.name}! ${node.shortDesc}`, '#ffd700');
@@ -3095,58 +3164,64 @@ class Match3Scene extends Phaser.Scene {
         const panel = this.add.rectangle(width / 2, height / 2, width - 10, height - 10, 0x0e0e1a, 1)
             .setStrokeStyle(2, 0xffd700, 0.8);
 
-        const title = this.add.text(width / 2, 28, 'Talent Tree', {
-            fontSize: '22px', color: '#ffd700', fontStyle: 'bold'
+        const title = this.add.text(width / 2, 22, 'Talent Tree', {
+            fontSize: '20px', color: '#ffd700', fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        const subtitle = this.add.text(width / 2, 52, 'Tap a node to allocate a talent point', {
-            fontSize: '11px', color: '#b8a860'
+        this.talentPointsLabel = this.add.text(width / 2, 44, 'Points: 0', {
+            fontSize: '13px', color: '#ffffff', fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        this.talentPointsLabel = this.add.text(width / 2, 74, 'Points: 0', {
-            fontSize: '14px', color: '#ffffff', fontStyle: 'bold'
+        // Info bar for selected node
+        this.talentInfoText = this.add.text(width / 2, 64, 'Tap any node to allocate', {
+            fontSize: '11px', color: '#b8a860', align: 'center'
         }).setOrigin(0.5);
 
-        const backBtn = this.add.text(12, 10, '← Back', {
-            fontSize: '14px', color: '#00ffcc', backgroundColor: '#1a1a2e',
-            padding: { left: 8, right: 8, top: 4, bottom: 4 }
+        const backBtn = this.add.text(12, 8, '← Back', {
+            fontSize: '13px', color: '#00ffcc', backgroundColor: '#1a1a2e',
+            padding: { left: 8, right: 8, top: 3, bottom: 3 }
         }).setOrigin(0, 0).setInteractive({ useHandCursor: true });
         backBtn.on('pointerup', () => this.showGameScreen());
 
-        this.talentScreenGroup.add([bg, panel, title, subtitle, this.talentPointsLabel, backBtn]);
+        this.talentScreenGroup.add([bg, panel, title, this.talentPointsLabel, this.talentInfoText, backBtn]);
 
-        // Graphics layer for connection lines (drawn below nodes)
+        // Graphics layer for connection lines
         this.talentConnectionGraphics = this.add.graphics();
         this.talentScreenGroup.add(this.talentConnectionGraphics);
 
         // Build node UI elements
         this.talentNodeUI = {};
-        const nodeRadius = 26;
+        const nodeRadius = 13;
 
         TALENT_TREE_NODES.forEach(node => {
-            const { x, y } = this.getTalentNodeScreenPos(node);
+            const isKey = node.isKeystone;
+            const r = isKey ? 17 : nodeRadius;
 
-            const glow = this.add.circle(x, y, nodeRadius + 8, 0xffd700, 0.12).setAlpha(0);
-            const circle = this.add.circle(x, y, nodeRadius, 0x111122, 1)
+            const glow = this.add.circle(node.x, node.y, r + 6, node.color, 0.12).setAlpha(0);
+            const circle = this.add.circle(node.x, node.y, r, 0x111122, 1)
                 .setStrokeStyle(2, 0x333355, 1)
                 .setInteractive({ useHandCursor: true });
 
-            const iconText = this.add.text(x, y - 5, node.icon, { fontSize: '18px' }).setOrigin(0.5);
+            const iconText = this.add.text(node.x, node.y, node.icon, {
+                fontSize: isKey ? '13px' : '10px'
+            }).setOrigin(0.5);
 
-            const nameText = this.add.text(x, y + nodeRadius + 4, node.name, {
-                fontSize: '9px', color: '#888899', align: 'center',
-                wordWrap: { width: 68, useAdvancedWrap: true }
-            }).setOrigin(0.5, 0);
+            circle.on('pointerup', () => {
+                this.talentInfoText.setText(`${node.name}: ${node.shortDesc}`);
+                this.talentInfoText.setColor(this.toHexColor(node.color));
+                this.allocateTalent(node.id);
+            });
 
-            const effectText = this.add.text(x, y + nodeRadius + 17, node.shortDesc, {
-                fontSize: '8px', color: '#666677', align: 'center'
-            }).setOrigin(0.5, 0);
-
-            circle.on('pointerup', () => this.allocateTalent(node.id));
-
-            this.talentNodeUI[node.id] = { circle, glow, iconText, nameText, effectText };
-            this.talentScreenGroup.add([glow, circle, iconText, nameText, effectText]);
+            this.talentNodeUI[node.id] = { circle, glow, iconText };
+            this.talentScreenGroup.add([glow, circle, iconText]);
         });
+
+        // Bonus summary at bottom
+        this.talentSummaryText = this.add.text(width / 2, height - 170, '', {
+            fontSize: '9px', color: '#888899', align: 'center',
+            wordWrap: { width: 360, useAdvancedWrap: true }
+        }).setOrigin(0.5);
+        this.talentScreenGroup.add(this.talentSummaryText);
 
         this.refreshTalentScreenUI();
     }
@@ -3167,8 +3242,6 @@ class Match3Scene extends Phaser.Scene {
                 const fromNode = TALENT_TREE_NODES.find(n => n.id === conn.from);
                 const toNode   = TALENT_TREE_NODES.find(n => n.id === conn.to);
                 if (!fromNode || !toNode) return;
-                const fp = this.getTalentNodeScreenPos(fromNode);
-                const tp = this.getTalentNodeScreenPos(toNode);
                 const fromAlloc = this.allocatedTalents.has(conn.from);
                 const toAlloc   = this.allocatedTalents.has(conn.to);
                 const color = (fromAlloc && toAlloc) ? 0xffd700
@@ -3177,10 +3250,10 @@ class Match3Scene extends Phaser.Scene {
                 const alpha = (fromAlloc && toAlloc) ? 0.9
                             : (fromAlloc || toAlloc) ? 0.55
                             : 0.3;
-                this.talentConnectionGraphics.lineStyle(3, color, alpha);
+                this.talentConnectionGraphics.lineStyle(2, color, alpha);
                 this.talentConnectionGraphics.beginPath();
-                this.talentConnectionGraphics.moveTo(fp.x, fp.y);
-                this.talentConnectionGraphics.lineTo(tp.x, tp.y);
+                this.talentConnectionGraphics.moveTo(fromNode.x, fromNode.y);
+                this.talentConnectionGraphics.lineTo(toNode.x, toNode.y);
                 this.talentConnectionGraphics.strokePath();
             });
         }
@@ -3191,36 +3264,41 @@ class Match3Scene extends Phaser.Scene {
             const node = TALENT_TREE_NODES.find(n => n.id === nodeId);
             if (!node || !ui) return;
 
-            const isAllocated  = this.allocatedTalents.has(nodeId);
-            const isUnlockable = !isAllocated && this.isTalentAvailable(node);
-            const isAvailable  = isUnlockable && this.player.talentPoints > 0;
+            const isAllocated = this.allocatedTalents.has(nodeId);
+            const hasPoints = this.player.talentPoints > 0;
 
             if (isAllocated) {
-                ui.circle.setFillStyle(0x2e2200, 1).setStrokeStyle(2, 0xffd700, 1);
-                ui.glow.setAlpha(0.5);
+                ui.circle.setFillStyle(0x2e2200, 1).setStrokeStyle(2, node.color, 1);
+                ui.glow.setFillStyle(node.color, 0.15).setAlpha(0.5);
                 ui.iconText.setAlpha(1);
-                ui.nameText.setColor('#ffd700');
-                ui.effectText.setColor('#ccaa44');
-            } else if (isAvailable) {
+            } else if (hasPoints) {
                 ui.circle.setFillStyle(0x142035, 1).setStrokeStyle(2, 0x6699ff, 1);
-                ui.glow.setAlpha(0.25);
-                ui.iconText.setAlpha(1);
-                ui.nameText.setColor('#88aaff');
-                ui.effectText.setColor('#6677bb');
-            } else if (isUnlockable) {
-                ui.circle.setFillStyle(0x101a28, 1).setStrokeStyle(2, 0x334466, 1);
-                ui.glow.setAlpha(0);
-                ui.iconText.setAlpha(0.65);
-                ui.nameText.setColor('#556688');
-                ui.effectText.setColor('#3a4455');
+                ui.glow.setAlpha(0.15);
+                ui.iconText.setAlpha(0.9);
             } else {
                 ui.circle.setFillStyle(0x0a0a15, 1).setStrokeStyle(2, 0x222233, 1);
                 ui.glow.setAlpha(0);
                 ui.iconText.setAlpha(0.3);
-                ui.nameText.setColor('#333344');
-                ui.effectText.setColor('#222233');
             }
         });
+
+        // Update bonus summary
+        if (this.talentSummaryText) {
+            const b = this.getTalentPercentBonuses();
+            const parts = [];
+            if (b.physicalDamage > 0) parts.push(`+${b.physicalDamage}% Phys`);
+            if (b.magicDamage > 0) parts.push(`+${b.magicDamage}% Magic`);
+            if (b.rangedDamage > 0) parts.push(`+${b.rangedDamage}% Ranged`);
+            if (b.armor > 0) parts.push(`+${b.armor}% Armour`);
+            if (b.health > 0) parts.push(`+${b.health}% HP`);
+            if (b.energyShield > 0) parts.push(`+${b.energyShield}% ES`);
+            if (b.evasion > 0) parts.push(`+${b.evasion}% Eva`);
+            if (b.blockChance > 0) parts.push(`+${b.blockChance}% Block`);
+            if (b.redTileChance > 0) parts.push(`+${b.redTileChance}% Red Tile`);
+            if (b.juggernaut) parts.push('Juggernaut');
+            if (b.seeRed) parts.push('See Red');
+            this.talentSummaryText.setText(parts.length > 0 ? `Bonuses: ${parts.join(' | ')}` : '');
+        }
     }
 
     createSkillsScreen() {
@@ -4206,7 +4284,7 @@ class Match3Scene extends Phaser.Scene {
         const charBonuses = this.getCharacterStatBonuses();
 
         if (this.playerHealthBar) {
-            const fraction = Phaser.Math.Clamp(this.player.health / 100, 0, 1);
+            const fraction = Phaser.Math.Clamp(this.player.health / this.getMaxHealth(), 0, 1);
             const targetWidth = 166 * fraction;
             const targetColor = (fraction > 0.5 ? 0x00cc00 : (fraction > 0.25 ? 0xffcc00 : 0xff0000));
             this.tweens.killTweensOf(this.playerHealthBar);
@@ -4362,7 +4440,7 @@ class Match3Scene extends Phaser.Scene {
             for (let x = 0; x < GRID_WIDTH; x++) {
                 let type;
                 do {
-                    type = Phaser.Math.Between(0, TILE_TYPES.length - 1);
+                    type = this.getRandomTileType();
                 } while (!this.isValidPlacement(x, y, type));
                 this.grid[y][x] = type;
             }
@@ -4837,6 +4915,19 @@ class Match3Scene extends Phaser.Scene {
             });
         });
 
+        // Apply talent damage % bonuses
+        const talentBonuses = this.getTalentPercentBonuses();
+        if (physicalDamage > 0) {
+            physicalDamage = Math.floor(physicalDamage * (1 + talentBonuses.physicalDamage / 100) * (talentBonuses.seeRed ? 2 : 1));
+        }
+        if (magicDamage > 0) {
+            magicDamage = Math.floor(magicDamage * (1 + talentBonuses.magicDamage / 100));
+        }
+        if (rangedDamage > 0) {
+            rangedDamage = Math.floor(rangedDamage * (1 + talentBonuses.rangedDamage / 100));
+        }
+        totalEnemyDamage = physicalDamage + magicDamage + rangedDamage;
+
         // Apply gold gains
         if (goldGain > 0) {
             this.player.gold += goldGain;
@@ -4891,11 +4982,11 @@ class Match3Scene extends Phaser.Scene {
         }
 
         if (totalPlayerHeal > 0) {
-            this.player.health = Math.min(500, this.player.health + totalPlayerHeal);
+            this.player.health = Math.min(this.getMaxHealth(), this.player.health + totalPlayerHeal);
             this.showCombatMessage(`Hero +${totalPlayerHeal}`, '#55ff55', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + 20);
         }
 
-        this.player.health = Math.min(500, this.player.health);
+        this.player.health = Math.min(this.getMaxHealth(), this.player.health);
 
         document.getElementById('score').textContent = `Score: ${this.score}`;
         this.updatePlayerUI();
@@ -4930,7 +5021,7 @@ class Match3Scene extends Phaser.Scene {
         for (let x = 0; x < GRID_WIDTH; x++) {
             for (let y = 0; y < GRID_HEIGHT; y++) {
                 if (newGrid[y][x] === -1) {
-                    const type = Phaser.Math.Between(0, TILE_TYPES.length - 1);
+                    const type = this.getRandomTileType();
                     newGrid[y][x] = type;
                     newTiles.push({ x, y, type });
                 }
@@ -5020,13 +5111,25 @@ class Match3Scene extends Phaser.Scene {
 
         const gear = this.getEquippedStatTotals();
         const charBonuses = this.getCharacterStatBonuses();
-        const totalArmor = gear.armor + charBonuses.armorBonus;
+        const tb = this.getTalentPercentBonuses();
+        const baseArmor = gear.armor + charBonuses.armorBonus;
+        const totalArmor = Math.floor(baseArmor * (1 + tb.armor / 100));
         const armorReduction = Math.floor(totalArmor / 4);
-        const totalEvasionChance = Math.min(75, charBonuses.evasionChance + gear.evasion * 0.3);
+        const totalEvasionChance = Math.min(75, charBonuses.evasionChance + gear.evasion * 0.3 + tb.evasion);
+        const totalBlockChance = Math.min(75, tb.blockChance);
 
         alive.forEach((enemy, idx) => {
             this.time.delayedCall(idx * 300, () => {
                 if (this.player.health <= 0) return;
+
+                // Block check per attack
+                if (totalBlockChance > 0 && Math.random() * 100 < totalBlockChance) {
+                    this.addCombatLog(`Blocked ${enemy.name}'s attack! (${totalBlockChance}%)`, '#ffd700');
+                    this.showCombatMessage('BLOCK!', '#ffd700', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20 - idx * 18);
+                    this.playEnemyAttackAnim(enemy);
+                    this.updatePlayerUI();
+                    return;
+                }
 
                 // Evasion check per attack
                 if (Math.random() * 100 < totalEvasionChance) {

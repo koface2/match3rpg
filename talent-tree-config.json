@@ -2,10 +2,10 @@
   "Skills": [
     {
       "Skill Name": "Strength",
-      "Skill Position": "(12,5)",
+      "Skill Position": "(11,6)",
       "Skill Position Exact": {
-        "x": 1416.6597900390625,
-        "y": 598.6781921386719
+        "x": 1304.8224487304688,
+        "y": 663.1907653808594
       },
       "Skill Level": 1,
       "Skill Description": "",
@@ -26,10 +26,10 @@
     },
     {
       "Skill Name": "Dexterity",
-      "Skill Position": "(13,6)",
+      "Skill Position": "(12,6)",
       "Skill Position Exact": {
-        "x": 1536.6597900390625,
-        "y": 718.6781921386719
+        "x": 1364.8224487304688,
+        "y": 723.1907653808594
       },
       "Skill Level": 1,
       "Skill Description": "",
@@ -52,8 +52,8 @@
       "Skill Name": "Intelligence",
       "Skill Position": "(11,6)",
       "Skill Position Exact": {
-        "x": 1296.6597900390625,
-        "y": 718.6781921386719
+        "x": 1244.8224487304688,
+        "y": 723.1907653808594
       },
       "Skill Level": 1,
       "Skill Description": "Smash an enemy with your shield, stunning them momentarily",
@@ -74,10 +74,10 @@
     },
     {
       "Skill Name": "Physical Damage",
-      "Skill Position": "(12,3)",
+      "Skill Position": "(11,5)",
       "Skill Position Exact": {
-        "x": 1416.6597900390625,
-        "y": 358.6781921386719
+        "x": 1304.8224487304688,
+        "y": 543.1907653808594
       },
       "Skill Level": 1,
       "Skill Description": "",
@@ -96,10 +96,10 @@
     },
     {
       "Skill Name": "Strength",
-      "Skill Position": "(12,4)",
+      "Skill Position": "(11,5)",
       "Skill Position Exact": {
-        "x": 1416.6597900390625,
-        "y": 478.6781921386719
+        "x": 1304.8224487304688,
+        "y": 603.1907653808594
       },
       "Skill Level": 1,
       "Skill Description": "",
@@ -122,8 +122,8 @@
       "Skill Name": "Intelligence",
       "Skill Position": "(10,7)",
       "Skill Position Exact": {
-        "x": 1176.6597900390625,
-        "y": 838.6781921386719
+        "x": 1184.8224487304688,
+        "y": 783.1907653808594
       },
       "Skill Level": 1,
       "Skill Description": "Smash an enemy with your shield, stunning them momentarily",
@@ -144,17 +144,19 @@
     },
     {
       "Skill Name": "Magic Damage",
-      "Skill Position": "(9,8)",
+      "Skill Position": "(10,7)",
       "Skill Position Exact": {
-        "x": 1056.6597900390625,
-        "y": 958.6781921386719
+        "x": 1124.8224487304688,
+        "y": 843.1907653808594
       },
       "Skill Level": 1,
       "Skill Description": "",
       "Skill Max Points": 1,
       "Skill Current Points": 0,
       "Skill Image": "/water-sword.png",
-      "Skill Dependencies": [],
+      "Skill Dependencies": [
+        "Intelligence"
+      ],
       "Skill Prerequisite": "Intelligence (1)",
       "Skill Resources": [
         {
@@ -166,17 +168,19 @@
     },
     {
       "Skill Name": "Ranged Damage",
-      "Skill Position": "(15,8)",
+      "Skill Position": "(13,7)",
       "Skill Position Exact": {
-        "x": 1776.6597900390625,
-        "y": 958.6781921386719
+        "x": 1484.8224487304688,
+        "y": 843.1907653808594
       },
       "Skill Level": 1,
       "Skill Description": "",
       "Skill Max Points": 1,
       "Skill Current Points": 0,
       "Skill Image": "/ornate-spear.png",
-      "Skill Dependencies": [],
+      "Skill Dependencies": [
+        "Dexterity"
+      ],
       "Skill Prerequisite": "Dexterity (1)",
       "Skill Resources": [
         {
@@ -188,10 +192,10 @@
     },
     {
       "Skill Name": "Dexterity",
-      "Skill Position": "(14,7)",
+      "Skill Position": "(12,7)",
       "Skill Position Exact": {
-        "x": 1656.6597900390625,
-        "y": 838.6781921386719
+        "x": 1424.8224487304688,
+        "y": 783.1907653808594
       },
       "Skill Level": 1,
       "Skill Description": "",
@@ -209,12 +213,731 @@
           "color": "#0fb836"
         }
       ]
+    },
+    {
+      "Skill Name": "Strength",
+      "Skill Position": "(11,4)",
+      "Skill Position Exact": {
+        "x": 1304.8224487304688,
+        "y": 483.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/axe-hammer-grey.png",
+      "Skill Dependencies": [
+        "Armour"
+      ],
+      "Skill Prerequisite": "-",
+      "Skill Resources": [
+        {
+          "name": "Strength",
+          "value": "10",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Armour",
+      "Skill Position": "(11,4)",
+      "Skill Position Exact": {
+        "x": 1304.8224487304688,
+        "y": 423.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [
+        "Strength",
+        "Health",
+        "Red Tile Chance"
+      ],
+      "Skill Prerequisite": "Strength (1)",
+      "Skill Resources": [
+        {
+          "name": "Armour",
+          "value": "4%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Strength",
+      "Skill Position": "(11,4)",
+      "Skill Position Exact": {
+        "x": 1244.8224487304688,
+        "y": 423.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/axe-hammer-grey.png",
+      "Skill Dependencies": [
+        "Physical Damage"
+      ],
+      "Skill Prerequisite": "Armour (1)",
+      "Skill Resources": [
+        {
+          "name": "Strength",
+          "value": "10",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Physical Damage",
+      "Skill Position": "(10,4)",
+      "Skill Position Exact": {
+        "x": 1184.8224487304688,
+        "y": 423.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-orb.png",
+      "Skill Dependencies": [
+        "Red Tile Chance"
+      ],
+      "Skill Prerequisite": "Strength (1)",
+      "Skill Resources": [
+        {
+          "name": "Physical Damage",
+          "value": "4%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Red Tile Chance",
+      "Skill Position": "(10,4)",
+      "Skill Position Exact": {
+        "x": 1124.8224487304688,
+        "y": 423.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/small-trident.png",
+      "Skill Dependencies": [],
+      "Skill Prerequisite": "Physical Damage (1)",
+      "Skill Resources": [
+        {
+          "name": "Chance for red tile to drop",
+          "value": "1%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Health",
+      "Skill Position": "(12,4)",
+      "Skill Position Exact": {
+        "x": 1364.8224487304688,
+        "y": 423.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [
+        "Armour"
+      ],
+      "Skill Prerequisite": "Armour (1)",
+      "Skill Resources": [
+        {
+          "name": "Health",
+          "value": "2%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Armour",
+      "Skill Position": "(12,4)",
+      "Skill Position Exact": {
+        "x": 1424.8224487304688,
+        "y": 423.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [
+        "Strength"
+      ],
+      "Skill Prerequisite": "Health (1)",
+      "Skill Resources": [
+        {
+          "name": "Armour",
+          "value": "4%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Strength",
+      "Skill Position": "(13,4)",
+      "Skill Position Exact": {
+        "x": 1484.8224487304688,
+        "y": 423.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/axe-hammer-grey.png",
+      "Skill Dependencies": [
+        "Health",
+        "Block Chance"
+      ],
+      "Skill Prerequisite": "Armour (1)",
+      "Skill Resources": [
+        {
+          "name": "Strength",
+          "value": "10",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Block Chance",
+      "Skill Position": "(13,4)",
+      "Skill Position Exact": {
+        "x": 1544.8224487304688,
+        "y": 423.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/axe-hammer-grey.png",
+      "Skill Dependencies": [
+        "Strength"
+      ],
+      "Skill Prerequisite": "Strength (1)",
+      "Skill Resources": [
+        {
+          "name": "Block Chance",
+          "value": "2%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Strength",
+      "Skill Position": "(14,4)",
+      "Skill Position Exact": {
+        "x": 1604.8224487304688,
+        "y": 423.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/axe-hammer-grey.png",
+      "Skill Dependencies": [
+        "Block Chance"
+      ],
+      "Skill Prerequisite": "Block Chance (1)",
+      "Skill Resources": [
+        {
+          "name": "Strength",
+          "value": "10",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Block Chance",
+      "Skill Position": "(14,4)",
+      "Skill Position Exact": {
+        "x": 1664.8224487304688,
+        "y": 423.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 1,
+      "Skill Image": "/axe-hammer-grey.png",
+      "Skill Dependencies": [],
+      "Skill Prerequisite": "Strength (1)",
+      "Skill Resources": [
+        {
+          "name": "Block Chance",
+          "value": "2%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Health",
+      "Skill Position": "(13,4)",
+      "Skill Position Exact": {
+        "x": 1484.8224487304688,
+        "y": 483.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [
+        "Strength"
+      ],
+      "Skill Prerequisite": "Strength (1)",
+      "Skill Resources": [
+        {
+          "name": "Health",
+          "value": "2%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Health",
+      "Skill Position": "(13,5)",
+      "Skill Position Exact": {
+        "x": 1484.8224487304688,
+        "y": 603.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [
+        "Health"
+      ],
+      "Skill Prerequisite": "Strength (1)",
+      "Skill Resources": [
+        {
+          "name": "Health",
+          "value": "2%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Strength",
+      "Skill Position": "(13,5)",
+      "Skill Position Exact": {
+        "x": 1484.8224487304688,
+        "y": 543.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/axe-hammer-grey.png",
+      "Skill Dependencies": [
+        "Health"
+      ],
+      "Skill Prerequisite": "Health (1)",
+      "Skill Resources": [
+        {
+          "name": "Strength",
+          "value": "10",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Health",
+      "Skill Position": "(12,5)",
+      "Skill Position Exact": {
+        "x": 1364.8224487304688,
+        "y": 603.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [
+        "Juggernaut"
+      ],
+      "Skill Prerequisite": "Health (1)",
+      "Skill Resources": [
+        {
+          "name": "Health",
+          "value": "2%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Health",
+      "Skill Position": "(12,5)",
+      "Skill Position Exact": {
+        "x": 1424.8224487304688,
+        "y": 543.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [
+        "Health"
+      ],
+      "Skill Prerequisite": "Health (1)",
+      "Skill Resources": [
+        {
+          "name": "Health",
+          "value": "2%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Red Tile Chance",
+      "Skill Position": "(12,3)",
+      "Skill Position Exact": {
+        "x": 1364.8224487304688,
+        "y": 363.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "Increase chance for a red tile to drop",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [
+        "Red Tile Chance copy"
+      ],
+      "Skill Prerequisite": "Armour (1)",
+      "Skill Resources": [
+        {
+          "name": "Red Tile Chance",
+          "value": "1%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Juggernaut",
+      "Skill Position": "(12,6)",
+      "Skill Position Exact": {
+        "x": 1409.8224487304688,
+        "y": 648.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "Double health from gear",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [],
+      "Skill Prerequisite": "Health (1)",
+      "Skill Resources": [
+        {
+          "name": "Health value from gear",
+          "value": "X2",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Red Tile Chance copy",
+      "Skill Position": "(12,3)",
+      "Skill Position Exact": {
+        "x": 1424.8224487304688,
+        "y": 303.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "Increase chance for a red tile to drop",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [
+        "Red Tile Chance copy"
+      ],
+      "Skill Prerequisite": "Red Tile Chance (1)",
+      "Skill Resources": [
+        {
+          "name": "Red Tile Chance",
+          "value": "1%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Red Tile Chance copy",
+      "Skill Position": "(13,2)",
+      "Skill Position Exact": {
+        "x": 1484.8224487304688,
+        "y": 243.19076538085938
+      },
+      "Skill Level": 1,
+      "Skill Description": "Increase chance for a red tile to drop",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [
+        "See Red"
+      ],
+      "Skill Prerequisite": "Red Tile Chance copy (1)",
+      "Skill Resources": [
+        {
+          "name": "Red Tile Chance",
+          "value": "1%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "See Red",
+      "Skill Position": "(13,3)",
+      "Skill Position Exact": {
+        "x": 1544.8224487304688,
+        "y": 303.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "Double the damage done by red matches",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [],
+      "Skill Prerequisite": "Red Tile Chance copy (1)",
+      "Skill Resources": [
+        {
+          "name": "Red match damage",
+          "value": "X2",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Intelligence",
+      "Skill Position": "(9,8)",
+      "Skill Position Exact": {
+        "x": 1064.8224487304688,
+        "y": 903.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "Smash an enemy with your shield, stunning them momentarily",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/water-sword.png",
+      "Skill Dependencies": [
+        "Energy Shield"
+      ],
+      "Skill Prerequisite": "Magic Damage (1)",
+      "Skill Resources": [
+        {
+          "name": "Intelligence",
+          "value": "10",
+          "color": "#1131d1"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Energy Shield",
+      "Skill Position": "(9,8)",
+      "Skill Position Exact": {
+        "x": 1004.8224487304688,
+        "y": 963.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/water-sword.png",
+      "Skill Dependencies": [],
+      "Skill Prerequisite": "Intelligence (1)",
+      "Skill Resources": [
+        {
+          "name": "Energy Shield",
+          "value": "4%",
+          "color": "#1131d1"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Dexterity",
+      "Skill Position": "(13,8)",
+      "Skill Position Exact": {
+        "x": 1544.8224487304688,
+        "y": 903.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/gray-spear.png",
+      "Skill Dependencies": [
+        "Evasion"
+      ],
+      "Skill Prerequisite": "Ranged Damage (1)",
+      "Skill Resources": [
+        {
+          "name": "Dexterity",
+          "value": "10",
+          "color": "#0fb836"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Evasion",
+      "Skill Position": "(14,8)",
+      "Skill Position Exact": {
+        "x": 1604.8224487304688,
+        "y": 963.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/gray-spear.png",
+      "Skill Dependencies": [
+        "Health"
+      ],
+      "Skill Prerequisite": "Dexterity (1)",
+      "Skill Resources": [
+        {
+          "name": "Evasion",
+          "value": "4%",
+          "color": "#0fb836"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Evasion copy",
+      "Skill Position": "(14,7)",
+      "Skill Position Exact": {
+        "x": 1604.8224487304688,
+        "y": 843.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/gray-spear.png",
+      "Skill Dependencies": [
+        "Dexterity"
+      ],
+      "Skill Prerequisite": "Health (1)",
+      "Skill Resources": [
+        {
+          "name": "Evasion",
+          "value": "4%",
+          "color": "#0fb836"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Dexterity",
+      "Skill Position": "(14,7)",
+      "Skill Position Exact": {
+        "x": 1604.8224487304688,
+        "y": 783.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/gray-spear.png",
+      "Skill Dependencies": [
+        "Health copy copy"
+      ],
+      "Skill Prerequisite": "Evasion copy (1)",
+      "Skill Resources": [
+        {
+          "name": "Dexterity",
+          "value": "10",
+          "color": "#0fb836"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Health",
+      "Skill Position": "(14,8)",
+      "Skill Position Exact": {
+        "x": 1604.8224487304688,
+        "y": 903.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [
+        "Evasion copy"
+      ],
+      "Skill Prerequisite": "Evasion (1)",
+      "Skill Resources": [
+        {
+          "name": "Health",
+          "value": "2%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Health copy copy",
+      "Skill Position": "(14,6)",
+      "Skill Position Exact": {
+        "x": 1604.8224487304688,
+        "y": 723.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/fire-rock.png",
+      "Skill Dependencies": [
+        "Dexterity copy copy"
+      ],
+      "Skill Prerequisite": "Dexterity (1)",
+      "Skill Resources": [
+        {
+          "name": "Health",
+          "value": "2%",
+          "color": "#ff4747"
+        }
+      ]
+    },
+    {
+      "Skill Name": "Dexterity copy copy",
+      "Skill Position": "(13,6)",
+      "Skill Position Exact": {
+        "x": 1544.8224487304688,
+        "y": 663.1907653808594
+      },
+      "Skill Level": 1,
+      "Skill Description": "",
+      "Skill Max Points": 1,
+      "Skill Current Points": 0,
+      "Skill Image": "/gray-spear.png",
+      "Skill Dependencies": [
+        "Health"
+      ],
+      "Skill Prerequisite": "Health copy copy (1)",
+      "Skill Resources": [
+        {
+          "name": "Dexterity",
+          "value": "10",
+          "color": "#0fb836"
+        }
+      ]
     }
   ],
   "Class Name": "Warrior",
   "FullData": {
     "hideLockedSkills": 0,
-    "totalStats": {},
+    "totalStats": {
+      "Block Chance": {
+        "total": 2,
+        "color": "#ff4747",
+        "isPercent": true
+      }
+    },
     "showInfo": false,
     "showStatsSummary": false,
     "config": {
@@ -258,8 +981,8 @@
       {
         "id": 1,
         "name": "Strength",
-        "x": 1416.6597900390625,
-        "y": 598.6781921386719,
+        "x": 1304.8224487304688,
+        "y": 663.1907653808594,
         "showActions": false,
         "level": 1,
         "description": "",
@@ -286,8 +1009,8 @@
       {
         "id": 2,
         "name": "Dexterity",
-        "x": 1536.6597900390625,
-        "y": 718.6781921386719,
+        "x": 1364.8224487304688,
+        "y": 723.1907653808594,
         "showActions": false,
         "level": 1,
         "description": "",
@@ -314,8 +1037,8 @@
       {
         "id": 3,
         "name": "Intelligence",
-        "x": 1296.6597900390625,
-        "y": 718.6781921386719,
+        "x": 1244.8224487304688,
+        "y": 723.1907653808594,
         "showActions": false,
         "level": 1,
         "description": "Smash an enemy with your shield, stunning them momentarily",
@@ -343,8 +1066,8 @@
         "id": 11,
         "name": "Physical Damage",
         "description": "",
-        "x": 1416.6597900390625,
-        "y": 358.6781921386719,
+        "x": 1304.8224487304688,
+        "y": 543.1907653808594,
         "showActions": false,
         "showTooltip": false,
         "maxPoints": 1,
@@ -371,8 +1094,8 @@
       {
         "id": 13,
         "name": "Strength",
-        "x": 1416.6597900390625,
-        "y": 478.6781921386719,
+        "x": 1304.8224487304688,
+        "y": 603.1907653808594,
         "showActions": false,
         "level": 1,
         "description": "",
@@ -399,8 +1122,8 @@
       {
         "id": 14,
         "name": "Intelligence",
-        "x": 1176.6597900390625,
-        "y": 838.6781921386719,
+        "x": 1184.8224487304688,
+        "y": 783.1907653808594,
         "showActions": false,
         "level": 1,
         "description": "Smash an enemy with your shield, stunning them momentarily",
@@ -427,8 +1150,8 @@
       {
         "id": 15,
         "name": "Magic Damage",
-        "x": 1056.6597900390625,
-        "y": 958.6781921386719,
+        "x": 1124.8224487304688,
+        "y": 843.1907653808594,
         "showActions": false,
         "level": 1,
         "description": "",
@@ -455,8 +1178,8 @@
       {
         "id": 18,
         "name": "Ranged Damage",
-        "x": 1776.6597900390625,
-        "y": 958.6781921386719,
+        "x": 1484.8224487304688,
+        "y": 843.1907653808594,
         "showActions": false,
         "level": 1,
         "description": "",
@@ -483,8 +1206,858 @@
       {
         "id": 19,
         "name": "Dexterity",
-        "x": 1656.6597900390625,
-        "y": 838.6781921386719,
+        "x": 1424.8224487304688,
+        "y": 783.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/gray-spear.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Dexterity",
+            "value": "10",
+            "color": "#0fb836"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 26,
+        "name": "Strength",
+        "x": 1304.8224487304688,
+        "y": 483.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/axe-hammer-grey.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Strength",
+            "value": "10",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 27,
+        "name": "Armour",
+        "x": 1304.8224487304688,
+        "y": 423.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Armour",
+            "value": "4%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 31,
+        "name": "Strength",
+        "x": 1244.8224487304688,
+        "y": 423.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/axe-hammer-grey.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Strength",
+            "value": "10",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 32,
+        "name": "Physical Damage",
+        "description": "",
+        "x": 1184.8224487304688,
+        "y": 423.1907653808594,
+        "showActions": false,
+        "showTooltip": false,
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-orb.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Physical Damage",
+            "value": "4%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [
+          12
+        ]
+      },
+      {
+        "id": 33,
+        "name": "Red Tile Chance",
+        "description": "",
+        "x": 1124.8224487304688,
+        "y": 423.1907653808594,
+        "showActions": false,
+        "showTooltip": false,
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/small-trident.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Chance for red tile to drop",
+            "value": "1%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [
+          12
+        ]
+      },
+      {
+        "id": 34,
+        "name": "Health",
+        "description": "",
+        "x": 1364.8224487304688,
+        "y": 423.1907653808594,
+        "showActions": false,
+        "showTooltip": false,
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Health",
+            "value": "2%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [
+          12
+        ]
+      },
+      {
+        "id": 35,
+        "name": "Armour",
+        "x": 1424.8224487304688,
+        "y": 423.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Armour",
+            "value": "4%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 36,
+        "name": "Strength",
+        "x": 1484.8224487304688,
+        "y": 423.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/axe-hammer-grey.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Strength",
+            "value": "10",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 38,
+        "name": "Block Chance",
+        "x": 1544.8224487304688,
+        "y": 423.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/axe-hammer-grey.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Block Chance",
+            "value": "2%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 39,
+        "name": "Strength",
+        "x": 1604.8224487304688,
+        "y": 423.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/axe-hammer-grey.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Strength",
+            "value": "10",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 40,
+        "name": "Block Chance",
+        "x": 1664.8224487304688,
+        "y": 423.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 1,
+        "requiredPoints": 0,
+        "image": "/img/skill/axe-hammer-grey.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Block Chance",
+            "value": "2%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 42,
+        "name": "Health",
+        "description": "",
+        "x": 1484.8224487304688,
+        "y": 483.1907653808594,
+        "showActions": false,
+        "showTooltip": false,
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Health",
+            "value": "2%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [
+          12
+        ]
+      },
+      {
+        "id": 43,
+        "name": "Health",
+        "description": "",
+        "x": 1484.8224487304688,
+        "y": 603.1907653808594,
+        "showActions": false,
+        "showTooltip": false,
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Health",
+            "value": "2%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [
+          12
+        ]
+      },
+      {
+        "id": 44,
+        "name": "Strength",
+        "x": 1484.8224487304688,
+        "y": 543.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/axe-hammer-grey.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Strength",
+            "value": "10",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 46,
+        "name": "Health",
+        "description": "",
+        "x": 1364.8224487304688,
+        "y": 603.1907653808594,
+        "showActions": false,
+        "showTooltip": false,
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Health",
+            "value": "2%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [
+          12
+        ]
+      },
+      {
+        "id": 47,
+        "name": "Health",
+        "description": "",
+        "x": 1424.8224487304688,
+        "y": 543.1907653808594,
+        "showActions": false,
+        "showTooltip": false,
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Health",
+            "value": "2%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [
+          12
+        ]
+      },
+      {
+        "id": 50,
+        "name": "Red Tile Chance",
+        "x": 1364.8224487304688,
+        "y": 363.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "Increase chance for a red tile to drop",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Red Tile Chance",
+            "value": "1%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 54,
+        "name": "Juggernaut",
+        "description": "Double health from gear",
+        "x": 1409.8224487304688,
+        "y": 648.1907653808594,
+        "showActions": false,
+        "showTooltip": false,
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Health value from gear",
+            "value": "X2",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 60,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [
+          12
+        ]
+      },
+      {
+        "id": 57,
+        "name": "Red Tile Chance copy",
+        "x": 1424.8224487304688,
+        "y": 303.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "Increase chance for a red tile to drop",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Red Tile Chance",
+            "value": "1%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 58,
+        "name": "Red Tile Chance copy",
+        "x": 1484.8224487304688,
+        "y": 243.19076538085938,
+        "showActions": false,
+        "level": 1,
+        "description": "Increase chance for a red tile to drop",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Red Tile Chance",
+            "value": "1%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 59,
+        "name": "See Red",
+        "x": 1544.8224487304688,
+        "y": 303.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "Double the damage done by red matches",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Red match damage",
+            "value": "X2",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 60,
+        "name": "Intelligence",
+        "x": 1064.8224487304688,
+        "y": 903.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "Smash an enemy with your shield, stunning them momentarily",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/water-sword.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Intelligence",
+            "value": "10",
+            "color": "#1131d1"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 61,
+        "name": "Energy Shield",
+        "x": 1004.8224487304688,
+        "y": 963.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/water-sword.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Energy Shield",
+            "value": "4%",
+            "color": "#1131d1"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 62,
+        "name": "Dexterity",
+        "x": 1544.8224487304688,
+        "y": 903.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/gray-spear.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Dexterity",
+            "value": "10",
+            "color": "#0fb836"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 64,
+        "name": "Evasion",
+        "x": 1604.8224487304688,
+        "y": 963.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/gray-spear.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Evasion",
+            "value": "4%",
+            "color": "#0fb836"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 66,
+        "name": "Evasion copy",
+        "x": 1604.8224487304688,
+        "y": 843.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/gray-spear.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Evasion",
+            "value": "4%",
+            "color": "#0fb836"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 67,
+        "name": "Dexterity",
+        "x": 1604.8224487304688,
+        "y": 783.1907653808594,
+        "showActions": false,
+        "level": 1,
+        "description": "",
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/gray-spear.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Dexterity",
+            "value": "10",
+            "color": "#0fb836"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [],
+        "showTooltip": false
+      },
+      {
+        "id": 68,
+        "name": "Health",
+        "description": "",
+        "x": 1604.8224487304688,
+        "y": 903.1907653808594,
+        "showActions": false,
+        "showTooltip": false,
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Health",
+            "value": "2%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [
+          12
+        ]
+      },
+      {
+        "id": 69,
+        "name": "Health copy copy",
+        "description": "",
+        "x": 1604.8224487304688,
+        "y": 723.1907653808594,
+        "showActions": false,
+        "showTooltip": false,
+        "maxPoints": 1,
+        "currentPoints": 0,
+        "requiredPoints": 0,
+        "image": "/img/skill/fire-rock.png",
+        "shouldAnimate": true,
+        "resources": [
+          {
+            "name": "Health",
+            "value": "2%",
+            "color": "#ff4747"
+          }
+        ],
+        "size": 30,
+        "borderType": "solid",
+        "shape": "round",
+        "cost": 1,
+        "prerequisiteModeOverride": "global",
+        "exclusiveSkillIds": [
+          12
+        ]
+      },
+      {
+        "id": 70,
+        "name": "Dexterity copy copy",
+        "x": 1544.8224487304688,
+        "y": 663.1907653808594,
         "showActions": false,
         "level": 1,
         "description": "",
@@ -559,7 +2132,8 @@
           "y": 913.6781921386719
         },
         "mutuallyExclusive": false,
-        "dotted": false
+        "dotted": false,
+        "isHovered": false
       },
       {
         "id": "2-19",
@@ -586,37 +2160,421 @@
         "mutuallyExclusive": false,
         "dotted": false,
         "isHovered": false
+      },
+      {
+        "id": "26-27",
+        "from": 26,
+        "to": 27,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1423.4935913085938,
+          "y": 417.4872741699219
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "27-31",
+        "from": 27,
+        "to": 31,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1363.4935913085938,
+          "y": 357.4872741699219
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "31-32",
+        "from": 31,
+        "to": 32,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1243.4935913085938,
+          "y": 357.4872741699219
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "32-33",
+        "from": 32,
+        "to": 33,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1123.4935913085938,
+          "y": 357.4872741699219
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "36-42",
+        "from": 36,
+        "to": 42,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1679.0000610351562,
+          "y": 252.665283203125
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "42-44",
+        "from": 42,
+        "to": 44,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1679.0000610351562,
+          "y": 372.665283203125
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "44-43",
+        "from": 44,
+        "to": 43,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1679.0000610351562,
+          "y": 492.665283203125
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "43-47",
+        "from": 43,
+        "to": 47,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1619.0000610351562,
+          "y": 522.665283203125
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "47-46",
+        "from": 47,
+        "to": 46,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1499.0000610351562,
+          "y": 522.665283203125
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "27-34",
+        "from": 27,
+        "to": 34,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1379.0000610351562,
+          "y": 192.665283203125
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "34-35",
+        "from": 34,
+        "to": 35,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1499.0000610351562,
+          "y": 192.665283203125
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "35-36",
+        "from": 35,
+        "to": 36,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1619.0000610351562,
+          "y": 192.665283203125
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "36-38",
+        "from": 36,
+        "to": 38,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1739.0000610351562,
+          "y": 192.665283203125
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "38-39",
+        "from": 38,
+        "to": 39,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1859.0000610351562,
+          "y": 192.665283203125
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "39-40",
+        "from": 39,
+        "to": 40,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1979.0000610351562,
+          "y": 192.665283203125
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "46-54",
+        "from": 46,
+        "to": 54,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1320,
+          "y": 810
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "27-50",
+        "from": 27,
+        "to": 50,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1320.4907836914062,
+          "y": 757.8194732666016
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "50-57",
+        "from": 50,
+        "to": 57,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1380.4907836914062,
+          "y": 697.8194732666016
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "57-58",
+        "from": 57,
+        "to": 58,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1440.4907836914062,
+          "y": 637.8194732666016
+        },
+        "mutuallyExclusive": false,
+        "dotted": false
+      },
+      {
+        "id": "58-59",
+        "from": 58,
+        "to": 59,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1500.4907836914062,
+          "y": 637.8194732666016
+        },
+        "mutuallyExclusive": false,
+        "dotted": false
+      },
+      {
+        "id": "15-60",
+        "from": 15,
+        "to": 60,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1241.3142700195312,
+          "y": 940.6851043701172
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "60-61",
+        "from": 60,
+        "to": 61,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1181.3142700195312,
+          "y": 1000.6851043701172
+        },
+        "mutuallyExclusive": false,
+        "dotted": false
+      },
+      {
+        "id": "18-62",
+        "from": 18,
+        "to": 62,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1661.3142700195312,
+          "y": 940.6851043701172
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "62-64",
+        "from": 62,
+        "to": 64,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1721.3142700195312,
+          "y": 1000.6851043701172
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "64-68",
+        "from": 64,
+        "to": 68,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1535.4942016601562,
+          "y": 933.5256652832031
+        },
+        "mutuallyExclusive": false,
+        "dotted": false
+      },
+      {
+        "id": "68-66",
+        "from": 68,
+        "to": 66,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1535.4942016601562,
+          "y": 873.5256652832031
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "66-67",
+        "from": 66,
+        "to": 67,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1535.4942016601562,
+          "y": 813.5256652832031
+        },
+        "mutuallyExclusive": false,
+        "dotted": false
+      },
+      {
+        "id": "67-69",
+        "from": 67,
+        "to": 69,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1535.4942016601562,
+          "y": 753.5256652832031
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "69-70",
+        "from": 69,
+        "to": 70,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1505.4942016601562,
+          "y": 693.5256652832031
+        },
+        "mutuallyExclusive": false,
+        "dotted": false,
+        "isHovered": false
+      },
+      {
+        "id": "70-43",
+        "from": 70,
+        "to": 43,
+        "hasControlPoint": false,
+        "controlPoint": {
+          "x": 1445.4942016601562,
+          "y": 633.5256652832031
+        },
+        "mutuallyExclusive": false,
+        "dotted": false
       }
     ],
     "connectingFrom": null,
-    "skillIdCounter": 20,
+    "skillIdCounter": 70,
     "draggedSkill": null,
     "dragOffset": {
-      "x": 16.3402099609375,
-      "y": -21.678192138671875
+      "x": -37.00426691228677,
+      "y": -22.463492653586627
     },
     "draggedElement": {},
     "isDragging": false,
     "isLinking": false,
     "hoveredSkill": null,
     "defaultMaxPoints": 5,
-    "dragStartTime": 1774379920762,
+    "dragStartTime": 1774485072010,
     "dragStartPos": {
-      "x": 1778,
-      "y": 622
+      "x": 1567.818181818182,
+      "y": 760.7272727272727
     },
     "dragThreshold": 5,
     "showOptions": false,
     "isPanning": false,
     "panStart": {
-      "x": 943.7757568359375,
-      "y": 382.79180908203125
+      "x": 870.9467163085938,
+      "y": 450.4510955810547
     },
     "treePosition": {
-      "x": 111.6597900390625,
-      "y": -106.32180786132812
+      "x": 179.82244873046875,
+      "y": -221.80923461914062
     },
-    "scale": 0.5,
+    "scale": 1.0999999999999999,
     "minScale": 0.5,
     "maxScale": 2,
     "scaleStep": 0.1,
@@ -624,9 +2582,9 @@
     "touchStartX": null,
     "touchStartY": null,
     "lastTouchDistance": null,
-    "touchTimeout": null,
+    "touchTimeout": 442,
     "doubleTapDelay": 300,
-    "lastTap": 0,
+    "lastTap": 1774484522023,
     "editingSkill": null,
     "oldSkills": null,
     "oldBackgroundLink": null,
@@ -636,10 +2594,10 @@
     "currentClassDescription": "Masters of physical combat and unrivaled in close-quarter battles, warriors are the epitome of strength and valor on the battlefield.",
     "inputText": "Warrior",
     "isLoading": false,
-    "historyIndex": 39,
+    "historyIndex": 49,
     "maxHistorySize": 50,
     "showImageSelector": false,
-    "selectedImage": "/ornate-spear.png",
+    "selectedImage": "/fire-rock.png",
     "availableImages": [
       "/axe-hammer-grey.png",
       "/fire-orb.png",
@@ -668,8 +2626,8 @@
     "maxPoints": 20,
     "selectionBox": null,
     "initialClick": {
-      "x": 1796,
-      "y": 685.2727272727273
+      "x": 1768,
+      "y": 908
     },
     "showLoadModal": false,
     "initialPositions": null,
@@ -772,11 +2730,14 @@
     ],
     "showAccount": false,
     "accountStatus": {
-      "logged_in": false
+      "email": "koface@gmail.com",
+      "logged_in": true,
+      "tier": "free",
+      "user_id": "4203267"
     },
     "showPatreonModal": false,
-    "patreonModalTitle": "",
-    "patreonModalMessage": "",
-    "patreonModalButtonText": ""
+    "patreonModalTitle": "Login Required Soon",
+    "patreonModalMessage": "Everyone who logs in with a free Patreon account before January 1st will get Builder Tier for free forever.<br> <br>Starting January 1st, I'll be charging $3 a month (the Builder Tier on Patreon) to host new trees (the share tree online button). All existing trees will continue to be hosted at no cost.<br> <br>You can still save, download, input/upload files locally like normal without an account. It's only new clicks of the share tree online button that you'll need a Builder Tier Patreon account.<br> <br> I've <a href='https://github.com/hdevx/Skill-Tree-Maker' target='_blank'>given the code away for free under MIT License</a>. Feel free to host your own tool with no accounts, contribute features, or use it locally.<br> ",
+    "patreonModalButtonText": "Login with Patreon"
   }
 }
