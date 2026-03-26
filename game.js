@@ -29,6 +29,8 @@ const PLAYER_BODY = {
 const MONSTER_BODIES = [
     // Red Squirrel — sprite-based enemy (index 0)
     { head: 0x993311, headSize: 10, eyeColor: 0xff4400, torso: 0x774422, torsoW: 16, torsoH: 16, armColor: 0x993311, legColor: 0x553311, skinColor: 0x993311, hairColor: 0xcc4400, hairStyle: 'spikes', weaponColor: 0x664422, shieldColor: 0, facingRight: false, spriteKey: 'redsquirrel' },
+    // Pig Goblin — sprite-based enemy (index 1)
+    { head: 0x668833, headSize: 10, eyeColor: 0xffaa00, torso: 0x556b2f, torsoW: 15, torsoH: 16, armColor: 0x668833, legColor: 0x445522, skinColor: 0x668833, hairColor: 0x444422, hairStyle: 'none', weaponColor: 0x775533, shieldColor: 0, facingRight: false, spriteKey: 'skinnypiggoblin' },
     // Ogre — big green brute
     { head: 0x558833, headSize: 11, eyeColor: 0xff2200, torso: 0x556b2f, torsoW: 18, torsoH: 18, armColor: 0x558833, legColor: 0x443322, skinColor: 0x558833, hairColor: 0x000000, hairStyle: 'horns', weaponColor: 0x664422, shieldColor: 0, facingRight: false },
     // Oni — red demon
@@ -470,8 +472,10 @@ class Match3Scene extends Phaser.Scene {
             let monsterIndex;
             if (battleNumber === 1 && i === 0) {
                 monsterIndex = 0; // Red Squirrel for the first battle
+            } else if (battleNumber === 2 && i === 0) {
+                monsterIndex = 1; // Pig Goblin for the second battle
             } else {
-                monsterIndex = Phaser.Math.Between(1, MONSTER_BODIES.length - 1);
+                monsterIndex = Phaser.Math.Between(2, MONSTER_BODIES.length - 1);
             }
             const pos = positions[i];
             const name = MONSTER_NAMES[monsterIndex];
@@ -563,6 +567,10 @@ class Match3Scene extends Phaser.Scene {
             frameWidth: 155,
             frameHeight: 130
         });
+        this.load.spritesheet('skinnypiggoblin', 'assets/sprites/skinnypiggoblin_anim.png', {
+            frameWidth: 155,
+            frameHeight: 130
+        });
     }
 
     create() {
@@ -579,6 +587,12 @@ class Match3Scene extends Phaser.Scene {
         this.anims.create({ key: 'redsquirrel_attack', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 6, end: 11 }), frameRate: 14, repeat: 0 });
         this.anims.create({ key: 'redsquirrel_hit', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 12, end: 17 }), frameRate: 12, repeat: 0 });
         this.anims.create({ key: 'redsquirrel_death', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 18, end: 23 }), frameRate: 8, repeat: 0 });
+
+        // --- Skinny Pig Goblin sprite animations (row 0=idle, 1=attack, 2=hit, 3=death) ---
+        this.anims.create({ key: 'skinnypiggoblin_idle', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 0, end: 5 }), frameRate: 5, repeat: -1 });
+        this.anims.create({ key: 'skinnypiggoblin_attack', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 6, end: 11 }), frameRate: 14, repeat: 0 });
+        this.anims.create({ key: 'skinnypiggoblin_hit', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 12, end: 17 }), frameRate: 12, repeat: 0 });
+        this.anims.create({ key: 'skinnypiggoblin_death', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 18, end: 23 }), frameRate: 8, repeat: 0 });
 
         this.boardContainer = this.add.container(0, 0);
         this.hudContainer = this.add.container(0, 0);
