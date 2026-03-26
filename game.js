@@ -13,7 +13,7 @@ const TILE_TYPES = [
 ];
 
 const MONSTER_AVATARS = ['�️', '👹', '👺', '🧟', '👾', '🤖', '🐉', '🕷️', '🦑'];
-const MONSTER_NAMES = ['Red Squirrel', 'Ogre', 'Oni', 'Zombie', 'Ghost', 'Robot', 'Dragon', 'Spider', 'Squid'];
+const MONSTER_NAMES = ['Red Squirrel', 'Pig Goblin', 'Orc Pig'];
 const PLAYER_AVATAR = '👸';
 
 // Body configs for procedural character rendering
@@ -31,22 +31,8 @@ const MONSTER_BODIES = [
     { head: 0x993311, headSize: 10, eyeColor: 0xff4400, torso: 0x774422, torsoW: 16, torsoH: 16, armColor: 0x993311, legColor: 0x553311, skinColor: 0x993311, hairColor: 0xcc4400, hairStyle: 'spikes', weaponColor: 0x664422, shieldColor: 0, facingRight: false, spriteKey: 'redsquirrel' },
     // Pig Goblin — sprite-based enemy (index 1)
     { head: 0x668833, headSize: 10, eyeColor: 0xffaa00, torso: 0x556b2f, torsoW: 15, torsoH: 16, armColor: 0x668833, legColor: 0x445522, skinColor: 0x668833, hairColor: 0x444422, hairStyle: 'none', weaponColor: 0x775533, shieldColor: 0, facingRight: false, spriteKey: 'skinnypiggoblin' },
-    // Ogre — big green brute
-    { head: 0x558833, headSize: 11, eyeColor: 0xff2200, torso: 0x556b2f, torsoW: 18, torsoH: 18, armColor: 0x558833, legColor: 0x443322, skinColor: 0x558833, hairColor: 0x000000, hairStyle: 'horns', weaponColor: 0x664422, shieldColor: 0, facingRight: false },
-    // Oni — red demon
-    { head: 0xcc2222, headSize: 10, eyeColor: 0xffff00, torso: 0x881111, torsoW: 16, torsoH: 16, armColor: 0xcc2222, legColor: 0x442222, skinColor: 0xcc2222, hairColor: 0x222222, hairStyle: 'horns', weaponColor: 0x888888, shieldColor: 0, facingRight: false },
-    // Zombie — pale shambler
-    { head: 0x88aa77, headSize: 9, eyeColor: 0xccff00, torso: 0x555544, torsoW: 14, torsoH: 17, armColor: 0x88aa77, legColor: 0x444433, skinColor: 0x88aa77, hairColor: 0x333322, hairStyle: 'messy', weaponColor: 0, shieldColor: 0, facingRight: false },
-    // Ghost — translucent purple
-    { head: 0x9966cc, headSize: 10, eyeColor: 0xffffff, torso: 0x7744aa, torsoW: 16, torsoH: 20, armColor: 0x9966cc, legColor: 0x7744aa, skinColor: 0x9966cc, hairColor: 0xbb88ee, hairStyle: 'none', weaponColor: 0, shieldColor: 0, facingRight: false },
-    // Robot — metallic grey
-    { head: 0x888899, headSize: 10, eyeColor: 0x00ffff, torso: 0x666677, torsoW: 16, torsoH: 18, armColor: 0x777788, legColor: 0x555566, skinColor: 0x888899, hairColor: 0x999999, hairStyle: 'antenna', weaponColor: 0x44aaff, shieldColor: 0, facingRight: false },
-    // Dragon — golden scales
-    { head: 0xcc8811, headSize: 11, eyeColor: 0xff3300, torso: 0xaa7711, torsoW: 18, torsoH: 20, armColor: 0xcc8811, legColor: 0x886611, skinColor: 0xcc8811, hairColor: 0xff4400, hairStyle: 'spikes', weaponColor: 0, shieldColor: 0, facingRight: false },
-    // Spider — dark chitinous
-    { head: 0x333333, headSize: 8, eyeColor: 0xff0000, torso: 0x222222, torsoW: 16, torsoH: 12, armColor: 0x333333, legColor: 0x222222, skinColor: 0x333333, hairColor: 0x111111, hairStyle: 'none', weaponColor: 0, shieldColor: 0, facingRight: false },
-    // Squid — deep sea blue
-    { head: 0x446688, headSize: 10, eyeColor: 0x66ffcc, torso: 0x335577, torsoW: 14, torsoH: 18, armColor: 0x446688, legColor: 0x335577, skinColor: 0x446688, hairColor: 0x557799, hairStyle: 'tentacles', weaponColor: 0, shieldColor: 0, facingRight: false }
+    // Orc Pig — sprite-based enemy (index 2)
+    { head: 0x557744, headSize: 11, eyeColor: 0xff6600, torso: 0x445533, torsoW: 18, torsoH: 18, armColor: 0x557744, legColor: 0x334422, skinColor: 0x557744, hairColor: 0x222211, hairStyle: 'none', weaponColor: 0x886644, shieldColor: 0, facingRight: false, spriteKey: 'orcpig' }
 ];
 
 const ITEM_RARITIES = [
@@ -530,8 +516,10 @@ class Match3Scene extends Phaser.Scene {
                 monsterIndex = 0; // Red Squirrel for the first battle
             } else if (battleNumber === 2 && i === 0) {
                 monsterIndex = 1; // Pig Goblin for the second battle
+            } else if (battleNumber === 3 && i === 0) {
+                monsterIndex = 2; // Orc Pig for the third battle
             } else {
-                monsterIndex = Phaser.Math.Between(2, MONSTER_BODIES.length - 1);
+                monsterIndex = Phaser.Math.Between(0, MONSTER_BODIES.length - 1);
             }
             const pos = positions[i];
             const name = MONSTER_NAMES[monsterIndex];
@@ -638,6 +626,12 @@ class Match3Scene extends Phaser.Scene {
         this.anims.create({ key: 'skinnypiggoblin_attack', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 6, end: 11 }), frameRate: 7, repeat: 0 });
         this.anims.create({ key: 'skinnypiggoblin_hit', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 12, end: 17 }), frameRate: 6, repeat: 0 });
         this.anims.create({ key: 'skinnypiggoblin_death', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 18, end: 23 }), frameRate: 5, repeat: 0 });
+
+        // --- Orc Pig sprite animations (row 0=idle, 1=attack, 2=hit, 3=death) ---
+        this.anims.create({ key: 'orcpig_idle', frames: this.anims.generateFrameNumbers('orcpig', { start: 0, end: 5 }), frameRate: 3, repeat: -1 });
+        this.anims.create({ key: 'orcpig_attack', frames: this.anims.generateFrameNumbers('orcpig', { start: 6, end: 11 }), frameRate: 7, repeat: 0 });
+        this.anims.create({ key: 'orcpig_hit', frames: this.anims.generateFrameNumbers('orcpig', { start: 12, end: 17 }), frameRate: 6, repeat: 0 });
+        this.anims.create({ key: 'orcpig_death', frames: this.anims.generateFrameNumbers('orcpig', { start: 18, end: 23 }), frameRate: 5, repeat: 0 });
 
         this.boardContainer = this.add.container(0, 0);
         this.hudContainer = this.add.container(0, 0);
@@ -5402,6 +5396,10 @@ class LoadScreen extends Phaser.Scene {
             frameHeight: 130
         });
         this.load.spritesheet('skinnypiggoblin', 'assets/sprites/skinnypiggoblin_anim.png', {
+            frameWidth: 155,
+            frameHeight: 130
+        });
+        this.load.spritesheet('orcpig', 'assets/sprites/orcpig_anim.png', {
             frameWidth: 155,
             frameHeight: 130
         });
