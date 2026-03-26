@@ -500,6 +500,14 @@ class Match3Scene extends Phaser.Scene {
         return this.enemies.length > 0 && this.enemies.every(e => !e.alive);
     }
 
+    stopAllParticleEffects() {
+        if (this.skillChargeFxContainer) {
+            this.skillChargeFxContainer.each(child => child.destroy());
+            this.skillChargeFxContainer.removeAll();
+        }
+        this.tweens.killAll();
+    }
+
     destroyAllEnemyUI() {
         this.enemies.forEach(enemy => {
             enemy.idleTweens.forEach(t => t.remove());
@@ -792,6 +800,7 @@ class Match3Scene extends Phaser.Scene {
         if (this.allEnemiesDead()) {
             if (!this.awaitingRewardChoice) {
                 this.awaitingRewardChoice = true;
+                this.stopAllParticleEffects();
                 this.time.delayedCall(850, () => this.showRewardScreen());
             }
             this.isSwapping = true;
@@ -3070,11 +3079,7 @@ class Match3Scene extends Phaser.Scene {
         this.closeSkillGemPopup();
 
         // Stop all in-flight particle effects so they don't overlay the reward screen
-        if (this.skillChargeFxContainer) {
-            this.skillChargeFxContainer.each(child => child.destroy());
-            this.skillChargeFxContainer.removeAll();
-        }
-        this.tweens.killAll();
+        this.stopAllParticleEffects();
 
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
@@ -5645,6 +5650,7 @@ class Match3Scene extends Phaser.Scene {
             if (this.allEnemiesDead()) {
                 if (!this.awaitingRewardChoice) {
                     this.awaitingRewardChoice = true;
+                    this.stopAllParticleEffects();
                     this.time.delayedCall(850, () => this.showRewardScreen());
                 }
                 this.isSwapping = true;
