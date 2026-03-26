@@ -820,11 +820,11 @@ class Match3Scene extends Phaser.Scene {
             if (!activeSkill || activeSkill.tileEffect !== effect) return;
 
             const slotUI = this.skillSlotUI[index];
-            if (!slotUI || !slotUI.bg) return;
+            if (!slotUI) return;
 
             targets.push({
-                x: slotUI.bg.x,
-                y: slotUI.bg.y,
+                x: slotUI.centerX,
+                y: slotUI.centerY,
                 slotIndex: index
             });
         });
@@ -834,9 +834,9 @@ class Match3Scene extends Phaser.Scene {
 
     flashSkillCardCharge(slotIndex, color) {
         const slotUI = this.skillSlotUI[slotIndex];
-        if (!slotUI || !slotUI.bg) return;
+        if (!slotUI) return;
 
-        const flash = this.add.rectangle(slotUI.bg.x, slotUI.bg.y, slotUI.bg.width - 2, slotUI.bg.height - 2, color, 0.5)
+        const flash = this.add.circle(slotUI.centerX, slotUI.centerY, slotUI.iconRadius + 4, color, 0.45)
             .setOrigin(0.5)
             .setDepth(1080);
 
@@ -847,12 +847,15 @@ class Match3Scene extends Phaser.Scene {
         this.tweens.add({
             targets: flash,
             alpha: 0,
-            scaleX: 1.08,
-            scaleY: 1.08,
-            duration: 220,
+            scaleX: 1.15,
+            scaleY: 1.15,
+            duration: 280,
             ease: 'Quad.easeOut',
             onComplete: () => flash.destroy()
         });
+
+        // Update glow immediately after charge particle hits
+        this.updateSkillBarUI();
     }
 
     launchChargeParticle(startX, startY, targetX, targetY, color, delay, onHit, durationMin = 680, durationMax = 980) {
@@ -1255,76 +1258,57 @@ class Match3Scene extends Phaser.Scene {
 
     createSkillBar() {
         const width = this.sys.game.config.width;
+        const height = this.sys.game.config.height;
         this.skillBarContainer = this.add.container(0, 0);
 
-        const skillBarBg = this.add.rectangle(width / 2, 724, width - 4, 62, 0x0e0e0e, 0.95)
-            .setStrokeStyle(1, 0x3b3b3b, 1)
-            .setOrigin(0.5);
-        this.skillBarContainer.add(skillBarBg);
-
-        const cardWidth = 122;
-        const cardHeight = 50;
-        const spacing = 8;
-        const startX = (width - (cardWidth * 3 + spacing * 2)) / 2 + cardWidth / 2;
-        const cardY = 724;
-        const iconSize = 26;
+        const iconDiameter = 90;
+        const iconRadius = iconDiameter / 2;
+        const barY = height - iconRadius - 8; // center of icons near bottom
+        const spacing = width / 4; // evenly divide width into 4 segments
 
         this.skillSlotUI = [];
         for (let i = 0; i < 3; i++) {
-            const centerX = startX + i * (cardWidth + spacing);
+            const centerX = spacing * (i + 1); // positions at 1/4, 2/4, 3/4
 
-            // Skill frame image as card background
-            const frameBg = this.add.image(centerX, cardY, 'skillframe')
+            // Glow effect graphics (drawn behind icon, rises from bottom as charge fills)
+            const glowGfx = this.add.graphics();
+            glowGfx.setDepth(0);
+
+            // Dark circle background behind icon
+            const circleBg = this.add.circle(centerX, barY, iconRadius + 4, 0x111111, 0.85)
+                .setStrokeStyle(2, 0x3b3b3b, 0.6)
                 .setOrigin(0.5);
-            // Compute base scale to fit card dimensions
-            const frameScaleX = cardWidth / frameBg.width;
-            const frameScaleY = cardHeight / frameBg.height;
-            frameBg.setScale(frameScaleX, frameScaleY);
 
-            // Invisible interactive hitbox on top
-            const bg = this.add.rectangle(centerX, cardY, cardWidth, cardHeight, 0x000000, 0)
-                .setOrigin(0.5)
-                .setInteractive({ useHandCursor: true });
-
-            // Skill icon image (used for skills with art; hidden until updateSkillBarUI assigns it)
-            const skillIcon = this.add.image(centerX, cardY, 'skill_cleave')
+            // Skill icon image
+            const skillIcon = this.add.image(centerX, barY, 'skill_cleave')
                 .setOrigin(0.5)
                 .setVisible(false);
 
             // Skill icon text fallback (emoji for non-image skills)
-            const skillIconText = this.add.text(centerX, cardY, '', {
-                fontSize: '16px'
+            const skillIconText = this.add.text(centerX, barY, '', {
+                fontSize: '36px'
             }).setOrigin(0.5).setVisible(false);
 
-            const name = this.add.text(centerX, cardY - 11, '', {
+            // Invisible interactive hitbox on top
+            const bg = this.add.rectangle(centerX, barY, iconDiameter + 8, iconDiameter + 8, 0x000000, 0)
+                .setOrigin(0.5)
+                .setInteractive({ useHandCursor: true });
+
+            // Charge text overlay at bottom of icon
+            const threshold = this.add.text(centerX, barY + iconRadius + 10, '', {
                 fontSize: '11px',
-                color: '#ffffff',
+                color: '#d5d5d5',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
-            const threshold = this.add.text(centerX, cardY + 12, '', {
-                fontSize: '10px',
-                color: '#d5d5d5'
-            }).setOrigin(0.5);
-
-            const supportSockets = [];
-            for (let socketIndex = 0; socketIndex < 3; socketIndex++) {
-                const socketX = centerX - 34 + socketIndex * 34;
-                const socketY = cardY + 16;
-                const socketBg = this.add.rectangle(socketX, socketY, 32, 13, 0x292929, 1)
-                    .setStrokeStyle(1, 0x737373, 1)
-                    .setOrigin(0.5);
-                const socketText = this.add.text(socketX, socketY, '-', {
-                    fontSize: '9px',
-                    color: '#cccccc'
-                }).setOrigin(0.5);
-                supportSockets.push({ socketBg, socketText });
-                this.skillBarContainer.add([socketBg, socketText]);
-            }
 
             bg.on('pointerup', () => this.activateSkillSlot(i));
 
-            this.skillSlotUI.push({ bg, frameBg, frameScaleX, frameScaleY, skillIcon, skillIconText, iconSize, name, threshold, supportSockets });
-            this.skillBarContainer.add([frameBg, bg, skillIcon, skillIconText, name, threshold]);
+            this.skillSlotUI.push({
+                bg, circleBg, glowGfx, skillIcon, skillIconText,
+                iconDiameter, iconRadius, centerX, centerY: barY,
+                threshold
+            });
+            this.skillBarContainer.add([glowGfx, circleBg, bg, skillIcon, skillIconText, threshold]);
         }
 
         this.updateSkillBarUI();
@@ -1340,57 +1324,84 @@ class Match3Scene extends Phaser.Scene {
 
             const tileData = this.getTileDataForEffect(activeSkill.tileEffect);
             const borderColor = tileData ? tileData.color : 0xffffff;
-            const threshold = this.getSkillTriggerThreshold(loadout);
+            const thresholdVal = this.getSkillTriggerThreshold(loadout);
             const currentCharge = this.skillCharge[activeSkill.tileEffect] || 0;
-            const isReady = currentCharge >= threshold;
+            const isReady = currentCharge >= thresholdVal;
+            const chargeRatio = Math.min(1, currentCharge / thresholdVal);
 
-            slotUI.frameBg.setScale(slotUI.frameScaleX * (isReady ? 1 : 0.9), slotUI.frameScaleY * (isReady ? 1 : 0.9));
-            slotUI.frameBg.setAlpha(isReady ? 1 : 0.62);
+            // Update circle background stroke based on charge
+            const strokeColor = isReady ? borderColor : 0x3b3b3b;
+            const strokeAlpha = isReady ? 1 : 0.6;
+            slotUI.circleBg.setStrokeStyle(isReady ? 3 : 2, strokeColor, strokeAlpha);
 
-            // Skill icon: use image for skills with art, emoji text for others
+            // Draw rising glow effect
+            const gfx = slotUI.glowGfx;
+            gfx.clear();
+            if (chargeRatio > 0) {
+                const cx = slotUI.centerX;
+                const cy = slotUI.centerY;
+                const r = slotUI.iconRadius + 4;
+
+                // The glow rises from the bottom of the circle
+                // We draw filled arcs using many thin horizontal slices
+                const totalSlices = 40;
+                const fillSlices = Math.max(1, Math.round(totalSlices * chargeRatio));
+
+                for (let s = 0; s < fillSlices; s++) {
+                    const sliceFraction = s / totalSlices; // 0 = bottom, 1 = top
+                    const y = cy + r - (s / totalSlices) * (2 * r);
+                    const dy = y - cy;
+                    const halfWidth = Math.sqrt(Math.max(0, r * r - dy * dy));
+
+                    // Alpha: strongest at bottom, fading toward the fill line
+                    const baseAlpha = isReady ? 0.7 : 0.15 + 0.45 * chargeRatio;
+                    const fadeAlpha = baseAlpha * (1 - sliceFraction * 0.6);
+
+                    gfx.fillStyle(borderColor, fadeAlpha);
+                    gfx.fillRect(cx - halfWidth, y, halfWidth * 2, (2 * r) / totalSlices + 1);
+                }
+
+                // If ready, add outer glow halo
+                if (isReady) {
+                    for (let ring = 0; ring < 4; ring++) {
+                        const ringR = r + 3 + ring * 3;
+                        const ringAlpha = 0.3 - ring * 0.07;
+                        gfx.lineStyle(2, borderColor, ringAlpha);
+                        gfx.strokeCircle(cx, cy, ringR);
+                    }
+                }
+
+                // Mask: clear outside the circle by drawing with clear composite
+                // Since Phaser graphics doesn't support easy circle masks inline,
+                // we'll use a geometry mask
+                if (!slotUI.glowMask) {
+                    const maskShape = this.make.graphics();
+                    maskShape.fillStyle(0xffffff);
+                    maskShape.fillCircle(cx, cy, r);
+                    slotUI.glowMask = maskShape.createGeometryMask();
+                    gfx.setMask(slotUI.glowMask);
+                }
+            }
+
+            // Skill icon: use image for skills with art, emoji for others
             const skillIconMap = { 'cleave': 'skill_cleave', 'minute-missles': 'skill_minutemissles', 'multishot': 'skill_multishot' };
             const imageKey = skillIconMap[activeSkill.id];
             if (imageKey) {
                 slotUI.skillIcon.setTexture(imageKey);
-                // Scale icon to fit iconSize
-                const iconScale = slotUI.iconSize / slotUI.skillIcon.width;
+                const iconScale = slotUI.iconDiameter / slotUI.skillIcon.width;
                 slotUI.skillIcon.setScale(iconScale);
                 slotUI.skillIcon.setVisible(true);
-                slotUI.skillIcon.setAlpha(isReady ? 1 : 0.6);
+                slotUI.skillIcon.setAlpha(isReady ? 1 : 0.5 + chargeRatio * 0.3);
                 slotUI.skillIconText.setVisible(false);
             } else {
                 slotUI.skillIcon.setVisible(false);
                 slotUI.skillIconText.setText(tileData ? tileData.icon : '◆');
                 slotUI.skillIconText.setVisible(true);
-                slotUI.skillIconText.setAlpha(isReady ? 1 : 0.6);
+                slotUI.skillIconText.setAlpha(isReady ? 1 : 0.5 + chargeRatio * 0.3);
             }
 
-            slotUI.bg.setAlpha(isReady ? 1 : 0.62);
-            slotUI.bg.setScale(isReady ? 1 : 0.9);
-            slotUI.name.setText(`${index + 1}. ${activeSkill.name}`);
-            slotUI.name.setColor(this.toHexColor(borderColor));
-            slotUI.name.setAlpha(isReady ? 1 : 0.6);
-            slotUI.name.setScale(isReady ? 1 : 0.92);
-            slotUI.name.setFontStyle(isReady ? 'bold' : 'normal');
-            slotUI.threshold.setText(`${tileData ? tileData.icon : ''} ${currentCharge}/${threshold}`);
+            slotUI.threshold.setText(`${tileData ? tileData.icon : ''} ${currentCharge}/${thresholdVal}`);
             slotUI.threshold.setColor(isReady ? '#ffffff' : '#989898');
-            slotUI.threshold.setAlpha(isReady ? 1 : 0.66);
-
-            slotUI.supportSockets.forEach((socketUI, socketIndex) => {
-                const supportId = loadout.supportIds[socketIndex];
-                const supportGem = this.getSupportGemById(supportId);
-                if (supportGem) {
-                    socketUI.socketText.setText(supportGem.short);
-                    socketUI.socketBg.setStrokeStyle(1, borderColor, isReady ? 1 : 0.6);
-                    socketUI.socketBg.setAlpha(isReady ? 1 : 0.68);
-                    socketUI.socketText.setAlpha(isReady ? 1 : 0.72);
-                } else {
-                    socketUI.socketText.setText('---');
-                    socketUI.socketBg.setStrokeStyle(1, 0x737373, 1);
-                    socketUI.socketBg.setAlpha(isReady ? 1 : 0.55);
-                    socketUI.socketText.setAlpha(isReady ? 1 : 0.65);
-                }
-            });
         });
 
         this.refreshSkillsScreenUI();
@@ -5856,8 +5867,7 @@ class LoadScreen extends Phaser.Scene {
             frameHeight: 130
         });
 
-        // Skill card assets
-        this.load.image('skillframe', 'assets/Skills/SkillFrame.png');
+        // Skill icon assets
         this.load.image('skill_cleave', 'assets/Skills/CleaveSkill.png');
         this.load.image('skill_minutemissles', 'assets/Skills/MinuteMisslesSkill.png');
         this.load.image('skill_multishot', 'assets/Skills/MultishotSkill.png');
