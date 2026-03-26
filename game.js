@@ -2,7 +2,7 @@ const GRID_WIDTH = 7;
 const GRID_HEIGHT = 7;
 const TILE_SIZE = 55;
 const GRID_OFFSET_X = 3;
-const GRID_OFFSET_Y = 282;
+const GRID_OFFSET_Y = 252;
 
 const TILE_TYPES = [
     { name: 'health', color: 0xff1493, icon: '♥', effect: 'health' },
@@ -1263,10 +1263,10 @@ class Match3Scene extends Phaser.Scene {
         const height = this.sys.game.config.height;
         this.skillBarContainer = this.add.container(0, 0);
 
-        const iconDiameter = 80;
+        const iconDiameter = 100;
         const iconRadius = iconDiameter / 2;
-        const barY = height - iconRadius - 32; // moved up so name + charge text fit below
-        const edgePad = 55; // padding from screen edges
+        const barY = height - iconRadius - 30; // positioned so name + charge text fit below
+        const edgePad = 60; // padding from screen edges
         const totalSpan = width - edgePad * 2;
 
         this.skillSlotUI = [];
@@ -1859,7 +1859,7 @@ class Match3Scene extends Phaser.Scene {
 
     createCombatLog() {
         // Positioned between HUD panels and the grid
-        const bg = this.add.rectangle(195, 255, 386, 46, 0x111111, 0.9).setOrigin(0.5);
+        const bg = this.add.rectangle(195, 230, 386, 42, 0x111111, 0.9).setOrigin(0.5);
         this.hudContainer.add(bg);
     }
 
@@ -1876,8 +1876,8 @@ class Match3Scene extends Phaser.Scene {
         this.combatLogTexts.forEach(t => t.destroy());
         this.combatLogTexts = [];
 
-        const logTopY = 238;
-        const lineHeight = 14;
+        const logTopY = 214;
+        const lineHeight = 13;
 
         this.combatLog.forEach((entry, index) => {
             const y = logTopY + index * lineHeight;
@@ -5986,12 +5986,11 @@ const config = {
     type: Phaser.AUTO,
     width: 390,
     height: 780,
-    resolution: window.devicePixelRatio || 1,
     backgroundColor: '#2c3e50',
     render: {
         antialias: true,
         pixelArt: false,
-        roundPixels: false
+        roundPixels: true
     },
     scale: {
         mode: Phaser.Scale.FIT,
