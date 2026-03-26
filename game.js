@@ -409,21 +409,21 @@ class Match3Scene extends Phaser.Scene {
 
     getEnemyPositions(count) {
         const rightCX = 293;
-        if (count === 1) return [{ x: rightCX, y: 68, scale: 1.4, barW: 166, barY: 128 }];
+        if (count === 1) return [{ x: rightCX, y: 72, scale: 1.0, barW: 166, barY: 128 }];
         if (count === 2) return [
-            { x: rightCX - 38, y: 62, scale: 0.85, barW: 70, barY: 106 },
-            { x: rightCX + 38, y: 62, scale: 0.85, barW: 70, barY: 106 }
+            { x: rightCX - 38, y: 66, scale: 0.7, barW: 70, barY: 108 },
+            { x: rightCX + 38, y: 66, scale: 0.7, barW: 70, barY: 108 }
         ];
         if (count === 3) return [
-            { x: rightCX - 50, y: 62, scale: 0.70, barW: 50, barY: 102 },
-            { x: rightCX, y: 62, scale: 0.70, barW: 50, barY: 102 },
-            { x: rightCX + 50, y: 62, scale: 0.70, barW: 50, barY: 102 }
+            { x: rightCX - 50, y: 66, scale: 0.58, barW: 50, barY: 104 },
+            { x: rightCX, y: 66, scale: 0.58, barW: 50, barY: 104 },
+            { x: rightCX + 50, y: 66, scale: 0.58, barW: 50, barY: 104 }
         ];
         return [
-            { x: rightCX - 38, y: 45, scale: 0.62, barW: 56, barY: 84 },
-            { x: rightCX + 38, y: 45, scale: 0.62, barW: 56, barY: 84 },
-            { x: rightCX - 38, y: 100, scale: 0.62, barW: 56, barY: 136 },
-            { x: rightCX + 38, y: 100, scale: 0.62, barW: 56, barY: 136 }
+            { x: rightCX - 38, y: 50, scale: 0.50, barW: 56, barY: 86 },
+            { x: rightCX + 38, y: 50, scale: 0.50, barW: 56, barY: 86 },
+            { x: rightCX - 38, y: 104, scale: 0.50, barW: 56, barY: 138 },
+            { x: rightCX + 38, y: 104, scale: 0.50, barW: 56, barY: 138 }
         ];
     }
 
