@@ -340,7 +340,7 @@ class Match3Scene extends Phaser.Scene {
         this.isSwapping = false;
         this.score = 0;
         this.player = {
-            health: 100,
+            health: 20,
             currentShield: 0,
             physical: 0,
             magic: 0,
@@ -454,8 +454,8 @@ class Match3Scene extends Phaser.Scene {
     }
 
     getEnemyGroupStats(battleNumber, enemyCount) {
-        const baseHP = 200 + (battleNumber - 1) * 40;
-        const baseAtk = 12 + (battleNumber - 1) * 3;
+        const baseHP = 15 + (battleNumber - 1) * 8;
+        const baseAtk = 1 + Math.floor((battleNumber - 1) * 0.8);
         if (enemyCount === 1) return { hp: baseHP, atk: baseAtk };
         const hpPerEnemy = Math.floor(baseHP * 0.85 / enemyCount);
         const atkPerEnemy = Math.max(1, Math.floor(baseAtk * 0.9 / enemyCount));
@@ -1927,7 +1927,8 @@ class Match3Scene extends Phaser.Scene {
 
     getMaxHealth() {
         const tb = this.getTalentPercentBonuses();
-        return Math.floor(500 * (1 + tb.health / 100));
+        const gear = this.getEquippedStatTotals();
+        return Math.floor((20 + gear.health) * (1 + tb.health / 100));
     }
 
     getRandomTileType() {
