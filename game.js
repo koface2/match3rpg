@@ -2,7 +2,7 @@ const GRID_WIDTH = 7;
 const GRID_HEIGHT = 7;
 const TILE_SIZE = 50;
 const GRID_OFFSET_X = 20;
-const GRID_OFFSET_Y = 252;
+const GRID_OFFSET_Y = 280;
 
 const TILE_TYPES = [
     { name: 'health', color: 0xff1493, icon: '♥', effect: 'health' },
