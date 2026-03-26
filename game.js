@@ -583,16 +583,16 @@ class Match3Scene extends Phaser.Scene {
         this.anims.create({ key: 'warrior_death', frames: this.anims.generateFrameNumbers('warrior', { start: 18, end: 23 }), frameRate: 8, repeat: 0 });
 
         // --- Red Squirrel sprite animations (row 0=idle, 1=attack, 2=hit, 3=death) ---
-        this.anims.create({ key: 'redsquirrel_idle', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 0, end: 5 }), frameRate: 5, repeat: -1 });
-        this.anims.create({ key: 'redsquirrel_attack', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 6, end: 11 }), frameRate: 14, repeat: 0 });
-        this.anims.create({ key: 'redsquirrel_hit', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 12, end: 17 }), frameRate: 12, repeat: 0 });
-        this.anims.create({ key: 'redsquirrel_death', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 18, end: 23 }), frameRate: 8, repeat: 0 });
+        this.anims.create({ key: 'redsquirrel_idle', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 0, end: 5 }), frameRate: 3, repeat: -1 });
+        this.anims.create({ key: 'redsquirrel_attack', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 6, end: 11 }), frameRate: 7, repeat: 0 });
+        this.anims.create({ key: 'redsquirrel_hit', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 12, end: 17 }), frameRate: 6, repeat: 0 });
+        this.anims.create({ key: 'redsquirrel_death', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 18, end: 23 }), frameRate: 5, repeat: 0 });
 
         // --- Skinny Pig Goblin sprite animations (row 0=idle, 1=attack, 2=hit, 3=death) ---
-        this.anims.create({ key: 'skinnypiggoblin_idle', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 0, end: 5 }), frameRate: 5, repeat: -1 });
-        this.anims.create({ key: 'skinnypiggoblin_attack', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 6, end: 11 }), frameRate: 14, repeat: 0 });
-        this.anims.create({ key: 'skinnypiggoblin_hit', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 12, end: 17 }), frameRate: 12, repeat: 0 });
-        this.anims.create({ key: 'skinnypiggoblin_death', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 18, end: 23 }), frameRate: 8, repeat: 0 });
+        this.anims.create({ key: 'skinnypiggoblin_idle', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 0, end: 5 }), frameRate: 3, repeat: -1 });
+        this.anims.create({ key: 'skinnypiggoblin_attack', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 6, end: 11 }), frameRate: 7, repeat: 0 });
+        this.anims.create({ key: 'skinnypiggoblin_hit', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 12, end: 17 }), frameRate: 6, repeat: 0 });
+        this.anims.create({ key: 'skinnypiggoblin_death', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 18, end: 23 }), frameRate: 5, repeat: 0 });
 
         this.boardContainer = this.add.container(0, 0);
         this.hudContainer = this.add.container(0, 0);
