@@ -5129,6 +5129,47 @@ class Match3Scene extends Phaser.Scene {
     }
 }
 
+class LoadScreen extends Phaser.Scene {
+    constructor() {
+        super('LoadScreen');
+    }
+
+    preload() {
+        this.load.image('loadscreen', 'assets/LoadScreens/Load Screen.png');
+    }
+
+    create() {
+        const width = this.sys.game.config.width;
+        const height = this.sys.game.config.height;
+        const img = this.add.image(width / 2, height / 2, 'loadscreen');
+        // Scale to cover the full canvas while preserving aspect ratio
+        const scaleX = width / img.width;
+        const scaleY = height / img.height;
+        img.setScale(Math.max(scaleX, scaleY));
+
+        const prompt = this.add.text(width / 2, height - 60, 'Tap to Start', {
+            fontSize: '24px',
+            color: '#ffffff',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5);
+
+        this.tweens.add({
+            targets: prompt,
+            alpha: 0.3,
+            duration: 800,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        this.input.once('pointerup', () => {
+            this.scene.start('Match3Scene');
+        });
+    }
+}
+
 const config = {
     type: Phaser.AUTO,
     width: 390,
@@ -5144,7 +5185,7 @@ const config = {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
-    scene: Match3Scene
+    scene: [LoadScreen, Match3Scene]
 };
 
 const game = new Phaser.Game(config);
