@@ -181,6 +181,33 @@ const ACTIVE_SKILL_GEMS = [
         mode: 'gold',
         basePower: 16,
         scalingStat: 'magicFind'
+    },
+    {
+        id: 'duck-and-roll',
+        name: 'Duck and Roll',
+        tileEffect: 'ranged',
+        baseThreshold: 4,
+        mode: 'damage',
+        basePower: 20,
+        scalingStat: 'ranged'
+    },
+    {
+        id: 'energy-beam',
+        name: 'Energy Beam',
+        tileEffect: 'magic',
+        baseThreshold: 4,
+        mode: 'damage',
+        basePower: 28,
+        scalingStat: 'magic'
+    },
+    {
+        id: 'reckless-attack',
+        name: 'Reckless Attack',
+        tileEffect: 'physical',
+        baseThreshold: 5,
+        mode: 'damage',
+        basePower: 30,
+        scalingStat: 'physical'
     }
 ];
 
@@ -236,6 +263,15 @@ const SUPPORT_SKILL_GEMS = [
         extraHitChance: 0
     }
 ];
+
+const SKILL_ICON_MAP = {
+    'cleave': 'skill_cleave',
+    'minute-missles': 'skill_minutemissles',
+    'multishot': 'skill_multishot',
+    'duck-and-roll': 'skill_duckandroll',
+    'energy-beam': 'skill_energybeam',
+    'reckless-attack': 'skill_recklessattack'
+};
 
 // ---------------------------------------------------------------------------
 // Talent Tree — 9 nodes across Strength / Intelligence / Dexterity branches.
@@ -440,6 +476,7 @@ class Match3Scene extends Phaser.Scene {
         this.skillsGemModal = null;
         this.skillsGemModalTitle = null;
         this.skillsGemModalIcon = null;
+        this.skillsGemModalIconImage = null;
         this.skillsGemModalName = null;
         this.skillsGemModalType = null;
         this.skillsGemModalDesc = null;
@@ -1437,8 +1474,7 @@ class Match3Scene extends Phaser.Scene {
             const isReady = currentCharge >= thresholdVal;
 
             // Skill icon: use image for skills with art, emoji for others
-            const skillIconMap = { 'cleave': 'skill_cleave', 'minute-missles': 'skill_minutemissles', 'multishot': 'skill_multishot' };
-            const imageKey = skillIconMap[activeSkill.id];
+            const imageKey = SKILL_ICON_MAP[activeSkill.id];
             const iconTarget = imageKey ? slotUI.skillIcon : slotUI.skillIconText;
 
             if (imageKey) {
@@ -1494,7 +1530,7 @@ class Match3Scene extends Phaser.Scene {
     }
 
     getSkillGemDisplay(gem) {
-        if (!gem) return { icon: '?', name: 'Unknown', typeLabel: '' };
+        if (!gem) return { icon: '?', name: 'Unknown', typeLabel: '', imageKey: null };
 
         if (gem.type === 'active') {
             const activeSkill = this.getActiveSkillById(gem.id);
@@ -1502,7 +1538,8 @@ class Match3Scene extends Phaser.Scene {
             return {
                 icon: tileData ? tileData.icon : '◆',
                 name: activeSkill ? activeSkill.name : 'Unknown Active',
-                typeLabel: 'Active'
+                typeLabel: 'Active',
+                imageKey: activeSkill ? (SKILL_ICON_MAP[activeSkill.id] || null) : null
             };
         }
 
@@ -1510,7 +1547,8 @@ class Match3Scene extends Phaser.Scene {
         return {
             icon: supportGem ? supportGem.short : 'S',
             name: supportGem ? supportGem.name : 'Unknown Support',
-            typeLabel: 'Support'
+            typeLabel: 'Support',
+            imageKey: null
         };
     }
 
@@ -1549,6 +1587,15 @@ class Match3Scene extends Phaser.Scene {
         const description = this.getSkillGemDescription(gem);
 
         this.skillsGemModalIcon.setText(display.icon);
+        if (display.imageKey && this.skillsGemModalIconImage) {
+            this.skillsGemModalIconImage.setTexture(display.imageKey);
+            this.skillsGemModalIconImage.setDisplaySize(56, 56);
+            this.skillsGemModalIconImage.setVisible(true);
+            this.skillsGemModalIcon.setVisible(false);
+        } else {
+            if (this.skillsGemModalIconImage) this.skillsGemModalIconImage.setVisible(false);
+            this.skillsGemModalIcon.setVisible(true);
+        }
         this.skillsGemModalName.setText(display.name);
         this.skillsGemModalType.setText(`${display.typeLabel} Gem`);
         this.skillsGemModalDesc.setText(description);
@@ -1714,7 +1761,18 @@ class Match3Scene extends Phaser.Scene {
             const activeTargetStroke = armedType === 'active' ? 0xfff07a : borderColor;
             slotUI.cardBg.setStrokeStyle(2, activeTargetStroke, activeTargetAlpha);
             slotUI.cardBg.setFillStyle(isReady ? 0x2a2a2a : 0x202020, isReady ? 1 : 0.86);
-            slotUI.iconText.setText(tileData ? tileData.icon : '◆');
+            const slotImageKey = activeSkill ? (SKILL_ICON_MAP[activeSkill.id] || null) : null;
+            if (slotImageKey && slotUI.skillIconImage) {
+                slotUI.skillIconImage.setTexture(slotImageKey);
+                const iconDiam = slotUI.mainRadius * 2 - 8;
+                slotUI.skillIconImage.setDisplaySize(iconDiam, iconDiam);
+                slotUI.skillIconImage.setVisible(true);
+                slotUI.iconText.setVisible(false);
+            } else {
+                if (slotUI.skillIconImage) slotUI.skillIconImage.setVisible(false);
+                slotUI.iconText.setText(tileData ? tileData.icon : '◆');
+                slotUI.iconText.setVisible(true);
+            }
             slotUI.nameText.setText(activeSkill ? activeSkill.name : 'None');
             slotUI.nameText.setColor(this.toHexColor(borderColor));
             slotUI.chargeText.setText(`${charge}/${threshold}`);
@@ -1754,13 +1812,13 @@ class Match3Scene extends Phaser.Scene {
                 if (!gem) {
                     tile.tileBg.setVisible(false);
                     tile.iconText.setVisible(false);
+                    if (tile.tileSkillIcon) tile.tileSkillIcon.setVisible(false);
                     tile.nameText.setVisible(false);
                     tile.typeText.setVisible(false);
                     return;
                 }
 
                 tile.tileBg.setVisible(true);
-                tile.iconText.setVisible(true);
                 tile.nameText.setVisible(true);
                 tile.typeText.setVisible(true);
 
@@ -1768,13 +1826,26 @@ class Match3Scene extends Phaser.Scene {
                 tile.tileBg.y = tile.homeY;
                 tile.iconText.x = tile.homeX;
                 tile.iconText.y = tile.homeY;
+                if (tile.tileSkillIcon) {
+                    tile.tileSkillIcon.x = tile.homeX;
+                    tile.tileSkillIcon.y = tile.homeY;
+                }
                 tile.nameText.x = tile.homeX;
-                tile.nameText.y = tile.homeY + 33;
+                tile.nameText.y = tile.homeY + 27;
                 tile.typeText.x = tile.homeX;
-                tile.typeText.y = tile.homeY + 55;
+                tile.typeText.y = tile.homeY + 39;
 
                 const display = this.getSkillGemDisplay(gem);
-                tile.iconText.setText(display.icon);
+                if (display.imageKey && tile.tileSkillIcon) {
+                    tile.tileSkillIcon.setTexture(display.imageKey);
+                    tile.tileSkillIcon.setDisplaySize(42, 42);
+                    tile.tileSkillIcon.setVisible(true);
+                    tile.iconText.setVisible(false);
+                } else {
+                    if (tile.tileSkillIcon) tile.tileSkillIcon.setVisible(false);
+                    tile.iconText.setText(display.icon);
+                    tile.iconText.setVisible(true);
+                }
                 tile.nameText.setText(display.name);
                 tile.typeText.setText(display.typeLabel);
 
@@ -3980,6 +4051,10 @@ class Match3Scene extends Phaser.Scene {
             const iconText = this.add.text(centerX, centerY - 10, '', {
                 fontSize: '24px'
             }).setOrigin(0.5);
+            const skillIconImage = this.add.image(centerX, centerY - 4, 'skill_cleave')
+                .setOrigin(0.5).setVisible(false);
+            const iconDiam = mainRadius * 2 - 8;
+            skillIconImage.setDisplaySize(iconDiam, iconDiam);
             const nameText = this.add.text(centerX, centerY + 21, '', {
                 fontSize: '9px',
                 color: '#ffffff',
@@ -4017,23 +4092,24 @@ class Match3Scene extends Phaser.Scene {
                 cardBg,
                 cardLabel,
                 iconText,
+                skillIconImage,
                 nameText,
                 chargeText,
                 supportSockets,
                 mainCenter: { x: centerX, y: centerY },
                 mainRadius
             });
-            this.skillsScreenGroup.add([cardBg, cardLabel, iconText, nameText, chargeText]);
+            this.skillsScreenGroup.add([cardBg, cardLabel, iconText, skillIconImage, nameText, chargeText]);
         }
 
-        const inventoryPanel = this.add.rectangle(width / 2, 632, width - 26, 250, 0x1c1c1c, 1)
+        const inventoryPanel = this.add.rectangle(width / 2, 640, width - 26, 290, 0x1c1c1c, 1)
             .setStrokeStyle(1, 0x666666, 1);
-        const inventoryTitle = this.add.text(width / 2, 515, 'Gem Inventory', {
+        const inventoryTitle = this.add.text(width / 2, 502, 'Gem Inventory', {
             fontSize: '16px',
             color: '#7ee8ff',
             fontStyle: 'bold'
         }).setOrigin(0.5);
-        this.selectedGemLabel = this.add.text(width / 2, 536, 'Selected: none', {
+        this.selectedGemLabel = this.add.text(width / 2, 522, 'Selected: none', {
             fontSize: '11px',
             color: '#bbbbbb'
         }).setOrigin(0.5);
@@ -4042,13 +4118,13 @@ class Match3Scene extends Phaser.Scene {
 
         this.skillsInventoryTiles = [];
         const cols = 5;
-        const rows = 2;
+        const rows = 3;
         const cellW = 68;
-        const cellH = 92;
+        const cellH = 72;
         const gapX = 6;
-        const gapY = 8;
+        const gapY = 4;
         const gridStartX = (width - (cols * cellW + (cols - 1) * gapX)) / 2;
-        const gridStartY = 554;
+        const gridStartY = 540;
 
         let gemIndex = 0;
         for (let row = 0; row < rows; row++) {
@@ -4066,13 +4142,16 @@ class Match3Scene extends Phaser.Scene {
                 const iconText = this.add.text(centerX, centerY, '', {
                     fontSize: '24px'
                 }).setOrigin(0.5);
-                const nameText = this.add.text(centerX, y + 60, '', {
+                const tileSkillIcon = this.add.image(centerX, centerY, 'skill_cleave')
+                    .setOrigin(0.5).setVisible(false);
+                tileSkillIcon.setDisplaySize(42, 42);
+                const nameText = this.add.text(centerX, y + 54, '', {
                     fontSize: '9px',
                     color: '#ffffff',
                     align: 'center',
                     wordWrap: { width: cellW - 8, useAdvancedWrap: true }
                 }).setOrigin(0.5);
-                const typeText = this.add.text(centerX, y + 82, '', {
+                const typeText = this.add.text(centerX, y + 66, '', {
                     fontSize: '8px',
                     color: '#aaaaaa'
                 }).setOrigin(0.5);
@@ -4100,6 +4179,7 @@ class Match3Scene extends Phaser.Scene {
                     dragStartY = pointer.worldY;
                     tileBg.setDepth(1200);
                     iconText.setDepth(1201);
+                    tileSkillIcon.setDepth(1201);
                     nameText.setDepth(1201);
                     typeText.setDepth(1201);
                 });
@@ -4115,10 +4195,12 @@ class Match3Scene extends Phaser.Scene {
                     tileBg.y = dragY;
                     iconText.x = dragX;
                     iconText.y = dragY;
+                    tileSkillIcon.x = dragX;
+                    tileSkillIcon.y = dragY;
                     nameText.x = dragX;
-                    nameText.y = dragY + 33;
+                    nameText.y = dragY + 27;
                     typeText.x = dragX;
-                    typeText.y = dragY + 55;
+                    typeText.y = dragY + 39;
                 });
 
                 tileBg.on('dragend', (pointer) => {
@@ -4132,6 +4214,7 @@ class Match3Scene extends Phaser.Scene {
                     }
                     tileBg.setDepth(0);
                     iconText.setDepth(0);
+                    tileSkillIcon.setDepth(0);
                     nameText.setDepth(0);
                     typeText.setDepth(0);
                     this.draggingSkillGemTile = null;
@@ -4144,6 +4227,7 @@ class Match3Scene extends Phaser.Scene {
                 this.skillsInventoryTiles.push({
                     tileBg,
                     iconText,
+                    tileSkillIcon,
                     nameText,
                     typeText,
                     index: tileIndex,
@@ -4151,7 +4235,7 @@ class Match3Scene extends Phaser.Scene {
                     homeY: centerY,
                     gem
                 });
-                this.skillsScreenGroup.add([tileBg, iconText, nameText, typeText]);
+                this.skillsScreenGroup.add([tileBg, iconText, tileSkillIcon, nameText, typeText]);
                 gemIndex += 1;
             }
         }
@@ -4168,6 +4252,9 @@ class Match3Scene extends Phaser.Scene {
         this.skillsGemModalIcon = this.add.text(width / 2, height / 2 - 70, '', {
             fontSize: '28px'
         }).setOrigin(0.5);
+        this.skillsGemModalIconImage = this.add.image(width / 2, height / 2 - 70, 'skill_cleave')
+            .setOrigin(0.5).setVisible(false);
+        this.skillsGemModalIconImage.setDisplaySize(56, 56);
         this.skillsGemModalName = this.add.text(width / 2, height / 2 - 30, '', {
             fontSize: '16px',
             color: '#ffffff',
@@ -4215,6 +4302,7 @@ class Match3Scene extends Phaser.Scene {
             gemModalCard,
             this.skillsGemModalTitle,
             this.skillsGemModalIcon,
+            this.skillsGemModalIconImage,
             this.skillsGemModalName,
             this.skillsGemModalType,
             this.skillsGemModalDesc,
@@ -5959,6 +6047,9 @@ class LoadScreen extends Phaser.Scene {
         this.load.image('skill_cleave', 'assets/Skills/CleaveSkill.png');
         this.load.image('skill_minutemissles', 'assets/Skills/MinuteMisslesSkill.png');
         this.load.image('skill_multishot', 'assets/Skills/MultishotSkill.png');
+        this.load.image('skill_duckandroll', 'assets/Skills/Duckandrollskill.png');
+        this.load.image('skill_energybeam', 'assets/Skills/EnergyBeamskill.png');
+        this.load.image('skill_recklessattack', 'assets/Skills/RecklessAttackSkill.png');
     }
 
     create() {
