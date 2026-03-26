@@ -422,6 +422,8 @@ class Match3Scene extends Phaser.Scene {
 
         this.skillBarContainer = null;
         this.skillSlotUI = [];
+        this.skillInfoPopup = null;
+        this.skillLongPressTimer = null;
         this.playerSkills = this.createInitialSkillLoadout();
         this.skillCharge = this.createInitialSkillCharge();
         this.skillChargeFxContainer = null;
@@ -1261,14 +1263,15 @@ class Match3Scene extends Phaser.Scene {
         const height = this.sys.game.config.height;
         this.skillBarContainer = this.add.container(0, 0);
 
-        const iconDiameter = 90;
+        const iconDiameter = 80;
         const iconRadius = iconDiameter / 2;
-        const barY = height - iconRadius - 8; // center of icons near bottom
-        const spacing = width / 4; // evenly divide width into 4 segments
+        const barY = height - iconRadius - 32; // moved up so name + charge text fit below
+        const edgePad = 55; // padding from screen edges
+        const totalSpan = width - edgePad * 2;
 
         this.skillSlotUI = [];
         for (let i = 0; i < 3; i++) {
-            const centerX = spacing * (i + 1); // positions at 1/4, 2/4, 3/4
+            const centerX = edgePad + (totalSpan / 2) * i; // 0=left, 1=center, 2=right
 
             // Glow effect graphics (drawn behind icon, rises from bottom as charge fills)
             const glowGfx = this.add.graphics();
@@ -1286,7 +1289,7 @@ class Match3Scene extends Phaser.Scene {
 
             // Skill icon text fallback (emoji for non-image skills)
             const skillIconText = this.add.text(centerX, barY, '', {
-                fontSize: '36px'
+                fontSize: '32px'
             }).setOrigin(0.5).setVisible(false);
 
             // Invisible interactive hitbox on top
@@ -1294,24 +1297,129 @@ class Match3Scene extends Phaser.Scene {
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
 
-            // Charge text overlay at bottom of icon
-            const threshold = this.add.text(centerX, barY + iconRadius + 10, '', {
+            // Skill name label below icon
+            const nameLabel = this.add.text(centerX, barY + iconRadius + 8, '', {
                 fontSize: '11px',
-                color: '#d5d5d5',
+                color: '#cccccc',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
 
-            bg.on('pointerup', () => this.activateSkillSlot(i));
+            // Charge text below name
+            const threshold = this.add.text(centerX, barY + iconRadius + 22, '', {
+                fontSize: '10px',
+                color: '#d5d5d5'
+            }).setOrigin(0.5);
+
+            // Long press: show popup; short tap: activate skill
+            let pressStartTime = 0;
+            let longPressTriggered = false;
+
+            bg.on('pointerdown', () => {
+                pressStartTime = Date.now();
+                longPressTriggered = false;
+                const slotIndex = i;
+                this.skillLongPressTimer = this.time.delayedCall(400, () => {
+                    longPressTriggered = true;
+                    this.showSkillInfoPopup(slotIndex);
+                });
+            });
+
+            bg.on('pointerup', () => {
+                if (this.skillLongPressTimer) {
+                    this.skillLongPressTimer.remove(false);
+                    this.skillLongPressTimer = null;
+                }
+                if (!longPressTriggered) {
+                    this.activateSkillSlot(i);
+                }
+            });
+
+            bg.on('pointerout', () => {
+                if (this.skillLongPressTimer) {
+                    this.skillLongPressTimer.remove(false);
+                    this.skillLongPressTimer = null;
+                }
+            });
 
             this.skillSlotUI.push({
                 bg, circleBg, glowGfx, skillIcon, skillIconText,
                 iconDiameter, iconRadius, centerX, centerY: barY,
-                threshold
+                nameLabel, threshold
             });
-            this.skillBarContainer.add([glowGfx, circleBg, bg, skillIcon, skillIconText, threshold]);
+            this.skillBarContainer.add([glowGfx, circleBg, bg, skillIcon, skillIconText, nameLabel, threshold]);
         }
 
+        // --- Skill Info Popup (hidden by default) ---
+        this.skillInfoPopup = this.add.container(width / 2, height / 2).setVisible(false).setDepth(2000);
+        const popupBg = this.add.rectangle(0, 0, 300, 180, 0x1a1a2e, 0.96)
+            .setStrokeStyle(2, 0x6a6aff, 0.8)
+            .setOrigin(0.5);
+        const popupName = this.add.text(0, -65, '', {
+            fontSize: '16px', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(0.5);
+        const popupMode = this.add.text(0, -42, '', {
+            fontSize: '12px', color: '#aaaaee'
+        }).setOrigin(0.5);
+        const popupDesc = this.add.text(0, -8, '', {
+            fontSize: '11px', color: '#cccccc',
+            wordWrap: { width: 270, useAdvancedWrap: true },
+            align: 'center'
+        }).setOrigin(0.5);
+        const popupCharge = this.add.text(0, 40, '', {
+            fontSize: '11px', color: '#aaddaa'
+        }).setOrigin(0.5);
+        const popupSupports = this.add.text(0, 58, '', {
+            fontSize: '10px', color: '#bbbbbb',
+            wordWrap: { width: 270, useAdvancedWrap: true },
+            align: 'center'
+        }).setOrigin(0.5);
+        const popupCloseBtn = this.add.text(0, 80, '[  Close  ]', {
+            fontSize: '12px', color: '#ffaaaa', fontStyle: 'bold'
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        popupCloseBtn.on('pointerup', () => this.skillInfoPopup.setVisible(false));
+
+        this.skillInfoPopup.add([popupBg, popupName, popupMode, popupDesc, popupCharge, popupSupports, popupCloseBtn]);
+        this.skillInfoPopup.popupName = popupName;
+        this.skillInfoPopup.popupMode = popupMode;
+        this.skillInfoPopup.popupDesc = popupDesc;
+        this.skillInfoPopup.popupCharge = popupCharge;
+        this.skillInfoPopup.popupSupports = popupSupports;
+
         this.updateSkillBarUI();
+    }
+
+    showSkillInfoPopup(slotIndex) {
+        const loadout = this.playerSkills[slotIndex];
+        if (!loadout) return;
+        const activeSkill = this.getActiveSkillById(loadout.activeId);
+        if (!activeSkill) return;
+
+        const tileData = this.getTileDataForEffect(activeSkill.tileEffect);
+        const thresholdVal = this.getSkillTriggerThreshold(loadout);
+        const currentCharge = this.skillCharge[activeSkill.tileEffect] || 0;
+
+        const modeLabel = activeSkill.mode === 'damage' ? 'Deals damage to enemies'
+            : (activeSkill.mode === 'heal' ? 'Restores your health' : 'Generates gold');
+
+        const chargeSource = tileData ? tileData.name : activeSkill.tileEffect;
+        const descText = `Charges from ${tileData ? tileData.icon : ''} ${chargeSource} tile matches. Base power: ${activeSkill.basePower}. Tap to activate when charged.`;
+
+        const supportNames = (loadout.supportIds || [])
+            .map(id => this.getSupportGemById(id))
+            .filter(Boolean)
+            .map(s => s.name);
+        const supportText = supportNames.length > 0
+            ? `Supports: ${supportNames.join(', ')}`
+            : 'No support gems equipped';
+
+        const popup = this.skillInfoPopup;
+        popup.popupName.setText(activeSkill.name);
+        popup.popupName.setColor(this.toHexColor(tileData ? tileData.color : 0xffffff));
+        popup.popupMode.setText(modeLabel);
+        popup.popupDesc.setText(descText);
+        popup.popupCharge.setText(`Charge: ${currentCharge} / ${thresholdVal}`);
+        popup.popupSupports.setText(supportText);
+        popup.setVisible(true);
     }
 
     updateSkillBarUI() {
@@ -1402,6 +1510,11 @@ class Match3Scene extends Phaser.Scene {
 
             slotUI.threshold.setText(`${tileData ? tileData.icon : ''} ${currentCharge}/${thresholdVal}`);
             slotUI.threshold.setColor(isReady ? '#ffffff' : '#989898');
+
+            // Update name label
+            slotUI.nameLabel.setText(activeSkill.name);
+            slotUI.nameLabel.setColor(this.toHexColor(borderColor));
+            slotUI.nameLabel.setAlpha(isReady ? 1 : 0.7);
         });
 
         this.refreshSkillsScreenUI();
@@ -3002,6 +3115,7 @@ class Match3Scene extends Phaser.Scene {
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
+        if (this.skillInfoPopup) this.skillInfoPopup.setVisible(false);
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
         if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
         if (this.talentScreenGroup) this.talentScreenGroup.setVisible(false);
@@ -3232,6 +3346,7 @@ class Match3Scene extends Phaser.Scene {
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
+        if (this.skillInfoPopup) this.skillInfoPopup.setVisible(false);
         this.setGameBoardActive(false);
         this.generateStoreInventory();
         this.refreshStoreUI();
@@ -3494,6 +3609,7 @@ class Match3Scene extends Phaser.Scene {
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
+        if (this.skillInfoPopup) this.skillInfoPopup.setVisible(false);
         this.setGameBoardActive(false);
         // Reset zoom/pan — start slightly zoomed out to show spread tree
         this._talentZoom = 0.85;
@@ -4516,6 +4632,7 @@ class Match3Scene extends Phaser.Scene {
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
+        if (this.skillInfoPopup) this.skillInfoPopup.setVisible(false);
         this.setGameBoardActive(false);
         this.updateEquipmentScreen();
         this.refreshEquipmentScreenAnimations();
@@ -4532,6 +4649,7 @@ class Match3Scene extends Phaser.Scene {
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
+        if (this.skillInfoPopup) this.skillInfoPopup.setVisible(false);
         this.setGameBoardActive(false);
         this.refreshSkillsScreenUI();
     }
