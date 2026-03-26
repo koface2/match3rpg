@@ -3660,8 +3660,8 @@ class Match3Scene extends Phaser.Scene {
             { key: 'offhand', label: 'Off Hand', x: topCenterX + 108, y: topPanelTopY + 134 },
             { key: 'gloves', label: 'Gloves', x: topCenterX - 108, y: topPanelTopY + 196 },
             { key: 'belt', label: 'Belt', x: topCenterX, y: topPanelTopY + 160 },
-            { key: 'ring1', label: 'Ring 1', x: topCenterX + 108, y: topPanelTopY + 196 },
-            { key: 'ring2', label: 'Ring 2', x: topCenterX + 146, y: topPanelTopY + 258 },
+            { key: 'ring1', label: 'Ring 1', x: topCenterX + 84, y: topPanelTopY + 196 },
+            { key: 'ring2', label: 'Ring 2', x: topCenterX + 134, y: topPanelTopY + 196 },
             { key: 'boots', label: 'Boots', x: topCenterX, y: topPanelTopY + 236 }
         ];
 
@@ -4315,23 +4315,6 @@ class Match3Scene extends Phaser.Scene {
                 ease: 'Power2',
             });
         }
-
-        // Mini skull on enemy position
-        const skullX = enemy.pos ? enemy.pos.x : (GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2);
-        const skullY = enemy.pos ? enemy.pos.y : 210;
-        const skullSize = this.enemies.length > 1 ? '32px' : '80px';
-        const deathAnim = this.add.text(skullX, skullY, '💀', { fontSize: skullSize, color: '#ff0000', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5);
-        this.hudContainer.add(deathAnim);
-        this.time.delayedCall(200, () => {
-            this.tweens.add({
-                targets: deathAnim,
-                y: skullY + 30,
-                alpha: 0,
-                duration: 900,
-                ease: 'Power2',
-                onComplete: () => deathAnim.destroy()
-            });
-        });
 
         // Update target markers
         this.updateEnemyTargetMarkers();
