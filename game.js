@@ -2707,8 +2707,8 @@ class Match3Scene extends Phaser.Scene {
             this.enemyEncounterLabel.setText(`${this.enemies[0].name} Lv.${this.battleNumber}`);
         }
         // --- Gold display (under player HP bar) ---
-        this.goldDisplayIcon = this.add.text(14, 148, '\ud83e\ude99', { fontSize: '14px' }).setOrigin(0, 0.5);
-        this.goldDisplayText = this.add.text(32, 148, '0', { fontSize: '13px', color: '#ffd966', fontStyle: 'bold' }).setOrigin(0, 0.5);
+        this.goldDisplayIcon = this.add.text(14, 190, '\ud83e\ude99', { fontSize: '14px' }).setOrigin(0, 0.5);
+        this.goldDisplayText = this.add.text(32, 190, '0', { fontSize: '13px', color: '#ffd966', fontStyle: 'bold' }).setOrigin(0, 0.5);
         this.hudContainer.add([this.goldDisplayIcon, this.goldDisplayText]);
 
         this.createEquipmentScreen();
@@ -2793,7 +2793,7 @@ class Match3Scene extends Phaser.Scene {
                 compareLines.push(cl);
             }
 
-            const equipBtn = this.add.text(centerX - 28, centerY + 108, 'Equip', {
+            const equipBtn = this.add.text(centerX - 28, centerY + 122, 'Equip', {
                 fontSize: '12px',
                 fontFamily: 'Verdana, Georgia, sans-serif',
                 color: '#111111',
@@ -2801,7 +2801,7 @@ class Match3Scene extends Phaser.Scene {
                 padding: { left: 5, right: 5, top: 3, bottom: 3 }
             }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-            const stashBtn = this.add.text(centerX + 30, centerY + 108, 'Stash', {
+            const stashBtn = this.add.text(centerX + 30, centerY + 122, 'Stash', {
                 fontSize: '12px',
                 fontFamily: 'Verdana, Georgia, sans-serif',
                 color: '#ffffff',
@@ -3052,7 +3052,7 @@ class Match3Scene extends Phaser.Scene {
         if (!node) return { x: 0, y: 0 };
         return {
             x: 39 + (node.col - 9) * 52,
-            y: 115 + (node.row - 3) * 70
+            y: 115 + (node.row - 3) * 82
         };
     }
 
@@ -3279,7 +3279,7 @@ class Match3Scene extends Phaser.Scene {
             const cardBg = this.add.circle(centerX, centerY, mainRadius, 0x202020, 1)
                 .setStrokeStyle(2, 0xffffff, 1)
                 .setInteractive({ useHandCursor: true });
-            const cardLabel = this.add.text(centerX, centerY - 56, `Skill ${slotIndex + 1}`, {
+            const cardLabel = this.add.text(centerX, centerY - 44, `Skill ${slotIndex + 1}`, {
                 fontSize: '11px',
                 color: '#d9d9d9'
             }).setOrigin(0.5);
@@ -3293,7 +3293,7 @@ class Match3Scene extends Phaser.Scene {
                 wordWrap: { width: 74, useAdvancedWrap: true },
                 align: 'center'
             }).setOrigin(0.5);
-            const chargeText = this.add.text(centerX + 2, centerY + 56, '', {
+            const chargeText = this.add.text(centerX + 2, centerY + 44, '', {
                 fontSize: '10px',
                 color: '#cccccc'
             }).setOrigin(0.5);
@@ -3556,7 +3556,7 @@ class Match3Scene extends Phaser.Scene {
         const switchButton = this.add.text(10, 12, 'Back to Game', { fontSize: '14px', color: '#00ffcc', backgroundColor: '#333333', padding: { left: 5, right: 5, top: 3, bottom: 3 } }).setOrigin(0, 0).setInteractive({ useHandCursor: true });
         switchButton.on('pointerup', () => this.showGameScreen());
 
-        const slotsHeader = this.add.text(topCenterX, 84, 'Loadout', { fontSize: '15px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
+        const slotsHeader = this.add.text(topCenterX, 76, 'Loadout', { fontSize: '15px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
         const inventoryHeader = this.add.text(topCenterX, 468, 'Inventory', { fontSize: '15px', color: '#00ffcc', fontStyle: 'bold' }).setOrigin(0.5);
 
         const inventoryHint = this.add.text(topCenterX, 486, 'Tap item to inspect & equip.', {
@@ -3675,7 +3675,7 @@ class Match3Scene extends Phaser.Scene {
             { key: 'gloves', label: 'Gloves', x: topCenterX - 108, y: topPanelTopY + 196 },
             { key: 'belt', label: 'Belt', x: topCenterX, y: topPanelTopY + 160 },
             { key: 'ring1', label: 'Ring 1', x: topCenterX + 108, y: topPanelTopY + 196 },
-            { key: 'ring2', label: 'Ring 2', x: topCenterX + 146, y: topPanelTopY + 236 },
+            { key: 'ring2', label: 'Ring 2', x: topCenterX + 146, y: topPanelTopY + 258 },
             { key: 'boots', label: 'Boots', x: topCenterX, y: topPanelTopY + 236 }
         ];
 
