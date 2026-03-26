@@ -5447,6 +5447,9 @@ const config = {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
+    input: {
+        activePointers: 2
+    },
     scene: [BootScene, LoadScreen, Match3Scene]
 };
 
