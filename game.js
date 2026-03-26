@@ -1,7 +1,7 @@
 const GRID_WIDTH = 7;
 const GRID_HEIGHT = 7;
-const TILE_SIZE = 55;
-const GRID_OFFSET_X = 3;
+const TILE_SIZE = 50;
+const GRID_OFFSET_X = 20;
 const GRID_OFFSET_Y = 252;
 
 const TILE_TYPES = [
