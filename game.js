@@ -3494,10 +3494,10 @@ class Match3Scene extends Phaser.Scene {
         this.talentTreeContainer = this.add.container(0, 0);
         this.talentScreenGroup.add(this.talentTreeContainer);
 
-        // Clip tree content to the game screen so zoomed edges disappear
+        // Clip tree content to the yellow border so zoomed edges disappear at the panel edge
         const maskShape = this.make.graphics();
         maskShape.fillStyle(0xffffff);
-        maskShape.fillRect(0, 0, width, height);
+        maskShape.fillRect(5, 5, width - 10, height - 10);
         this.talentTreeContainer.setMask(maskShape.createGeometryMask());
 
         // Graphics layer for connection lines
