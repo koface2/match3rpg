@@ -2996,7 +2996,7 @@ class Match3Scene extends Phaser.Scene {
                 const delta = newVal - oldVal;
                 const label = this.getStatLabel(stat);
                 if (!hasEquipped) {
-                    return { text: `${label}: +${newVal}`, color: '#cccccc' };
+                    return { text: `${label}: +${newVal}  ↑`, color: '#4eff8a' };
                 } else if (delta > 0) {
                     return { text: `${label}: +${newVal} ↑ (+${delta})`, color: '#4eff8a' };
                 } else if (delta < 0) {
@@ -4629,7 +4629,7 @@ class Match3Scene extends Phaser.Scene {
             const label = this.getStatLabel(stat);
 
             if (!compareItem) {
-                return { text: `${label}:  +${newVal}`, color: '#cccccc' };
+                return { text: `${label}:  +${newVal}  ↑`, color: '#4eff8a' };
             } else if (delta > 0) {
                 return { text: `${label}:  +${newVal}  ↑  (+${delta})`, color: '#4eff8a' };
             } else if (delta < 0) {
