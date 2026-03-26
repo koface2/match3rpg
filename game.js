@@ -556,21 +556,7 @@ class Match3Scene extends Phaser.Scene {
     }
 
     preload() {
-        TILE_TYPES.forEach(t => {
-            this.load.image('tile_' + t.name, 'assets/' + t.name + '.png');
-        });
-        this.load.spritesheet('warrior', 'assets/sprites/warrior_anim.png', {
-            frameWidth: 155,
-            frameHeight: 130
-        });
-        this.load.spritesheet('redsquirrel', 'assets/sprites/redsquirrel_anim.png', {
-            frameWidth: 155,
-            frameHeight: 130
-        });
-        this.load.spritesheet('skinnypiggoblin', 'assets/sprites/skinnypiggoblin_anim.png', {
-            frameWidth: 155,
-            frameHeight: 130
-        });
+        // All assets already loaded by LoadScreen — nothing to do here
     }
 
     create() {
@@ -5136,13 +5122,52 @@ class LoadScreen extends Phaser.Scene {
 
     preload() {
         this.load.image('loadscreen', 'assets/LoadScreens/Load Screen.png');
+
+        // Preload ALL game assets here so the game scene starts instantly
+        TILE_TYPES.forEach(t => {
+            this.load.image('tile_' + t.name, 'assets/' + t.name + '.png');
+        });
+        this.load.spritesheet('warrior', 'assets/sprites/warrior_anim.png', {
+            frameWidth: 155,
+            frameHeight: 130
+        });
+        this.load.spritesheet('redsquirrel', 'assets/sprites/redsquirrel_anim.png', {
+            frameWidth: 155,
+            frameHeight: 130
+        });
+        this.load.spritesheet('skinnypiggoblin', 'assets/sprites/skinnypiggoblin_anim.png', {
+            frameWidth: 155,
+            frameHeight: 130
+        });
+
+        // Loading bar
+        const width = this.sys.game.config.width;
+        const height = this.sys.game.config.height;
+        const barW = 260;
+        const barH = 18;
+        const barX = (width - barW) / 2;
+        const barY = height - 100;
+
+        const barBg = this.add.rectangle(width / 2, barY, barW + 4, barH + 4, 0x000000, 0.7).setOrigin(0.5);
+        const barFill = this.add.rectangle(barX, barY - barH / 2, 0, barH, 0x00ff88).setOrigin(0, 0);
+        const loadText = this.add.text(width / 2, barY - 20, 'Loading...', {
+            fontSize: '14px', color: '#ffffff', stroke: '#000000', strokeThickness: 3
+        }).setOrigin(0.5);
+
+        this.load.on('progress', (value) => {
+            barFill.width = barW * value;
+        });
+        this.load.on('complete', () => {
+            barBg.destroy();
+            barFill.destroy();
+            loadText.destroy();
+        });
     }
 
     create() {
         const width = this.sys.game.config.width;
         const height = this.sys.game.config.height;
         const img = this.add.image(width / 2, height / 2, 'loadscreen');
-        // Scale to cover the full canvas while preserving aspect ratio
         const scaleX = width / img.width;
         const scaleY = height / img.height;
         img.setScale(Math.max(scaleX, scaleY));
