@@ -399,6 +399,7 @@ class Match3Scene extends Phaser.Scene {
         this.inventoryModalStats = null;
         this.inventoryModalEquipBtn = null;
         this.inventoryModalRemoveBtn = null;
+        this.inventoryModalSellBtn = null;
         this.rewardScreenGroup = null;
         this.rewardLootInfoText = null;
         this.rewardCards = [];
@@ -4310,25 +4311,32 @@ class Match3Scene extends Phaser.Scene {
             wordWrap: { width: 340, useAdvancedWrap: true }
         }).setOrigin(0.5);
 
-        const closeModalBtn = this.add.text(width / 2 - 90, height / 2 + 164, 'Close', {
+        const closeModalBtn = this.add.text(width / 2 - 120, height / 2 + 164, 'Close', {
             fontSize: '14px',
             fontFamily: 'Verdana, Georgia, sans-serif',
             color: '#ffffff',
             backgroundColor: '#444444',
             padding: { left: 8, right: 8, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        const removeBtn = this.add.text(width / 2, height / 2 + 164, 'Unequip', {
+        const removeBtn = this.add.text(width / 2 - 40, height / 2 + 164, 'Unequip', {
             fontSize: '14px',
             fontFamily: 'Verdana, Georgia, sans-serif',
             color: '#ffffff',
             backgroundColor: '#a33d3d',
             padding: { left: 8, right: 8, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        const equipBtn = this.add.text(width / 2 + 90, height / 2 + 164, 'Equip', {
+        const equipBtn = this.add.text(width / 2 + 40, height / 2 + 164, 'Equip', {
             fontSize: '14px',
             fontFamily: 'Verdana, Georgia, sans-serif',
             color: '#111111',
             backgroundColor: '#00ff99',
+            padding: { left: 8, right: 8, top: 4, bottom: 4 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        const sellBtn = this.add.text(width / 2 + 120, height / 2 + 164, 'Sell', {
+            fontSize: '14px',
+            fontFamily: 'Verdana, Georgia, sans-serif',
+            color: '#ffd966',
+            backgroundColor: '#4a3d1a',
             padding: { left: 8, right: 8, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
@@ -4336,9 +4344,11 @@ class Match3Scene extends Phaser.Scene {
         closeModalBtn.on('pointerup', () => this.closeInventoryItemPopup());
         equipBtn.on('pointerup', () => this.equipSelectedInventoryItem());
         removeBtn.on('pointerup', () => this.removeSelectedEquippedItem());
+        sellBtn.on('pointerup', () => this.sellSelectedItem());
 
         this.inventoryModalEquipBtn = equipBtn;
         this.inventoryModalRemoveBtn = removeBtn;
+        this.inventoryModalSellBtn = sellBtn;
 
         this.inventoryModal = this.add.container(0, 0, [
             modalOverlay,
@@ -4354,7 +4364,8 @@ class Match3Scene extends Phaser.Scene {
             this.inventoryAffixCompareLabel,
             closeModalBtn,
             removeBtn,
-            equipBtn
+            equipBtn,
+            sellBtn
         ]).setVisible(false);
 
         this.equipmentScreenGroup.add(this.inventoryModal);
@@ -4597,6 +4608,11 @@ class Match3Scene extends Phaser.Scene {
         if (this.inventoryModalRemoveBtn) {
             this.inventoryModalRemoveBtn.setVisible(source === 'equipped');
         }
+        if (this.inventoryModalSellBtn) {
+            const sellPrice = Math.max(1, Math.floor(this.getItemPrice(item) / 2));
+            this.inventoryModalSellBtn.setText(`Sell 🪙${sellPrice}`);
+            this.inventoryModalSellBtn.setVisible(true);
+        }
         this.inventoryModal.setVisible(true);
     }
 
@@ -4607,6 +4623,31 @@ class Match3Scene extends Phaser.Scene {
         if (this.inventoryModal) {
             this.inventoryModal.setVisible(false);
         }
+    }
+
+    sellSelectedItem() {
+        if (!this.selectedInventoryItem) return;
+        const item = this.selectedInventoryItem;
+        const source = this.selectedItemSource;
+        const sellPrice = Math.max(1, Math.floor(this.getItemPrice(item) / 2));
+
+        if (source === 'inventory') {
+            const idx = this.inventory.indexOf(item);
+            if (idx === -1) return;
+            this.inventory.splice(idx, 1);
+        } else if (source === 'equipped') {
+            const slot = this.selectedEquippedSlot;
+            if (!slot) return;
+            this.equippedItems[slot] = null;
+            this.player.equipment[slot] = 0;
+        }
+
+        this.player.gold += sellPrice;
+        this.addCombatLog(`Sold ${item.rarity} ${item.name} for ${sellPrice} gold!`, '#ffd966');
+        this.updateGoldDisplay();
+        this.updateInventoryGridUI();
+        this.updateEquipmentScreen();
+        this.closeInventoryItemPopup();
     }
 
     equipSelectedInventoryItem() {
