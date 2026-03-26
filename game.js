@@ -502,6 +502,7 @@ class Match3Scene extends Phaser.Scene {
             else if (enemy.bodyContainer) enemy.bodyContainer.destroy();
             if (enemy.healthBar) enemy.healthBar.destroy();
             if (enemy.healthBarBg) enemy.healthBarBg.destroy();
+            if (enemy.healthText) enemy.healthText.destroy();
             if (enemy.nameText) enemy.nameText.destroy();
             if (enemy.targetMarker) enemy.targetMarker.destroy();
         });
@@ -563,6 +564,8 @@ class Match3Scene extends Phaser.Scene {
             hudContainer.add(hpBg);
             const hpBar = this.add.rectangle(pos.x, barY, pos.barW, barH, 0xff0000).setOrigin(0.5, 0.5);
             hudContainer.add(hpBar);
+            const hpText = this.add.text(pos.x, barY, `${stats.hp} / ${stats.hp}`, { fontSize: count === 1 ? '9px' : '7px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+            hudContainer.add(hpText);
 
             // Small name label (skip for 1 enemy - the main label handles it)
             let nameLabel = null;
@@ -591,6 +594,7 @@ class Match3Scene extends Phaser.Scene {
                 idleTweens: idleTweens,
                 healthBar: hpBar,
                 healthBarBg: hpBg,
+                healthText: hpText,
                 nameText: nameLabel,
                 targetMarker: marker,
                 alive: true,
@@ -643,6 +647,7 @@ class Match3Scene extends Phaser.Scene {
         this.createGrid();
         this.renderGrid();
         this.createPlayerUI();
+        this.player.health = this.getMaxHealth();
         this.refillEnergyShield();
         this.createCombatLog();
         this.createRewardScreen();
@@ -2777,6 +2782,8 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.add(this.playerHealthBarBg);
         this.playerHealthBar = this.add.rectangle(14, 174, barW, 12, 0x00cc00).setOrigin(0, 0.5);
         this.hudContainer.add(this.playerHealthBar);
+        this.playerHealthText = this.add.text(14 + barW / 2, 174, '', { fontSize: '9px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.hudContainer.add(this.playerHealthText);
         // --- Enemy panel (right) ---
         this.hudContainer.add(this.add.rectangle(rightCX, panelH / 2 + 4, panelW, panelH, 0x111111, 0.9).setOrigin(0.5));
         // Encounter label (shows enemy name for solo, foe count for groups)
@@ -4296,6 +4303,9 @@ class Match3Scene extends Phaser.Scene {
             });
             this.playerHealthBar.fillColor = targetColor;
         }
+        if (this.playerHealthText) {
+            this.playerHealthText.setText(`${Math.ceil(this.player.health)} / ${this.getMaxHealth()}`);
+        }
 
         // Update energy shield bar
         if (this.playerShieldBar) {
@@ -4348,6 +4358,9 @@ class Match3Scene extends Phaser.Scene {
                 ease: 'Power2'
             });
             enemy.healthBar.fillColor = targetColor;
+            if (enemy.healthText) {
+                enemy.healthText.setText(`${Math.ceil(enemy.health)} / ${enemy.maxHealth}`);
+            }
         });
     }
 
