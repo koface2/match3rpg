@@ -1271,16 +1271,34 @@ class Match3Scene extends Phaser.Scene {
         this.skillSlotUI = [];
         for (let i = 0; i < 3; i++) {
             const centerX = startX + i * (cardWidth + spacing);
-            const bg = this.add.rectangle(centerX, cardY, cardWidth, cardHeight, 0x1b1b1b, 1)
-                .setStrokeStyle(2, 0xffffff, 1)
+
+            // Skill frame image as card background
+            const frameBg = this.add.image(centerX, cardY, 'skillframe')
+                .setDisplaySize(cardWidth, cardHeight)
+                .setOrigin(0.5);
+
+            // Invisible interactive hitbox on top
+            const bg = this.add.rectangle(centerX, cardY, cardWidth, cardHeight, 0x000000, 0)
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
+
+            // Skill icon image (used for cleave; hidden until updateSkillBarUI assigns it)
+            const skillIcon = this.add.image(centerX, cardY, 'skill_cleave')
+                .setDisplaySize(28, 28)
+                .setOrigin(0.5)
+                .setVisible(false);
+
+            // Skill icon text fallback (emoji for non-image skills)
+            const skillIconText = this.add.text(centerX, cardY, '', {
+                fontSize: '20px'
+            }).setOrigin(0.5).setVisible(false);
+
             const name = this.add.text(centerX, cardY - 11, '', {
                 fontSize: '11px',
                 color: '#ffffff',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
-            const threshold = this.add.text(centerX, cardY, '', {
+            const threshold = this.add.text(centerX, cardY + 12, '', {
                 fontSize: '10px',
                 color: '#d5d5d5'
             }).setOrigin(0.5);
@@ -1302,8 +1320,8 @@ class Match3Scene extends Phaser.Scene {
 
             bg.on('pointerup', () => this.activateSkillSlot(i));
 
-            this.skillSlotUI.push({ bg, name, threshold, supportSockets });
-            this.skillBarContainer.add([bg, name, threshold]);
+            this.skillSlotUI.push({ bg, frameBg, skillIcon, skillIconText, name, threshold, supportSockets });
+            this.skillBarContainer.add([frameBg, bg, skillIcon, skillIconText, name, threshold]);
         }
 
         this.updateSkillBarUI();
@@ -1323,10 +1341,26 @@ class Match3Scene extends Phaser.Scene {
             const currentCharge = this.skillCharge[activeSkill.tileEffect] || 0;
             const isReady = currentCharge >= threshold;
 
-            slotUI.bg.setStrokeStyle(2, borderColor, isReady ? 1 : 0.5);
-            slotUI.bg.setFillStyle(isReady ? 0x2a2a2a : 0x171717, isReady ? 1 : 0.72);
-            slotUI.bg.setScale(isReady ? 1 : 0.9);
+            slotUI.frameBg.setAlpha(isReady ? 1 : 0.62);
+            slotUI.frameBg.setScale(isReady ? 1 : 0.9);
+
+            // Skill icon: use image for cleave, emoji text for others
+            const skillIconMap = { 'cleave': 'skill_cleave' };
+            const imageKey = skillIconMap[activeSkill.id];
+            if (imageKey) {
+                slotUI.skillIcon.setTexture(imageKey);
+                slotUI.skillIcon.setVisible(true);
+                slotUI.skillIcon.setAlpha(isReady ? 1 : 0.6);
+                slotUI.skillIconText.setVisible(false);
+            } else {
+                slotUI.skillIcon.setVisible(false);
+                slotUI.skillIconText.setText(tileData ? tileData.icon : '◆');
+                slotUI.skillIconText.setVisible(true);
+                slotUI.skillIconText.setAlpha(isReady ? 1 : 0.6);
+            }
+
             slotUI.bg.setAlpha(isReady ? 1 : 0.62);
+            slotUI.bg.setScale(isReady ? 1 : 0.9);
             slotUI.name.setText(`${index + 1}. ${activeSkill.name}`);
             slotUI.name.setColor(this.toHexColor(borderColor));
             slotUI.name.setAlpha(isReady ? 1 : 0.6);
@@ -5815,6 +5849,10 @@ class LoadScreen extends Phaser.Scene {
             frameWidth: 155,
             frameHeight: 130
         });
+
+        // Skill card assets
+        this.load.image('skillframe', 'assets/Skills/SkillFrame.png');
+        this.load.image('skill_cleave', 'assets/Skills/CleaveSkill.png');
     }
 
     create() {
