@@ -371,6 +371,10 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer = null;
         this.equipmentScreenGroup = null;
         this.talentScreenGroup = null;
+        this.storeScreenGroup = null;
+        this.storeItems = [];
+        this.storeItemCards = [];
+        this.storeGoldLabel = null;
         this.talentNodeUI = {};
         this.talentPointsLabel = null;
         this.talentConnectionGraphics = null;
@@ -2799,9 +2803,12 @@ class Match3Scene extends Phaser.Scene {
         this.createEquipmentScreen();
         this.createSkillsScreen();
         this.createTalentScreen();
-        this.createEquipmentButton(leftCX - 46, 210);
-        this.createSkillsButton(leftCX + 46, 210);
-        this.createTalentButton(rightCX - 46, 210);
+        this.createStoreScreen();
+        // 4 buttons evenly spaced across 390px width
+        this.createEquipmentButton(49, 210);
+        this.createSkillsButton(147, 210);
+        this.createTalentButton(245, 210);
+        this.createStoreButton(343, 210);
 
         this.updatePlayerUI();
         this.updateEnemyUI();
@@ -2917,6 +2924,7 @@ class Match3Scene extends Phaser.Scene {
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
         if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
         if (this.talentScreenGroup) this.talentScreenGroup.setVisible(false);
+        if (this.storeScreenGroup) this.storeScreenGroup.setVisible(false);
         this.rewardScreenGroup.setVisible(true);
         this.setGameBoardActive(false);
         this.closeInventoryItemPopup();
@@ -3077,11 +3085,11 @@ class Match3Scene extends Phaser.Scene {
     }
 
     createEquipmentButton(x, y) {
-        this.equipmentButton = this.add.text(x, y, 'Equipment', {
-            fontSize: '14px',
+        this.equipmentButton = this.add.text(x, y, 'Equip', {
+            fontSize: '12px',
             color: '#00ffcc',
             backgroundColor: '#333333',
-            padding: { left: 8, right: 8, top: 4, bottom: 4 }
+            padding: { left: 6, right: 6, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
         this.hudContainer.add(this.equipmentButton);
 
@@ -3092,10 +3100,10 @@ class Match3Scene extends Phaser.Scene {
 
     createSkillsButton(x, y) {
         this.skillsButton = this.add.text(x, y, 'Skills', {
-            fontSize: '14px',
+            fontSize: '12px',
             color: '#ffd56b',
             backgroundColor: '#333333',
-            padding: { left: 10, right: 10, top: 4, bottom: 4 }
+            padding: { left: 6, right: 6, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
         this.hudContainer.add(this.skillsButton);
 
@@ -3106,15 +3114,290 @@ class Match3Scene extends Phaser.Scene {
 
     createTalentButton(x, y) {
         this.talentButton = this.add.text(x, y, 'Talents', {
-            fontSize: '14px',
+            fontSize: '12px',
             color: '#ffd700',
             backgroundColor: '#333333',
-            padding: { left: 8, right: 8, top: 4, bottom: 4 }
+            padding: { left: 6, right: 6, top: 4, bottom: 4 }
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
         this.hudContainer.add(this.talentButton);
         this.talentButton.on('pointerup', () => {
             this.showTalentScreen();
         });
+    }
+
+    createStoreButton(x, y) {
+        this.storeButton = this.add.text(x, y, 'Store', {
+            fontSize: '12px',
+            color: '#ff99cc',
+            backgroundColor: '#333333',
+            padding: { left: 6, right: 6, top: 4, bottom: 4 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        this.hudContainer.add(this.storeButton);
+        this.storeButton.on('pointerup', () => {
+            this.showStoreScreen();
+        });
+    }
+
+    showStoreScreen() {
+        this.currentScreen = 'store';
+        this.armedEquipGem = null;
+        this.closeSkillGemPopup();
+        this.closeInventoryItemPopup();
+        if (this.storeScreenGroup) this.storeScreenGroup.setVisible(true);
+        if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
+        if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
+        if (this.talentScreenGroup) this.talentScreenGroup.setVisible(false);
+        if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
+        this.boardContainer.setVisible(false);
+        this.hudContainer.setVisible(false);
+        if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
+        this.setGameBoardActive(false);
+        this.generateStoreInventory();
+        this.refreshStoreUI();
+    }
+
+    getItemPrice(item) {
+        const rarityMultipliers = { Normal: 1, Magic: 3, Rare: 8, Legendary: 20 };
+        const mult = rarityMultipliers[item.rarity] || 1;
+        const levelFactor = Math.max(1, item.itemLevel);
+        const statTotal = Object.values(item.stats).reduce((sum, v) => sum + v, 0);
+        return Math.max(5, Math.round((10 + statTotal * 0.8) * mult * (1 + levelFactor * 0.1)));
+    }
+
+    generateStoreInventory() {
+        this.storeItems = [];
+        const lootScore = this.battleNumber * 10;
+        for (let i = 0; i < 4; i++) {
+            const item = this.generateLoot(lootScore);
+            item.price = this.getItemPrice(item);
+            this.storeItems.push(item);
+        }
+    }
+
+    refreshStoreUI() {
+        if (!this.storeScreenGroup) return;
+
+        // Update gold label
+        if (this.storeGoldLabel) {
+            this.storeGoldLabel.setText(`🪙 Gold: ${this.player.gold}`);
+        }
+
+        // Clear old item cards
+        this.storeItemCards.forEach(card => {
+            card.forEach(obj => obj.destroy());
+        });
+        this.storeItemCards = [];
+
+        const width = this.sys.game.config.width;
+        const startY = 370;
+        const cardW = width - 40;
+        const cardH = 82;
+        const gap = 8;
+
+        this.storeItems.forEach((item, i) => {
+            const cardObjs = [];
+            const cy = startY + i * (cardH + gap);
+
+            // Card background
+            const cardBg = this.add.rectangle(width / 2, cy, cardW, cardH, 0x1a1a2e, 1)
+                .setStrokeStyle(2, item.frameColor, 0.9);
+            cardObjs.push(cardBg);
+
+            // Item icon
+            const icon = this.add.text(30, cy - 18, item.icon, { fontSize: '22px' }).setOrigin(0, 0.5);
+            cardObjs.push(icon);
+
+            // Item name
+            const nameText = this.add.text(58, cy - 24, item.name, {
+                fontSize: '12px', color: item.rarityTextColor, fontStyle: 'bold', wordWrap: { width: cardW - 140 }
+            }).setOrigin(0, 0);
+            cardObjs.push(nameText);
+
+            // Item type + level
+            const typeText = this.add.text(58, cy - 8, `${item.type} | Lv.${item.itemLevel} | ${item.rarity}`, {
+                fontSize: '10px', color: '#aaaaaa'
+            }).setOrigin(0, 0);
+            cardObjs.push(typeText);
+
+            // Stats summary
+            const statsStr = Object.entries(item.stats)
+                .map(([key, value]) => `${this.getStatLabel(key)} +${value}`)
+                .join('  ');
+            const statText = this.add.text(58, cy + 8, statsStr, {
+                fontSize: '10px', color: '#cccccc', wordWrap: { width: cardW - 140 }
+            }).setOrigin(0, 0);
+            cardObjs.push(statText);
+
+            // Price + buy button
+            const priceStr = `🪙 ${item.price}`;
+            const canAfford = this.player.gold >= item.price;
+            const buyBtn = this.add.text(width - 30, cy, priceStr, {
+                fontSize: '13px',
+                color: canAfford ? '#ffd966' : '#ff5555',
+                backgroundColor: canAfford ? '#2a4a2a' : '#3a2020',
+                fontStyle: 'bold',
+                padding: { left: 8, right: 8, top: 6, bottom: 6 }
+            }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+            cardObjs.push(buyBtn);
+
+            buyBtn.on('pointerup', () => {
+                this.buyStoreItem(i);
+            });
+
+            cardObjs.forEach(obj => this.storeScreenGroup.add(obj));
+            this.storeItemCards.push(cardObjs);
+        });
+    }
+
+    buyStoreItem(index) {
+        const item = this.storeItems[index];
+        if (!item) return;
+
+        if (this.player.gold < item.price) {
+            this.addCombatLog('Not enough gold!', '#ff8888');
+            return;
+        }
+
+        if (this.inventory.length >= this.maxInventorySlots) {
+            this.addCombatLog('Inventory full! Cannot buy.', '#ff8888');
+            return;
+        }
+
+        this.player.gold -= item.price;
+        const bought = { ...item };
+        delete bought.price;
+        this.inventory.push(bought);
+        this.updateInventoryGridUI();
+        this.addCombatLog(`Bought ${item.rarity} ${item.name} for ${item.price} gold!`, item.rarityTextColor);
+
+        // Remove from store
+        this.storeItems.splice(index, 1);
+        this.refreshStoreUI();
+        this.updateGoldDisplay();
+    }
+
+    createStoreScreen() {
+        const width = this.sys.game.config.width;
+        const height = this.sys.game.config.height;
+
+        this.storeScreenGroup = this.add.container(0, 0).setVisible(false);
+
+        const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x0a0a14, 1);
+        const panel = this.add.rectangle(width / 2, height / 2, width - 10, height - 10, 0x12121e, 1)
+            .setStrokeStyle(2, 0xff99cc, 0.8);
+        this.storeScreenGroup.add([bg, panel]);
+
+        // Title
+        const title = this.add.text(width / 2, 22, 'Rodent Emporium', {
+            fontSize: '20px', color: '#ff99cc', fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.storeScreenGroup.add(title);
+
+        // --- Draw rodent shopkeeper using graphics ---
+        const skG = this.add.graphics();
+        const cx = width / 2;
+        const baseY = 190;
+
+        // Body (brown oval)
+        skG.fillStyle(0x8B6914, 1);
+        skG.fillEllipse(cx, baseY, 80, 100);
+
+        // Belly (lighter)
+        skG.fillStyle(0xD4A855, 1);
+        skG.fillEllipse(cx, baseY + 10, 50, 60);
+
+        // Head
+        skG.fillStyle(0x8B6914, 1);
+        skG.fillEllipse(cx, baseY - 60, 60, 50);
+
+        // Ears (round)
+        skG.fillStyle(0xA0782B, 1);
+        skG.fillEllipse(cx - 25, baseY - 85, 22, 26);
+        skG.fillEllipse(cx + 25, baseY - 85, 22, 26);
+        // Inner ears
+        skG.fillStyle(0xE8B8B8, 1);
+        skG.fillEllipse(cx - 25, baseY - 85, 12, 16);
+        skG.fillEllipse(cx + 25, baseY - 85, 12, 16);
+
+        // Eyes
+        skG.fillStyle(0x000000, 1);
+        skG.fillCircle(cx - 12, baseY - 65, 5);
+        skG.fillCircle(cx + 12, baseY - 65, 5);
+        // Eye shine
+        skG.fillStyle(0xffffff, 1);
+        skG.fillCircle(cx - 10, baseY - 67, 2);
+        skG.fillCircle(cx + 14, baseY - 67, 2);
+
+        // Nose
+        skG.fillStyle(0xFF9999, 1);
+        skG.fillCircle(cx, baseY - 53, 4);
+
+        // Whiskers
+        skG.lineStyle(1, 0x666666, 0.7);
+        skG.lineBetween(cx - 4, baseY - 52, cx - 35, baseY - 58);
+        skG.lineBetween(cx - 4, baseY - 50, cx - 35, baseY - 48);
+        skG.lineBetween(cx + 4, baseY - 52, cx + 35, baseY - 58);
+        skG.lineBetween(cx + 4, baseY - 50, cx + 35, baseY - 48);
+
+        // Teeth (two front teeth)
+        skG.fillStyle(0xFFFFEE, 1);
+        skG.fillRect(cx - 4, baseY - 49, 3, 6);
+        skG.fillRect(cx + 1, baseY - 49, 3, 6);
+
+        // Arms holding a small sack
+        skG.lineStyle(4, 0x8B6914, 1);
+        skG.lineBetween(cx - 35, baseY - 10, cx - 18, baseY + 20);
+        skG.lineBetween(cx + 35, baseY - 10, cx + 18, baseY + 20);
+
+        // Small sack / bag
+        skG.fillStyle(0x6B4E1B, 1);
+        skG.fillEllipse(cx, baseY + 28, 30, 20);
+        skG.lineStyle(2, 0x4a3510, 1);
+        skG.strokeEllipse(cx, baseY + 28, 30, 20);
+
+        // Gold coins peeking out of sack
+        skG.fillStyle(0xFFD700, 1);
+        skG.fillCircle(cx - 5, baseY + 20, 4);
+        skG.fillCircle(cx + 5, baseY + 22, 3);
+
+        // Tail (curved line)
+        skG.lineStyle(3, 0x8B6914, 1);
+        skG.beginPath();
+        skG.moveTo(cx + 35, baseY + 30);
+        skG.lineTo(cx + 50, baseY + 10);
+        skG.lineTo(cx + 55, baseY - 10);
+        skG.strokePath();
+
+        // Feet
+        skG.fillStyle(0x7A5B12, 1);
+        skG.fillEllipse(cx - 15, baseY + 48, 18, 10);
+        skG.fillEllipse(cx + 15, baseY + 48, 18, 10);
+
+        this.storeScreenGroup.add(skG);
+
+        // Shopkeeper dialogue
+        const dialogue = this.add.text(cx, baseY + 68, '"Take a look, yes-yes! Fine wares!"', {
+            fontSize: '12px', color: '#ffddaa', fontStyle: 'italic'
+        }).setOrigin(0.5);
+        this.storeScreenGroup.add(dialogue);
+
+        // Divider line
+        const divider = this.add.rectangle(width / 2, 340, width - 30, 2, 0xff99cc, 0.3);
+        this.storeScreenGroup.add(divider);
+
+        // Gold display on store screen
+        this.storeGoldLabel = this.add.text(width / 2, 352, `🪙 Gold: ${this.player.gold}`, {
+            fontSize: '14px', color: '#ffd966', fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.storeScreenGroup.add(this.storeGoldLabel);
+
+        // Back button
+        const backBtn = this.add.text(width / 2, height - 28, 'Back to Game', {
+            fontSize: '16px', color: '#00ff00', backgroundColor: '#333333',
+            padding: { left: 10, right: 10, top: 5, bottom: 5 }
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        backBtn.on('pointerup', () => this.showGameScreen());
+        this.storeScreenGroup.add(backBtn);
     }
 
     showTalentScreen() {
@@ -3126,6 +3409,7 @@ class Match3Scene extends Phaser.Scene {
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
         if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
+        if (this.storeScreenGroup) this.storeScreenGroup.setVisible(false);
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
@@ -4090,6 +4374,7 @@ class Match3Scene extends Phaser.Scene {
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
         if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
         if (this.talentScreenGroup) this.talentScreenGroup.setVisible(false);
+        if (this.storeScreenGroup) this.storeScreenGroup.setVisible(false);
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
@@ -4105,6 +4390,7 @@ class Match3Scene extends Phaser.Scene {
         if (this.equipmentScreenGroup) this.equipmentScreenGroup.setVisible(false);
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
         if (this.talentScreenGroup) this.talentScreenGroup.setVisible(false);
+        if (this.storeScreenGroup) this.storeScreenGroup.setVisible(false);
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
@@ -4120,6 +4406,7 @@ class Match3Scene extends Phaser.Scene {
         if (this.skillsScreenGroup) this.skillsScreenGroup.setVisible(false);
         if (this.rewardScreenGroup) this.rewardScreenGroup.setVisible(false);
         if (this.talentScreenGroup) this.talentScreenGroup.setVisible(false);
+        if (this.storeScreenGroup) this.storeScreenGroup.setVisible(false);
         this.closeInventoryItemPopup();
         this.boardContainer.setVisible(true);
         this.hudContainer.setVisible(true);
