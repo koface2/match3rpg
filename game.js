@@ -627,11 +627,11 @@ class Match3Scene extends Phaser.Scene {
         this.anims.create({ key: 'skinnypiggoblin_hit', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 12, end: 17 }), frameRate: 6, repeat: 0 });
         this.anims.create({ key: 'skinnypiggoblin_death', frames: this.anims.generateFrameNumbers('skinnypiggoblin', { start: 18, end: 23 }), frameRate: 5, repeat: 0 });
 
-        // --- Orc Pig sprite animations (row 0=idle, 1=attack, 2=hit, 3=death) ---
-        this.anims.create({ key: 'orcpig_idle', frames: this.anims.generateFrameNumbers('orcpig', { start: 0, end: 5 }), frameRate: 3, repeat: -1 });
-        this.anims.create({ key: 'orcpig_attack', frames: this.anims.generateFrameNumbers('orcpig', { start: 6, end: 11 }), frameRate: 7, repeat: 0 });
-        this.anims.create({ key: 'orcpig_hit', frames: this.anims.generateFrameNumbers('orcpig', { start: 12, end: 17 }), frameRate: 6, repeat: 0 });
-        this.anims.create({ key: 'orcpig_death', frames: this.anims.generateFrameNumbers('orcpig', { start: 18, end: 23 }), frameRate: 5, repeat: 0 });
+        // --- Orc Pig sprite animations (row 0=idle, 1=attack, 2=hit, 3=death) --- (flipped: animate backwards)
+        this.anims.create({ key: 'orcpig_idle', frames: this.anims.generateFrameNumbers('orcpig', { start: 5, end: 0 }), frameRate: 3, repeat: -1 });
+        this.anims.create({ key: 'orcpig_attack', frames: this.anims.generateFrameNumbers('orcpig', { start: 11, end: 6 }), frameRate: 7, repeat: 0 });
+        this.anims.create({ key: 'orcpig_hit', frames: this.anims.generateFrameNumbers('orcpig', { start: 17, end: 12 }), frameRate: 6, repeat: 0 });
+        this.anims.create({ key: 'orcpig_death', frames: this.anims.generateFrameNumbers('orcpig', { start: 23, end: 18 }), frameRate: 5, repeat: 0 });
 
         this.boardContainer = this.add.container(0, 0);
         this.hudContainer = this.add.container(0, 0);
