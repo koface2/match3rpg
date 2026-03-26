@@ -3888,7 +3888,6 @@ class Match3Scene extends Phaser.Scene {
         this.equipmentSlotGhostIcons = {};
         this.equipmentSlotShells = {};
         this.equipmentSlotGlows = {};
-        this.equipmentSlotLabels = {};
 
         slotConfig.forEach(slot => {
             const slotGlow = this.add.rectangle(slot.x, slot.y, slotSize + 10, slotSize + 10, 0xffffff, 0)
@@ -3911,7 +3910,6 @@ class Match3Scene extends Phaser.Scene {
                 color: '#778593'
             }).setOrigin(0.5).setAlpha(0.52);
             const slotIcon = this.add.text(slot.x, slot.y - 2, '', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
-            const slotLabel = this.add.text(slot.x, slot.y - slotSize / 2 + 9, slot.label, { fontSize: '10px', fontFamily: 'Verdana, Georgia, sans-serif', color: '#9cb7c7' }).setOrigin(0.5, 0.5);
 
             const inspectEquippedItem = () => {
                 const equippedItem = this.equippedItems[slot.key];
@@ -3933,9 +3931,8 @@ class Match3Scene extends Phaser.Scene {
             this.equipmentSlotGhostIcons[slot.key] = slotGhostIcon;
             this.equipmentSlotShells[slot.key] = slotBg;
             this.equipmentSlotGlows[slot.key] = slotGlow;
-            this.equipmentSlotLabels[slot.key] = slotLabel;
 
-            this.equipmentScreenGroup.add([slotGlow, slotBg, slotImageBg, slotGhostIcon, slotIcon, slotLabel]);
+            this.equipmentScreenGroup.add([slotGlow, slotBg, slotImageBg, slotGhostIcon, slotIcon]);
         });
 
         this.inventoryTiles = [];
@@ -4183,9 +4180,6 @@ class Match3Scene extends Phaser.Scene {
                     offhandBlockedByBow ? 0.35 : (equippedItem ? 0.45 : 0)
                 );
             }
-            if (this.equipmentSlotLabels[key]) {
-                this.equipmentSlotLabels[key].setColor(offhandBlockedByBow ? '#eaf79b' : (equippedItem ? '#ffe08f' : '#9cb7c7'));
-            }
         });
 
         // Update character stats display
@@ -4303,7 +4297,7 @@ class Match3Scene extends Phaser.Scene {
         }
 
         if (this.inventoryModalTitle) {
-            this.inventoryModalTitle.setText(source === 'equipped' ? 'Equipped Item' : 'Inspect Item');
+            this.inventoryModalTitle.setText('');
         }
         this.inventoryModalFrame.setStrokeStyle(2, item.frameColor, 1);
         this.inventoryModalIcon.setText(item.icon);
