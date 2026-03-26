@@ -1267,6 +1267,7 @@ class Match3Scene extends Phaser.Scene {
         const spacing = 8;
         const startX = (width - (cardWidth * 3 + spacing * 2)) / 2 + cardWidth / 2;
         const cardY = 724;
+        const iconSize = 26;
 
         this.skillSlotUI = [];
         for (let i = 0; i < 3; i++) {
@@ -1274,23 +1275,25 @@ class Match3Scene extends Phaser.Scene {
 
             // Skill frame image as card background
             const frameBg = this.add.image(centerX, cardY, 'skillframe')
-                .setDisplaySize(cardWidth, cardHeight)
                 .setOrigin(0.5);
+            // Compute base scale to fit card dimensions
+            const frameScaleX = cardWidth / frameBg.width;
+            const frameScaleY = cardHeight / frameBg.height;
+            frameBg.setScale(frameScaleX, frameScaleY);
 
             // Invisible interactive hitbox on top
             const bg = this.add.rectangle(centerX, cardY, cardWidth, cardHeight, 0x000000, 0)
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
 
-            // Skill icon image (used for cleave; hidden until updateSkillBarUI assigns it)
+            // Skill icon image (used for skills with art; hidden until updateSkillBarUI assigns it)
             const skillIcon = this.add.image(centerX, cardY, 'skill_cleave')
-                .setDisplaySize(28, 28)
                 .setOrigin(0.5)
                 .setVisible(false);
 
             // Skill icon text fallback (emoji for non-image skills)
             const skillIconText = this.add.text(centerX, cardY, '', {
-                fontSize: '20px'
+                fontSize: '16px'
             }).setOrigin(0.5).setVisible(false);
 
             const name = this.add.text(centerX, cardY - 11, '', {
@@ -1320,7 +1323,7 @@ class Match3Scene extends Phaser.Scene {
 
             bg.on('pointerup', () => this.activateSkillSlot(i));
 
-            this.skillSlotUI.push({ bg, frameBg, skillIcon, skillIconText, name, threshold, supportSockets });
+            this.skillSlotUI.push({ bg, frameBg, frameScaleX, frameScaleY, skillIcon, skillIconText, iconSize, name, threshold, supportSockets });
             this.skillBarContainer.add([frameBg, bg, skillIcon, skillIconText, name, threshold]);
         }
 
@@ -1341,14 +1344,17 @@ class Match3Scene extends Phaser.Scene {
             const currentCharge = this.skillCharge[activeSkill.tileEffect] || 0;
             const isReady = currentCharge >= threshold;
 
+            slotUI.frameBg.setScale(slotUI.frameScaleX * (isReady ? 1 : 0.9), slotUI.frameScaleY * (isReady ? 1 : 0.9));
             slotUI.frameBg.setAlpha(isReady ? 1 : 0.62);
-            slotUI.frameBg.setScale(isReady ? 1 : 0.9);
 
-            // Skill icon: use image for cleave, emoji text for others
+            // Skill icon: use image for skills with art, emoji text for others
             const skillIconMap = { 'cleave': 'skill_cleave', 'minute-missles': 'skill_minutemissles', 'multishot': 'skill_multishot' };
             const imageKey = skillIconMap[activeSkill.id];
             if (imageKey) {
                 slotUI.skillIcon.setTexture(imageKey);
+                // Scale icon to fit iconSize
+                const iconScale = slotUI.iconSize / slotUI.skillIcon.width;
+                slotUI.skillIcon.setScale(iconScale);
                 slotUI.skillIcon.setVisible(true);
                 slotUI.skillIcon.setAlpha(isReady ? 1 : 0.6);
                 slotUI.skillIconText.setVisible(false);
