@@ -3135,6 +3135,11 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
         this.setGameBoardActive(false);
+        // Reset zoom/pan
+        this._talentZoom = 1;
+        this._talentPanX = 0;
+        this._talentPanY = 0;
+        this._applyTalentTreeTransform();
         this.refreshTalentScreenUI();
     }
 
@@ -3171,30 +3176,15 @@ class Match3Scene extends Phaser.Scene {
         const panel = this.add.rectangle(width / 2, height / 2, width - 10, height - 10, 0x0e0e1a, 1)
             .setStrokeStyle(2, 0xffd700, 0.8);
 
-        const title = this.add.text(width / 2, 22, 'Talent Tree', {
-            fontSize: '20px', color: '#ffd700', fontStyle: 'bold'
-        }).setOrigin(0.5);
+        this.talentScreenGroup.add([bg, panel]);
 
-        this.talentPointsLabel = this.add.text(width / 2, 44, 'Points: 0', {
-            fontSize: '13px', color: '#ffffff', fontStyle: 'bold'
-        }).setOrigin(0.5);
-
-        // Info bar for selected node
-        this.talentInfoText = this.add.text(width / 2, 64, 'Tap any node to allocate', {
-            fontSize: '11px', color: '#b8a860', align: 'center'
-        }).setOrigin(0.5);
-
-        const backBtn = this.add.text(12, 8, '← Back', {
-            fontSize: '13px', color: '#00ffcc', backgroundColor: '#1a1a2e',
-            padding: { left: 8, right: 8, top: 3, bottom: 3 }
-        }).setOrigin(0, 0).setInteractive({ useHandCursor: true });
-        backBtn.on('pointerup', () => this.showGameScreen());
-
-        this.talentScreenGroup.add([bg, panel, title, this.talentPointsLabel, this.talentInfoText, backBtn]);
+        // --- Inner container for zoomable/pannable tree content ---
+        this.talentTreeContainer = this.add.container(0, 0);
+        this.talentScreenGroup.add(this.talentTreeContainer);
 
         // Graphics layer for connection lines
         this.talentConnectionGraphics = this.add.graphics();
-        this.talentScreenGroup.add(this.talentConnectionGraphics);
+        this.talentTreeContainer.add(this.talentConnectionGraphics);
 
         // Build node UI elements
         this.talentNodeUI = {};
@@ -3220,17 +3210,158 @@ class Match3Scene extends Phaser.Scene {
             });
 
             this.talentNodeUI[node.id] = { circle, glow, iconText };
-            this.talentScreenGroup.add([glow, circle, iconText]);
+            this.talentTreeContainer.add([glow, circle, iconText]);
         });
 
-        // Bonus summary at bottom
+        // Bonus summary at bottom of tree
         this.talentSummaryText = this.add.text(width / 2, height - 170, '', {
             fontSize: '9px', color: '#888899', align: 'center',
             wordWrap: { width: 360, useAdvancedWrap: true }
         }).setOrigin(0.5);
-        this.talentScreenGroup.add(this.talentSummaryText);
+        this.talentTreeContainer.add(this.talentSummaryText);
+
+        // --- Fixed UI overlay (not affected by zoom/pan) ---
+        const title = this.add.text(width / 2, 22, 'Talent Tree', {
+            fontSize: '20px', color: '#ffd700', fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        this.talentPointsLabel = this.add.text(width / 2, 44, 'Points: 0', {
+            fontSize: '13px', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        this.talentInfoText = this.add.text(width / 2, 64, 'Tap any node to allocate', {
+            fontSize: '11px', color: '#b8a860', align: 'center'
+        }).setOrigin(0.5);
+
+        const backBtn = this.add.text(12, 8, '← Back', {
+            fontSize: '13px', color: '#00ffcc', backgroundColor: '#1a1a2e',
+            padding: { left: 8, right: 8, top: 3, bottom: 3 }
+        }).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+        backBtn.on('pointerup', () => this.showGameScreen());
+
+        this.talentZoomText = this.add.text(width - 12, 8, '100%', {
+            fontSize: '11px', color: '#888899'
+        }).setOrigin(1, 0);
+
+        this.talentScreenGroup.add([title, this.talentPointsLabel, this.talentInfoText, backBtn, this.talentZoomText]);
+
+        // Zoom / pan state
+        this._talentZoom = 1;
+        this._talentPanX = 0;
+        this._talentPanY = 0;
+        this._talentMinZoom = 0.5;
+        this._talentMaxZoom = 2.5;
+        this._talentPinchStartDist = null;
+        this._talentPinchStartZoom = null;
+        this._talentDragStartX = null;
+        this._talentDragStartY = null;
+        this._talentIsDragging = false;
+        this._talentPointerOnNode = false;
+
+        // Track whether pointerdown landed on a talent node (so we don't drag from nodes)
+        TALENT_TREE_NODES.forEach(node => {
+            const ui = this.talentNodeUI[node.id];
+            if (ui && ui.circle) {
+                ui.circle.on('pointerdown', () => { this._talentPointerOnNode = true; });
+            }
+        });
+
+        // Drag-to-pan via scene-level pointer events
+        this.input.on('pointerdown', (pointer) => {
+            if (this.currentScreen !== 'talents') return;
+            this._talentPointerOnNode = false;
+            // Delay check so node pointerdown fires first
+            this.time.delayedCall(0, () => {
+                if (this._talentPointerOnNode) return;
+                this._talentDragStartX = pointer.x;
+                this._talentDragStartY = pointer.y;
+                this._talentIsDragging = false;
+            });
+        });
+
+        this.input.on('pointermove', (pointer) => {
+            if (this.currentScreen !== 'talents') return;
+
+            // Pinch-to-zoom (multi-touch)
+            const pointers = this.input.manager.pointers.filter(p => p.isDown);
+            if (pointers.length === 2) {
+                const p1 = pointers[0];
+                const p2 = pointers[1];
+                const dist = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
+
+                if (this._talentPinchStartDist === null) {
+                    this._talentPinchStartDist = dist;
+                    this._talentPinchStartZoom = this._talentZoom;
+                } else {
+                    const scale = dist / this._talentPinchStartDist;
+                    this._talentZoom = Phaser.Math.Clamp(
+                        this._talentPinchStartZoom * scale,
+                        this._talentMinZoom,
+                        this._talentMaxZoom
+                    );
+                    this._applyTalentTreeTransform();
+                }
+                return;
+            }
+
+            // Single-finger drag-to-pan
+            if (!pointer.isDown) return;
+            if (this._talentDragStartX === null) return;
+
+            const dx = pointer.x - this._talentDragStartX;
+            const dy = pointer.y - this._talentDragStartY;
+
+            if (!this._talentIsDragging && Math.abs(dx) + Math.abs(dy) > 5) {
+                this._talentIsDragging = true;
+            }
+
+            if (this._talentIsDragging) {
+                this._talentPanX += dx;
+                this._talentPanY += dy;
+                this._talentDragStartX = pointer.x;
+                this._talentDragStartY = pointer.y;
+                this._applyTalentTreeTransform();
+            }
+        });
+
+        this.input.on('pointerup', () => {
+            if (this.currentScreen !== 'talents') return;
+            this._talentDragStartX = null;
+            this._talentDragStartY = null;
+            this._talentIsDragging = false;
+            this._talentPinchStartDist = null;
+            this._talentPinchStartZoom = null;
+            this._talentPointerOnNode = false;
+        });
+
+        // Mouse wheel zoom (for desktop)
+        this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY) => {
+            if (this.currentScreen !== 'talents') return;
+            const zoomDelta = deltaY > 0 ? -0.1 : 0.1;
+            const oldZoom = this._talentZoom;
+            this._talentZoom = Phaser.Math.Clamp(
+                this._talentZoom + zoomDelta,
+                this._talentMinZoom,
+                this._talentMaxZoom
+            );
+            // Zoom toward pointer position
+            const cx = pointer.x;
+            const cy = pointer.y;
+            this._talentPanX = cx - (cx - this._talentPanX) * (this._talentZoom / oldZoom);
+            this._talentPanY = cy - (cy - this._talentPanY) * (this._talentZoom / oldZoom);
+            this._applyTalentTreeTransform();
+        });
 
         this.refreshTalentScreenUI();
+    }
+
+    _applyTalentTreeTransform() {
+        if (!this.talentTreeContainer) return;
+        this.talentTreeContainer.setScale(this._talentZoom);
+        this.talentTreeContainer.setPosition(this._talentPanX, this._talentPanY);
+        if (this.talentZoomText) {
+            this.talentZoomText.setText(`${Math.round(this._talentZoom * 100)}%`);
+        }
     }
 
     refreshTalentScreenUI() {
