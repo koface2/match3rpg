@@ -295,6 +295,15 @@ const TALENT_TREE_NODES = [
     { id: 70, name: 'Dexterity',      icon: '🏹', stat: 'dexterity',      value: 10, shortDesc: '+10 DEX',       x: 300, y: 430, color: 0x0fb836 }
 ];
 
+// Spread talent nodes apart from center so connection lines are visible
+(function() {
+    const cx = 195, cy = 400, spread = 1.5;
+    TALENT_TREE_NODES.forEach(n => {
+        n.x = Math.round(cx + (n.x - cx) * spread);
+        n.y = Math.round(cy + (n.y - cy) * spread);
+    });
+})();
+
 const TALENT_TREE_CONNECTIONS = [
     // Strength inner branch
     { from: 1,  to: 13 }, { from: 13, to: 11 }, { from: 11, to: 26 }, { from: 26, to: 27 },
@@ -3425,10 +3434,10 @@ class Match3Scene extends Phaser.Scene {
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
         this.setGameBoardActive(false);
-        // Reset zoom/pan
-        this._talentZoom = 1;
-        this._talentPanX = 0;
-        this._talentPanY = 0;
+        // Reset zoom/pan — start slightly zoomed out to show spread tree
+        this._talentZoom = 0.85;
+        this._talentPanX = 25;
+        this._talentPanY = -10;
         this._talentIsPinching = false;
         this._talentPinchStartDist = null;
         this._talentPinchStartZoom = null;
@@ -3475,6 +3484,12 @@ class Match3Scene extends Phaser.Scene {
         this.talentTreeContainer = this.add.container(0, 0);
         this.talentScreenGroup.add(this.talentTreeContainer);
 
+        // Clip tree content to the game screen so zoomed edges disappear
+        const maskShape = this.make.graphics();
+        maskShape.fillStyle(0xffffff);
+        maskShape.fillRect(0, 0, width, height);
+        this.talentTreeContainer.setMask(maskShape.createGeometryMask());
+
         // Graphics layer for connection lines
         this.talentConnectionGraphics = this.add.graphics();
         this.talentTreeContainer.add(this.talentConnectionGraphics);
@@ -3507,7 +3522,7 @@ class Match3Scene extends Phaser.Scene {
         });
 
         // Bonus summary at bottom of tree
-        this.talentSummaryText = this.add.text(width / 2, height - 170, '', {
+        this.talentSummaryText = this.add.text(width / 2, height - 60, '', {
             fontSize: '9px', color: '#888899', align: 'center',
             wordWrap: { width: 360, useAdvancedWrap: true }
         }).setOrigin(0.5);
@@ -3539,10 +3554,10 @@ class Match3Scene extends Phaser.Scene {
         this.talentScreenGroup.add([title, this.talentPointsLabel, this.talentInfoText, backBtn, this.talentZoomText]);
 
         // Zoom / pan state
-        this._talentZoom = 1;
-        this._talentPanX = 0;
-        this._talentPanY = 0;
-        this._talentMinZoom = 0.5;
+        this._talentZoom = 0.85;
+        this._talentPanX = 25;
+        this._talentPanY = -10;
+        this._talentMinZoom = 0.4;
         this._talentMaxZoom = 2.5;
         this._talentPinchStartDist = null;
         this._talentPinchStartZoom = null;
