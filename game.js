@@ -5115,34 +5115,35 @@ class Match3Scene extends Phaser.Scene {
     }
 }
 
+class BootScene extends Phaser.Scene {
+    constructor() {
+        super('BootScene');
+    }
+
+    preload() {
+        this.load.image('loadscreen', 'assets/LoadScreens/Load Screen.jpg');
+    }
+
+    create() {
+        this.scene.start('LoadScreen');
+    }
+}
+
 class LoadScreen extends Phaser.Scene {
     constructor() {
         super('LoadScreen');
     }
 
     preload() {
-        this.load.image('loadscreen', 'assets/LoadScreens/Load Screen.png');
-
-        // Preload ALL game assets here so the game scene starts instantly
-        TILE_TYPES.forEach(t => {
-            this.load.image('tile_' + t.name, 'assets/' + t.name + '.png');
-        });
-        this.load.spritesheet('warrior', 'assets/sprites/warrior_anim.png', {
-            frameWidth: 155,
-            frameHeight: 130
-        });
-        this.load.spritesheet('redsquirrel', 'assets/sprites/redsquirrel_anim.png', {
-            frameWidth: 155,
-            frameHeight: 130
-        });
-        this.load.spritesheet('skinnypiggoblin', 'assets/sprites/skinnypiggoblin_anim.png', {
-            frameWidth: 155,
-            frameHeight: 130
-        });
-
-        // Loading bar
+        // Show the load screen image immediately (already cached by BootScene)
         const width = this.sys.game.config.width;
         const height = this.sys.game.config.height;
+        const img = this.add.image(width / 2, height / 2, 'loadscreen');
+        const scaleX = width / img.width;
+        const scaleY = height / img.height;
+        img.setScale(Math.max(scaleX, scaleY));
+
+        // Loading bar on top of the image
         const barW = 260;
         const barH = 18;
         const barX = (width - barW) / 2;
@@ -5162,15 +5163,28 @@ class LoadScreen extends Phaser.Scene {
             barFill.destroy();
             loadText.destroy();
         });
+
+        // Load ALL game assets here
+        TILE_TYPES.forEach(t => {
+            this.load.image('tile_' + t.name, 'assets/' + t.name + '.png');
+        });
+        this.load.spritesheet('warrior', 'assets/sprites/warrior_anim.png', {
+            frameWidth: 155,
+            frameHeight: 130
+        });
+        this.load.spritesheet('redsquirrel', 'assets/sprites/redsquirrel_anim.png', {
+            frameWidth: 155,
+            frameHeight: 130
+        });
+        this.load.spritesheet('skinnypiggoblin', 'assets/sprites/skinnypiggoblin_anim.png', {
+            frameWidth: 155,
+            frameHeight: 130
+        });
     }
 
     create() {
         const width = this.sys.game.config.width;
         const height = this.sys.game.config.height;
-        const img = this.add.image(width / 2, height / 2, 'loadscreen');
-        const scaleX = width / img.width;
-        const scaleY = height / img.height;
-        img.setScale(Math.max(scaleX, scaleY));
 
         const prompt = this.add.text(width / 2, height - 60, 'Tap to Start', {
             fontSize: '24px',
@@ -5210,7 +5224,7 @@ const config = {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
-    scene: [LoadScreen, Match3Scene]
+    scene: [BootScene, LoadScreen, Match3Scene]
 };
 
 const game = new Phaser.Game(config);
