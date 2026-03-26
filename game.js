@@ -147,8 +147,8 @@ const ACTIVE_SKILL_GEMS = [
         scalingStat: 'physical'
     },
     {
-        id: 'arc-burst',
-        name: 'Arc Burst',
+        id: 'minute-missles',
+        name: 'Minute Missles',
         tileEffect: 'magic',
         baseThreshold: 4,
         mode: 'damage',
@@ -687,7 +687,7 @@ class Match3Scene extends Phaser.Scene {
     createInitialSkillLoadout() {
         return [
             { activeId: 'cleave', supportIds: ['focus', 'brutality', null] },
-            { activeId: 'arc-burst', supportIds: ['echo', null, null] },
+            { activeId: 'minute-missles', supportIds: ['echo', null, null] },
             { activeId: 'multishot', supportIds: ['vitality', null, null] }
         ];
     }
@@ -1345,7 +1345,7 @@ class Match3Scene extends Phaser.Scene {
             slotUI.frameBg.setScale(isReady ? 1 : 0.9);
 
             // Skill icon: use image for cleave, emoji text for others
-            const skillIconMap = { 'cleave': 'skill_cleave' };
+            const skillIconMap = { 'cleave': 'skill_cleave', 'minute-missles': 'skill_minutemissles', 'multishot': 'skill_multishot' };
             const imageKey = skillIconMap[activeSkill.id];
             if (imageKey) {
                 slotUI.skillIcon.setTexture(imageKey);
@@ -5853,6 +5853,8 @@ class LoadScreen extends Phaser.Scene {
         // Skill card assets
         this.load.image('skillframe', 'assets/Skills/SkillFrame.png');
         this.load.image('skill_cleave', 'assets/Skills/CleaveSkill.png');
+        this.load.image('skill_minutemissles', 'assets/Skills/MinuteMisslesSkill.png');
+        this.load.image('skill_multishot', 'assets/Skills/MultishotSkill.png');
     }
 
     create() {
