@@ -12,8 +12,8 @@ const TILE_TYPES = [
     { name: 'gold', color: 0xffff00, icon: '🪙', effect: 'gold' }
 ];
 
-const MONSTER_AVATARS = ['👹', '👺', '🧟', '👾', '🤖', '🐉', '🕷️', '🦑'];
-const MONSTER_NAMES = ['Ogre', 'Oni', 'Zombie', 'Ghost', 'Robot', 'Dragon', 'Spider', 'Squid'];
+const MONSTER_AVATARS = ['�️', '👹', '👺', '🧟', '👾', '🤖', '🐉', '🕷️', '🦑'];
+const MONSTER_NAMES = ['Red Squirrel', 'Ogre', 'Oni', 'Zombie', 'Ghost', 'Robot', 'Dragon', 'Spider', 'Squid'];
 const PLAYER_AVATAR = '👸';
 
 // Body configs for procedural character rendering
@@ -27,6 +27,8 @@ const PLAYER_BODY = {
 };
 
 const MONSTER_BODIES = [
+    // Red Squirrel — sprite-based enemy (index 0)
+    { head: 0x993311, headSize: 10, eyeColor: 0xff4400, torso: 0x774422, torsoW: 16, torsoH: 16, armColor: 0x993311, legColor: 0x553311, skinColor: 0x993311, hairColor: 0xcc4400, hairStyle: 'spikes', weaponColor: 0x664422, shieldColor: 0, facingRight: false, spriteKey: 'redsquirrel' },
     // Ogre — big green brute
     { head: 0x558833, headSize: 11, eyeColor: 0xff2200, torso: 0x556b2f, torsoW: 18, torsoH: 18, armColor: 0x558833, legColor: 0x443322, skinColor: 0x558833, hairColor: 0x000000, hairStyle: 'horns', weaponColor: 0x664422, shieldColor: 0, facingRight: false },
     // Oni — red demon
@@ -439,7 +441,8 @@ class Match3Scene extends Phaser.Scene {
         this.enemies.forEach(enemy => {
             enemy.idleTweens.forEach(t => t.remove());
             enemy.idleTweens.length = 0;
-            if (enemy.bodyContainer) enemy.bodyContainer.destroy();
+            if (enemy.enemySprite) enemy.enemySprite.destroy();
+            else if (enemy.bodyContainer) enemy.bodyContainer.destroy();
             if (enemy.healthBar) enemy.healthBar.destroy();
             if (enemy.healthBarBg) enemy.healthBarBg.destroy();
             if (enemy.nameText) enemy.nameText.destroy();
@@ -464,15 +467,35 @@ class Match3Scene extends Phaser.Scene {
         }
 
         for (let i = 0; i < count; i++) {
-            const monsterIndex = Phaser.Math.Between(0, MONSTER_BODIES.length - 1);
+            let monsterIndex;
+            if (battleNumber === 1 && i === 0) {
+                monsterIndex = 0; // Red Squirrel for the first battle
+            } else {
+                monsterIndex = Phaser.Math.Between(1, MONSTER_BODIES.length - 1);
+            }
             const pos = positions[i];
             const name = MONSTER_NAMES[monsterIndex];
+            const bodyCfg = MONSTER_BODIES[monsterIndex];
 
-            const body = this.buildCharacterBody(MONSTER_BODIES[monsterIndex], pos.x, pos.y);
-            body.container.setScale(pos.scale);
-            hudContainer.add(body.container);
+            let bodyContainer, bodyParts, enemySprite = null;
             const idleTweens = [];
-            this.startIdleAnimation(body.container, body.parts, idleTweens);
+
+            if (bodyCfg.spriteKey) {
+                // Sprite-based enemy
+                enemySprite = this.add.sprite(pos.x, pos.y, bodyCfg.spriteKey).setOrigin(0.5, 0.5);
+                enemySprite.setScale(pos.scale * 1.3);
+                enemySprite.play(bodyCfg.spriteKey + '_idle');
+                hudContainer.add(enemySprite);
+                bodyContainer = enemySprite;
+                bodyParts = null;
+            } else {
+                const body = this.buildCharacterBody(bodyCfg, pos.x, pos.y);
+                body.container.setScale(pos.scale);
+                hudContainer.add(body.container);
+                this.startIdleAnimation(body.container, body.parts, idleTweens);
+                bodyContainer = body.container;
+                bodyParts = body.parts;
+            }
 
             // Mini HP bar below body
             const barY = pos.barY;
@@ -503,8 +526,9 @@ class Match3Scene extends Phaser.Scene {
                 attack: stats.atk,
                 name: name,
                 bodyIndex: monsterIndex,
-                bodyContainer: body.container,
-                bodyParts: body.parts,
+                bodyContainer: bodyContainer,
+                bodyParts: bodyParts,
+                enemySprite: enemySprite,
                 idleTweens: idleTweens,
                 healthBar: hpBar,
                 healthBarBg: hpBg,
@@ -535,6 +559,10 @@ class Match3Scene extends Phaser.Scene {
             frameWidth: 155,
             frameHeight: 130
         });
+        this.load.spritesheet('redsquirrel', 'assets/sprites/redsquirrel_anim.png', {
+            frameWidth: 155,
+            frameHeight: 130
+        });
     }
 
     create() {
@@ -545,6 +573,12 @@ class Match3Scene extends Phaser.Scene {
         this.anims.create({ key: 'warrior_attack', frames: this.anims.generateFrameNumbers('warrior', { start: 6, end: 11 }), frameRate: 14, repeat: 0 });
         this.anims.create({ key: 'warrior_hit', frames: this.anims.generateFrameNumbers('warrior', { start: 12, end: 17 }), frameRate: 12, repeat: 0 });
         this.anims.create({ key: 'warrior_death', frames: this.anims.generateFrameNumbers('warrior', { start: 18, end: 23 }), frameRate: 8, repeat: 0 });
+
+        // --- Red Squirrel sprite animations (row 0=idle, 1=attack, 2=hit, 3=death) ---
+        this.anims.create({ key: 'redsquirrel_idle', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 0, end: 5 }), frameRate: 5, repeat: -1 });
+        this.anims.create({ key: 'redsquirrel_attack', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 6, end: 11 }), frameRate: 14, repeat: 0 });
+        this.anims.create({ key: 'redsquirrel_hit', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 12, end: 17 }), frameRate: 12, repeat: 0 });
+        this.anims.create({ key: 'redsquirrel_death', frames: this.anims.generateFrameNumbers('redsquirrel', { start: 18, end: 23 }), frameRate: 8, repeat: 0 });
 
         this.boardContainer = this.add.container(0, 0);
         this.hudContainer = this.add.container(0, 0);
@@ -641,8 +675,8 @@ class Match3Scene extends Phaser.Scene {
                 if (this.playerSprite) {
                     this.playPlayerAttackAnim();
                 }
-                if (target.bodyContainer && target.health > 0) {
-                    this.time.delayedCall(100, () => this.playHitAnimation(target.bodyContainer));
+                if (target.health > 0) {
+                    this.time.delayedCall(100, () => this.playEnemyHitAnim(target));
                 }
                 if (target.health <= 0) {
                     this.handleEnemyDeath(target);
@@ -2575,6 +2609,42 @@ class Match3Scene extends Phaser.Scene {
         });
     }
 
+    /** Play an enemy's attack animation (sprite or procedural). */
+    playEnemyAttackAnim(enemy) {
+        if (!enemy || !enemy.alive) return;
+        const bodyCfg = MONSTER_BODIES[enemy.bodyIndex];
+        if (enemy.enemySprite && bodyCfg.spriteKey) {
+            enemy.enemySprite.play(bodyCfg.spriteKey + '_attack');
+            enemy.enemySprite.once('animationcomplete', () => {
+                if (enemy.alive) {
+                    enemy.enemySprite.play(bodyCfg.spriteKey + '_idle');
+                }
+            });
+        } else if (enemy.bodyContainer && enemy.bodyParts) {
+            this.playAttackAnimation(enemy.bodyContainer, enemy.bodyParts, bodyCfg.facingRight);
+        }
+    }
+
+    /** Play an enemy's hit reaction animation (sprite or procedural). */
+    playEnemyHitAnim(enemy) {
+        if (!enemy || !enemy.alive) return;
+        const bodyCfg = MONSTER_BODIES[enemy.bodyIndex];
+        if (enemy.enemySprite && bodyCfg.spriteKey) {
+            enemy.enemySprite.play(bodyCfg.spriteKey + '_hit');
+            enemy.enemySprite.setTint(0xff4444);
+            this.time.delayedCall(200, () => {
+                if (enemy.enemySprite) enemy.enemySprite.clearTint();
+            });
+            enemy.enemySprite.once('animationcomplete', () => {
+                if (enemy.alive) {
+                    enemy.enemySprite.play(bodyCfg.spriteKey + '_idle');
+                }
+            });
+        } else if (enemy.bodyContainer) {
+            this.playHitAnimation(enemy.bodyContainer);
+        }
+    }
+
     createPlayerUI() {
         // Portrait layout: player LEFT, enemy RIGHT, both in top half above grid
         const leftCX = 97;
@@ -4215,7 +4285,19 @@ class Match3Scene extends Phaser.Scene {
         enemy.idleTweens.forEach(t => t.remove());
         enemy.idleTweens.length = 0;
 
-        if (enemy.bodyContainer) {
+        if (enemy.enemySprite) {
+            // Sprite-based enemy: play death animation then fade out
+            const spriteKey = MONSTER_BODIES[enemy.bodyIndex].spriteKey;
+            enemy.enemySprite.play(spriteKey + '_death');
+            enemy.enemySprite.once('animationcomplete', () => {
+                this.tweens.add({
+                    targets: enemy.enemySprite,
+                    alpha: 0,
+                    duration: 400,
+                    ease: 'Power2'
+                });
+            });
+        } else if (enemy.bodyContainer) {
             this.tweens.add({
                 targets: enemy.bodyContainer,
                 y: enemy.bodyContainer.y + 20,
@@ -4799,8 +4881,8 @@ class Match3Scene extends Phaser.Scene {
                     this.playPlayerAttackAnim();
                 }
                 // Enemy hit reaction
-                if (target.bodyContainer && target.health > 0) {
-                    this.time.delayedCall(100, () => this.playHitAnimation(target.bodyContainer));
+                if (target.health > 0) {
+                    this.time.delayedCall(100, () => this.playEnemyHitAnim(target));
                 }
 
                 if (target.health <= 0) {
@@ -4959,10 +5041,7 @@ class Match3Scene extends Phaser.Scene {
                 if (Math.random() * 100 < totalEvasionChance) {
                     this.addCombatLog(`Evaded ${enemy.name}'s attack! (${totalEvasionChance.toFixed(0)}%)`, '#00ffcc');
                     this.showCombatMessage('EVADE!', '#00ffcc', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20 - idx * 18);
-                    if (enemy.bodyContainer && enemy.bodyParts) {
-                        const bodyCfg = MONSTER_BODIES[enemy.bodyIndex];
-                        this.playAttackAnimation(enemy.bodyContainer, enemy.bodyParts, bodyCfg.facingRight);
-                    }
+                    this.playEnemyAttackAnim(enemy);
                     this.updatePlayerUI();
                     return;
                 }
@@ -4985,10 +5064,7 @@ class Match3Scene extends Phaser.Scene {
                 this.showCombatMessage(`-${totalTaken}`, '#ff4444', GRID_OFFSET_X + (GRID_WIDTH * TILE_SIZE) / 2, GRID_OFFSET_Y + GRID_HEIGHT * TILE_SIZE - 20 - idx * 18);
 
                 // Enemy attack animation
-                if (enemy.bodyContainer && enemy.bodyParts) {
-                    const bodyCfg = MONSTER_BODIES[enemy.bodyIndex];
-                    this.playAttackAnimation(enemy.bodyContainer, enemy.bodyParts, bodyCfg.facingRight);
-                }
+                this.playEnemyAttackAnim(enemy);
                 // Player hit reaction
                 if (this.playerSprite) {
                     this.time.delayedCall(100, () => this.playPlayerHitAnim());
