@@ -13,7 +13,7 @@ const TILE_TYPES = [
 ];
 
 const MONSTER_AVATARS = ['�️', '👹', '👺', '🧟', '👾', '🤖', '🐉', '🕷️', '🦑'];
-const MONSTER_NAMES = ['Red Squirrel', 'Pig Goblin', 'Orc Pig'];
+const MONSTER_NAMES = ['Red Squirrel', 'Pig Goblin', 'Orc Pig', 'Sloth Troll'];
 const PLAYER_AVATAR = '👸';
 
 // Body configs for procedural character rendering
@@ -32,7 +32,9 @@ const MONSTER_BODIES = [
     // Pig Goblin — sprite-based enemy (index 1)
     { head: 0x668833, headSize: 10, eyeColor: 0xffaa00, torso: 0x556b2f, torsoW: 15, torsoH: 16, armColor: 0x668833, legColor: 0x445522, skinColor: 0x668833, hairColor: 0x444422, hairStyle: 'none', weaponColor: 0x775533, shieldColor: 0, facingRight: false, spriteKey: 'skinnypiggoblin' },
     // Orc Pig — sprite-based enemy (index 2)
-    { head: 0x557744, headSize: 11, eyeColor: 0xff6600, torso: 0x445533, torsoW: 18, torsoH: 18, armColor: 0x557744, legColor: 0x334422, skinColor: 0x557744, hairColor: 0x222211, hairStyle: 'none', weaponColor: 0x886644, shieldColor: 0, facingRight: false, spriteKey: 'orcpig' }
+    { head: 0x557744, headSize: 11, eyeColor: 0xff6600, torso: 0x445533, torsoW: 18, torsoH: 18, armColor: 0x557744, legColor: 0x334422, skinColor: 0x557744, hairColor: 0x222211, hairStyle: 'none', weaponColor: 0x886644, shieldColor: 0, facingRight: false, spriteKey: 'orcpig' },
+    // Sloth Troll — sprite-based enemy (index 3)
+    { head: 0x4a5a3a, headSize: 12, eyeColor: 0x66ccaa, torso: 0x3d4a2e, torsoW: 20, torsoH: 20, armColor: 0x4a5a3a, legColor: 0x2e3a22, skinColor: 0x4a5a3a, hairColor: 0x2a3a1a, hairStyle: 'none', weaponColor: 0x7a6644, shieldColor: 0, facingRight: false, spriteKey: 'slothtroll' }
 ];
 
 const ITEM_RARITIES = [
@@ -523,6 +525,8 @@ class Match3Scene extends Phaser.Scene {
                 monsterIndex = 1; // Pig Goblin for the second battle
             } else if (battleNumber === 3 && i === 0) {
                 monsterIndex = 2; // Orc Pig for the third battle
+            } else if (battleNumber === 4 && i === 0) {
+                monsterIndex = 3; // Sloth Troll for the fourth battle
             } else {
                 monsterIndex = Phaser.Math.Between(0, MONSTER_BODIES.length - 1);
             }
@@ -637,6 +641,12 @@ class Match3Scene extends Phaser.Scene {
         this.anims.create({ key: 'orcpig_attack', frames: this.anims.generateFrameNumbers('orcpig', { start: 11, end: 6 }), frameRate: 7, repeat: 0 });
         this.anims.create({ key: 'orcpig_hit', frames: this.anims.generateFrameNumbers('orcpig', { start: 17, end: 12 }), frameRate: 6, repeat: 0 });
         this.anims.create({ key: 'orcpig_death', frames: this.anims.generateFrameNumbers('orcpig', { start: 23, end: 18 }), frameRate: 5, repeat: 0 });
+
+        // Sloth Troll animations
+        this.anims.create({ key: 'slothtroll_idle', frames: this.anims.generateFrameNumbers('slothtroll', { start: 0, end: 5 }), frameRate: 3, repeat: -1 });
+        this.anims.create({ key: 'slothtroll_attack', frames: this.anims.generateFrameNumbers('slothtroll', { start: 6, end: 11 }), frameRate: 7, repeat: 0 });
+        this.anims.create({ key: 'slothtroll_hit', frames: this.anims.generateFrameNumbers('slothtroll', { start: 12, end: 17 }), frameRate: 6, repeat: 0 });
+        this.anims.create({ key: 'slothtroll_death', frames: this.anims.generateFrameNumbers('slothtroll', { start: 18, end: 23 }), frameRate: 5, repeat: 0 });
 
         this.boardContainer = this.add.container(0, 0);
         this.hudContainer = this.add.container(0, 0);
@@ -5769,6 +5779,10 @@ class LoadScreen extends Phaser.Scene {
             frameHeight: 130
         });
         this.load.spritesheet('orcpig', 'assets/sprites/orcpig_anim.png', {
+            frameWidth: 155,
+            frameHeight: 130
+        });
+        this.load.spritesheet('slothtroll', 'assets/sprites/slothtroll_anim.png', {
             frameWidth: 155,
             frameHeight: 130
         });
