@@ -483,7 +483,7 @@ class Match3Scene extends Phaser.Scene {
             if (bodyCfg.spriteKey) {
                 // Sprite-based enemy
                 enemySprite = this.add.sprite(pos.x, pos.y, bodyCfg.spriteKey).setOrigin(0.5, 0.5);
-                enemySprite.setScale(pos.scale * 1.3);
+                enemySprite.setScale(pos.scale * 0.95);
                 enemySprite.play(bodyCfg.spriteKey + '_idle');
                 hudContainer.add(enemySprite);
                 bodyContainer = enemySprite;
