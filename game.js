@@ -2818,6 +2818,14 @@ class Match3Scene extends Phaser.Scene {
         if (!this.rewardScreenGroup) return;
         this.currentScreen = 'reward';
         this.closeSkillGemPopup();
+
+        // Stop all in-flight particle effects so they don't overlay the reward screen
+        if (this.skillChargeFxContainer) {
+            this.skillChargeFxContainer.each(child => child.destroy());
+            this.skillChargeFxContainer.removeAll();
+        }
+        this.tweens.killAll();
+
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(false);
