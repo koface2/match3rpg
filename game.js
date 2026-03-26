@@ -41,9 +41,9 @@ const MONSTER_BODIES = [
 
 const ITEM_RARITIES = [
     { name: 'Normal', weight: 60, affixes: 0, statMultiplier: 1.0, frameColor: 0xa3a3a3, textColor: '#d0d0d0' },
-    { name: 'Magic', weight: 25, affixes: 2, statMultiplier: 1.15, frameColor: 0x5aa9ff, textColor: '#8ec5ff' },
-    { name: 'Rare', weight: 12, affixes: 4, statMultiplier: 1.35, frameColor: 0xffd166, textColor: '#ffe08f' },
-    { name: 'Legendary', weight: 3, affixes: 6, statMultiplier: 1.65, frameColor: 0xff7f11, textColor: '#ffb35c' }
+    { name: 'Magic', weight: 25, affixes: 2, statMultiplier: 1.1, frameColor: 0x5aa9ff, textColor: '#8ec5ff' },
+    { name: 'Rare', weight: 12, affixes: 4, statMultiplier: 1.25, frameColor: 0xffd166, textColor: '#ffe08f' },
+    { name: 'Legendary', weight: 3, affixes: 6, statMultiplier: 1.5, frameColor: 0xff7f11, textColor: '#ffb35c' }
 ];
 
 const ITEM_BASES = [
@@ -86,41 +86,41 @@ const ITEM_BASES = [
 ];
 
 const ITEM_PREFIXES = [
-    { name: 'Brutal', stats: { physical: [2, 6] }, tags: ['strength'] },
-    { name: 'Arcane', stats: { magic: [2, 6] }, tags: ['intelligence'] },
-    { name: 'Deadeye', stats: { ranged: [2, 6] }, tags: ['dexterity'] },
-    { name: 'Stalwart', stats: { armor: [2, 7] }, tags: ['strength'] },
-    { name: 'Vital', stats: { health: [8, 20] }, tags: [] },
-    { name: 'Prosperous', stats: { magicFind: [4, 14] }, tags: [] },
-    { name: 'Cruel', stats: { physical: [4, 10] }, tags: ['strength'] },
-    { name: 'Runic', stats: { magic: [4, 10] }, tags: ['intelligence'] },
-    { name: 'Sharpened', stats: { ranged: [3, 8], physical: [1, 3] }, tags: ['dexterity', 'strength'] },
-    { name: 'Fortified', stats: { armor: [4, 12], health: [4, 10] }, tags: ['strength'] },
-    { name: 'Vampiric', stats: { health: [6, 16], physical: [1, 4] }, tags: ['strength'] },
-    { name: 'Gilded', stats: { magicFind: [6, 20] }, tags: [] },
-    { name: 'Nimble', stats: { ranged: [2, 5], evasion: [1, 3] }, tags: ['dexterity'] },
-    { name: 'Sorcerous', stats: { magic: [3, 8], energyShield: [2, 6] }, tags: ['intelligence'] },
-    { name: 'Warding', stats: { energyShield: [3, 8] }, tags: ['intelligence'] },
-    { name: 'Evasive', stats: { evasion: [3, 8] }, tags: ['dexterity'] }
+    { name: 'Brutal', stats: { physical: [1, 3] }, tags: ['strength'] },
+    { name: 'Arcane', stats: { magic: [1, 3] }, tags: ['intelligence'] },
+    { name: 'Deadeye', stats: { ranged: [1, 3] }, tags: ['dexterity'] },
+    { name: 'Stalwart', stats: { armor: [2, 5] }, tags: ['strength'] },
+    { name: 'Vital', stats: { health: [5, 14] }, tags: [] },
+    { name: 'Prosperous', stats: { magicFind: [3, 10] }, tags: [] },
+    { name: 'Cruel', stats: { physical: [2, 6] }, tags: ['strength'] },
+    { name: 'Runic', stats: { magic: [2, 6] }, tags: ['intelligence'] },
+    { name: 'Sharpened', stats: { ranged: [1, 4], physical: [1, 2] }, tags: ['dexterity', 'strength'] },
+    { name: 'Fortified', stats: { armor: [3, 8], health: [3, 7] }, tags: ['strength'] },
+    { name: 'Vampiric', stats: { health: [4, 10], physical: [1, 2] }, tags: ['strength'] },
+    { name: 'Gilded', stats: { magicFind: [4, 14] }, tags: [] },
+    { name: 'Nimble', stats: { ranged: [1, 3], evasion: [1, 2] }, tags: ['dexterity'] },
+    { name: 'Sorcerous', stats: { magic: [2, 5], energyShield: [1, 4] }, tags: ['intelligence'] },
+    { name: 'Warding', stats: { energyShield: [2, 5] }, tags: ['intelligence'] },
+    { name: 'Evasive', stats: { evasion: [2, 5] }, tags: ['dexterity'] }
 ];
 
 const ITEM_SUFFIXES = [
-    { name: 'of Slaying', stats: { physical: [1, 5], magic: [1, 4] }, tags: ['strength', 'intelligence'] },
-    { name: 'of Focus', stats: { magic: [2, 7] }, tags: ['intelligence'] },
-    { name: 'of Precision', stats: { ranged: [2, 7] }, tags: ['dexterity'] },
-    { name: 'of Guarding', stats: { armor: [2, 8] }, tags: ['strength'] },
-    { name: 'of Vitality', stats: { health: [10, 24] }, tags: [] },
-    { name: 'of Fortune', stats: { magicFind: [5, 16] }, tags: [] },
-    { name: 'of Carnage', stats: { physical: [4, 12] }, tags: ['strength'] },
-    { name: 'of the Magi', stats: { magic: [4, 12] }, tags: ['intelligence'] },
-    { name: 'of the Hawk', stats: { ranged: [4, 10] }, tags: ['dexterity'] },
-    { name: 'of the Fortress', stats: { armor: [5, 14], health: [4, 10] }, tags: ['strength'] },
-    { name: 'of Regeneration', stats: { health: [12, 32] }, tags: [] },
-    { name: 'of Plunder', stats: { magicFind: [8, 22] }, tags: [] },
-    { name: 'of Devastation', stats: { physical: [3, 8], ranged: [2, 6] }, tags: ['strength', 'dexterity'] },
-    { name: 'of the Archmage', stats: { magic: [3, 9], energyShield: [3, 8] }, tags: ['intelligence'] },
-    { name: 'of Reflexes', stats: { evasion: [4, 10] }, tags: ['dexterity'] },
-    { name: 'of Shielding', stats: { energyShield: [4, 10] }, tags: ['intelligence'] }
+    { name: 'of Slaying', stats: { physical: [1, 3], magic: [1, 2] }, tags: ['strength', 'intelligence'] },
+    { name: 'of Focus', stats: { magic: [1, 4] }, tags: ['intelligence'] },
+    { name: 'of Precision', stats: { ranged: [1, 4] }, tags: ['dexterity'] },
+    { name: 'of Guarding', stats: { armor: [2, 5] }, tags: ['strength'] },
+    { name: 'of Vitality', stats: { health: [6, 16] }, tags: [] },
+    { name: 'of Fortune', stats: { magicFind: [4, 12] }, tags: [] },
+    { name: 'of Carnage', stats: { physical: [2, 7] }, tags: ['strength'] },
+    { name: 'of the Magi', stats: { magic: [2, 7] }, tags: ['intelligence'] },
+    { name: 'of the Hawk', stats: { ranged: [2, 6] }, tags: ['dexterity'] },
+    { name: 'of the Fortress', stats: { armor: [3, 9], health: [3, 7] }, tags: ['strength'] },
+    { name: 'of Regeneration', stats: { health: [8, 20] }, tags: [] },
+    { name: 'of Plunder', stats: { magicFind: [6, 16] }, tags: [] },
+    { name: 'of Devastation', stats: { physical: [2, 5], ranged: [1, 3] }, tags: ['strength', 'dexterity'] },
+    { name: 'of the Archmage', stats: { magic: [2, 5], energyShield: [2, 5] }, tags: ['intelligence'] },
+    { name: 'of Reflexes', stats: { evasion: [2, 6] }, tags: ['dexterity'] },
+    { name: 'of Shielding', stats: { energyShield: [2, 6] }, tags: ['intelligence'] }
 ];
 
 const EQUIPMENT_SLOT_GROUP_BY_KEY = {
@@ -458,7 +458,7 @@ class Match3Scene extends Phaser.Scene {
     }
 
     getEnemyGroupStats(battleNumber, enemyCount) {
-        const baseHP = 15 + (battleNumber - 1) * 8;
+        const baseHP = 22 + (battleNumber - 1) * 10;
         const baseAtk = 1 + Math.floor((battleNumber - 1) * 0.8);
         if (enemyCount === 1) return { hp: baseHP, atk: baseAtk };
         const hpPerEnemy = Math.floor(baseHP * 0.85 / enemyCount);
@@ -2115,7 +2115,7 @@ class Match3Scene extends Phaser.Scene {
             : this.rollRarityWithMagicFind(monsterLevel, magicFind);
 
         const itemLevel = Math.max(1, monsterLevel);
-        const levelScale = 1 + (itemLevel - 1) * 0.12;
+        const levelScale = 1 + (itemLevel - 1) * 0.07;
         const statMultiplier = rarity.statMultiplier * levelScale;
 
         const prefixCount = Math.ceil(rarity.affixes / 2);
@@ -2177,10 +2177,10 @@ class Match3Scene extends Phaser.Scene {
 
         // Monster level provides a base boost, magic find amplifies rarer drops
         const weights = {
-            Normal:    Math.max(5, 70 - ml * 2 - mf * 0.4),
-            Magic:     Math.min(50, 15 + ml * 1.5 + mf * 0.2),
-            Rare:      Math.min(35, Math.max(0, (ml - 2) * 1.5 + mf * 0.25)),
-            Legendary: Math.min(20, Math.max(0, (ml - 5) * 0.8 + mf * 0.15))
+            Normal:    Math.max(10, 75 - ml * 1.5 - mf * 0.3),
+            Magic:     Math.min(45, 12 + ml * 1.2 + mf * 0.15),
+            Rare:      Math.min(30, Math.max(0, (ml - 4) * 1.2 + mf * 0.2)),
+            Legendary: Math.min(15, Math.max(0, (ml - 8) * 0.6 + mf * 0.1))
         };
 
         const weightedTable = ITEM_RARITIES.map(r => ({
@@ -2230,7 +2230,7 @@ class Match3Scene extends Phaser.Scene {
 
         // itemLevel scales stat ranges: floor 1, soft-caps around 2.5×
         const itemLevel = Math.max(1, Math.floor(lootScore / 10));
-        const levelScale = 1 + (itemLevel - 1) * 0.12;
+        const levelScale = 1 + (itemLevel - 1) * 0.07;
         const statMultiplier = rarity.statMultiplier * levelScale;
 
         // Affix counts: Normal=0, Magic=1-2, Rare=4, Legendary=6
@@ -2294,10 +2294,10 @@ class Match3Scene extends Phaser.Scene {
 
         // Weights shift smoothly with score
         const weights = {
-            Normal:    Math.max(5,  70 - s * 0.8),
-            Magic:     Math.min(45, 10 + s * 0.45),
-            Rare:      Math.min(35, Math.max(0, (s - 30) * 0.45)),
-            Legendary: Math.min(20, Math.max(0, (s - 60) * 0.25))
+            Normal:    Math.max(10, 75 - s * 0.6),
+            Magic:     Math.min(40, 8 + s * 0.35),
+            Rare:      Math.min(30, Math.max(0, (s - 40) * 0.35)),
+            Legendary: Math.min(15, Math.max(0, (s - 70) * 0.2))
         };
 
         const weightedTable = ITEM_RARITIES.map(r => ({
@@ -5386,17 +5386,17 @@ class Match3Scene extends Phaser.Scene {
                     goldGain += 3;
                 }
                 if (effect === 'physical') {
-                    const tileDamage = Math.max(1, 2 + gear.physical);
+                    const tileDamage = Math.max(1, 2 + Math.floor(gear.physical * 0.5));
                     physicalDamage += tileDamage;
                     totalEnemyDamage += tileDamage;
                 }
                 if (effect === 'magic') {
-                    const tileDamage = Math.max(1, 2 + gear.magic);
+                    const tileDamage = Math.max(1, 2 + Math.floor(gear.magic * 0.5));
                     magicDamage += tileDamage;
                     totalEnemyDamage += tileDamage;
                 }
                 if (effect === 'ranged') {
-                    const tileDamage = Math.max(1, 2 + gear.ranged);
+                    const tileDamage = Math.max(1, 2 + Math.floor(gear.ranged * 0.5));
                     rangedDamage += tileDamage;
                     totalEnemyDamage += tileDamage;
                 }
@@ -5432,7 +5432,7 @@ class Match3Scene extends Phaser.Scene {
 
             switch (run.effect) {
                 case 'physical': {
-                    const baseDmg = 12 + gear.physical * 2 + charBonuses.physicalDamageBonus;
+                    const baseDmg = 8 + gear.physical + charBonuses.physicalDamageBonus;
                     let critDmg = Math.floor(baseDmg * critMultiplier);
                     if (Math.random() * 100 < charBonuses.critChance) {
                         critDmg = Math.floor(critDmg * 1.5);
@@ -5445,7 +5445,7 @@ class Match3Scene extends Phaser.Scene {
                     break;
                 }
                 case 'magic': {
-                    const baseDmg = 14 + gear.magic * 2 + charBonuses.magicDamageBonus;
+                    const baseDmg = 9 + gear.magic + charBonuses.magicDamageBonus;
                     let critDmg = Math.floor(baseDmg * critMultiplier);
                     if (Math.random() * 100 < charBonuses.critChance) {
                         critDmg = Math.floor(critDmg * 1.5);
@@ -5458,7 +5458,7 @@ class Match3Scene extends Phaser.Scene {
                     break;
                 }
                 case 'ranged': {
-                    const baseDmg = 10 + gear.ranged * 2 + charBonuses.rangedDamageBonus;
+                    const baseDmg = 7 + gear.ranged + charBonuses.rangedDamageBonus;
                     let critDmg = Math.floor(baseDmg * critMultiplier);
                     if (Math.random() * 100 < charBonuses.critChance) {
                         critDmg = Math.floor(critDmg * 1.5);
