@@ -409,21 +409,21 @@ class Match3Scene extends Phaser.Scene {
 
     getEnemyPositions(count) {
         const rightCX = 293;
-        if (count === 1) return [{ x: rightCX, y: 72, scale: 1.0, barW: 166, barY: 128 }];
+        if (count === 1) return [{ x: rightCX, y: 88, scale: 1.0, barW: 166, barY: 140 }];
         if (count === 2) return [
-            { x: rightCX - 38, y: 66, scale: 0.7, barW: 70, barY: 108 },
-            { x: rightCX + 38, y: 66, scale: 0.7, barW: 70, barY: 108 }
+            { x: rightCX - 38, y: 82, scale: 0.7, barW: 70, barY: 120 },
+            { x: rightCX + 38, y: 82, scale: 0.7, barW: 70, barY: 120 }
         ];
         if (count === 3) return [
-            { x: rightCX - 50, y: 66, scale: 0.58, barW: 50, barY: 104 },
-            { x: rightCX, y: 66, scale: 0.58, barW: 50, barY: 104 },
-            { x: rightCX + 50, y: 66, scale: 0.58, barW: 50, barY: 104 }
+            { x: rightCX - 50, y: 82, scale: 0.58, barW: 50, barY: 116 },
+            { x: rightCX, y: 82, scale: 0.58, barW: 50, barY: 116 },
+            { x: rightCX + 50, y: 82, scale: 0.58, barW: 50, barY: 116 }
         ];
         return [
-            { x: rightCX - 38, y: 50, scale: 0.50, barW: 56, barY: 86 },
-            { x: rightCX + 38, y: 50, scale: 0.50, barW: 56, barY: 86 },
-            { x: rightCX - 38, y: 104, scale: 0.50, barW: 56, barY: 138 },
-            { x: rightCX + 38, y: 104, scale: 0.50, barW: 56, barY: 138 }
+            { x: rightCX - 38, y: 64, scale: 0.50, barW: 56, barY: 98 },
+            { x: rightCX + 38, y: 64, scale: 0.50, barW: 56, barY: 98 },
+            { x: rightCX - 38, y: 116, scale: 0.50, barW: 56, barY: 148 },
+            { x: rightCX + 38, y: 116, scale: 0.50, barW: 56, barY: 148 }
         ];
     }
 
@@ -2672,13 +2672,13 @@ class Match3Scene extends Phaser.Scene {
 
         // --- Player panel (left) ---
         this.hudContainer.add(this.add.rectangle(leftCX, panelH / 2 + 4, panelW, panelH, 0x111111, 0.9).setOrigin(0.5));
-        this.hudContainer.add(this.add.text(leftCX, 14, 'Hero', { fontSize: '17px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
         // Sprite-based player character
         this.playerSprite = this.add.sprite(leftCX, 80, 'warrior').setOrigin(0.5, 0.5);
         this.playerSprite.setScale(1.3);
         this.playerSprite.play('warrior_idle');
         this.hudContainer.add(this.playerSprite);
         this.playerBodyContainer = this.playerSprite;  // alias for compatibility
+        this.hudContainer.add(this.add.text(leftCX, 140, 'Hero', { fontSize: '17px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
         // --- Energy Shield bar (above HP) ---
         this.playerShieldLabel = this.add.text(14, 148, 'ES', { fontSize: '9px', color: '#66aaff' });
         this.hudContainer.add(this.playerShieldLabel);
