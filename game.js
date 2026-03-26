@@ -3529,7 +3529,7 @@ class Match3Scene extends Phaser.Scene {
         this.talentScreenGroup.add(this.talentTreeContainer);
 
         // Clip tree content to the yellow border so zoomed edges disappear at the panel edge
-        const maskShape = this.make.graphics();
+        const maskShape = this.make.graphics({ add: false });
         maskShape.fillStyle(0xffffff);
         maskShape.fillRect(5, 5, width - 10, height - 10);
         this.talentTreeContainer.setMask(maskShape.createGeometryMask());
