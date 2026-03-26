@@ -3419,6 +3419,9 @@ class Match3Scene extends Phaser.Scene {
         this._talentZoom = 1;
         this._talentPanX = 0;
         this._talentPanY = 0;
+        this._talentIsPinching = false;
+        this._talentPinchStartDist = null;
+        this._talentPinchStartZoom = null;
         this._applyTalentTreeTransform();
         this.refreshTalentScreenUI();
     }
@@ -3533,6 +3536,7 @@ class Match3Scene extends Phaser.Scene {
         this._talentMaxZoom = 2.5;
         this._talentPinchStartDist = null;
         this._talentPinchStartZoom = null;
+        this._talentIsPinching = false;
         this._talentDragStartX = null;
         this._talentDragStartY = null;
         this._talentIsDragging = false;
@@ -3546,13 +3550,73 @@ class Match3Scene extends Phaser.Scene {
             }
         });
 
+        // --- Pinch-to-zoom via native DOM touch events (reliable multi-touch) ---
+        const canvas = this.game.canvas;
+        const canvasRect = () => canvas.getBoundingClientRect();
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (this.currentScreen !== 'talents') return;
+            if (e.touches.length === 2) {
+                // Start pinch
+                this._talentIsPinching = true;
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                this._talentPinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+                this._talentPinchStartZoom = this._talentZoom;
+                // Cancel any in-progress drag
+                this._talentDragStartX = null;
+                this._talentIsDragging = false;
+            }
+        }, { passive: true });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (this.currentScreen !== 'talents') return;
+            if (e.touches.length === 2 && this._talentPinchStartDist !== null) {
+                this._talentIsPinching = true;
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+                const scale = dist / this._talentPinchStartDist;
+                const oldZoom = this._talentZoom;
+                this._talentZoom = Phaser.Math.Clamp(
+                    this._talentPinchStartZoom * scale,
+                    this._talentMinZoom,
+                    this._talentMaxZoom
+                );
+                // Zoom toward midpoint of the two touches
+                const rect = canvasRect();
+                const scaleX = this.scale.width / rect.width;
+                const scaleY = this.scale.height / rect.height;
+                const cx = ((t1.clientX + t2.clientX) / 2 - rect.left) * scaleX;
+                const cy = ((t1.clientY + t2.clientY) / 2 - rect.top) * scaleY;
+                if (oldZoom !== 0) {
+                    this._talentPanX = cx - (cx - this._talentPanX) * (this._talentZoom / oldZoom);
+                    this._talentPanY = cy - (cy - this._talentPanY) * (this._talentZoom / oldZoom);
+                }
+                this._applyTalentTreeTransform();
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (this.currentScreen !== 'talents') return;
+            if (e.touches.length < 2) {
+                this._talentPinchStartDist = null;
+                this._talentPinchStartZoom = null;
+                // Brief delay before allowing drag again so the remaining finger doesn't jump-pan
+                this.time.delayedCall(100, () => { this._talentIsPinching = false; });
+            }
+        }, { passive: true });
+
         // Drag-to-pan via scene-level pointer events
         this.input.on('pointerdown', (pointer) => {
             if (this.currentScreen !== 'talents') return;
+            if (this._talentIsPinching) return;
             this._talentPointerOnNode = false;
             // Delay check so node pointerdown fires first
             this.time.delayedCall(0, () => {
                 if (this._talentPointerOnNode) return;
+                if (this._talentIsPinching) return;
                 this._talentDragStartX = pointer.x;
                 this._talentDragStartY = pointer.y;
                 this._talentIsDragging = false;
@@ -3561,28 +3625,7 @@ class Match3Scene extends Phaser.Scene {
 
         this.input.on('pointermove', (pointer) => {
             if (this.currentScreen !== 'talents') return;
-
-            // Pinch-to-zoom (multi-touch)
-            const pointers = this.input.manager.pointers.filter(p => p.isDown);
-            if (pointers.length === 2) {
-                const p1 = pointers[0];
-                const p2 = pointers[1];
-                const dist = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
-
-                if (this._talentPinchStartDist === null) {
-                    this._talentPinchStartDist = dist;
-                    this._talentPinchStartZoom = this._talentZoom;
-                } else {
-                    const scale = dist / this._talentPinchStartDist;
-                    this._talentZoom = Phaser.Math.Clamp(
-                        this._talentPinchStartZoom * scale,
-                        this._talentMinZoom,
-                        this._talentMaxZoom
-                    );
-                    this._applyTalentTreeTransform();
-                }
-                return;
-            }
+            if (this._talentIsPinching) return;
 
             // Single-finger drag-to-pan
             if (!pointer.isDown) return;
@@ -3609,8 +3652,6 @@ class Match3Scene extends Phaser.Scene {
             this._talentDragStartX = null;
             this._talentDragStartY = null;
             this._talentIsDragging = false;
-            this._talentPinchStartDist = null;
-            this._talentPinchStartZoom = null;
             this._talentPointerOnNode = false;
         });
 
