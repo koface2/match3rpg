@@ -511,19 +511,19 @@ class Match3Scene extends Phaser.Scene {
         const rightCX = 293;
         if (count === 1) return [{ x: rightCX, y: 88, scale: 1.0, barW: 166, barY: 174 }];
         if (count === 2) return [
-            { x: rightCX - 46, y: 68, scale: 0.58, barW: 68, barY: 116 },
-            { x: rightCX + 46, y: 68, scale: 0.58, barW: 68, barY: 116 }
+            { x: rightCX - 32, y: 72, scale: 0.78, barW: 80, barY: 138 },
+            { x: rightCX + 32, y: 72, scale: 0.78, barW: 80, barY: 152 }
         ];
         if (count === 3) return [
-            { x: rightCX - 46, y: 48, scale: 0.48, barW: 56, barY: 90 },
-            { x: rightCX + 46, y: 48, scale: 0.48, barW: 56, barY: 90 },
-            { x: rightCX,      y: 122, scale: 0.48, barW: 56, barY: 162 }
+            { x: rightCX - 36, y: 58, scale: 0.68, barW: 70, barY: 116 },
+            { x: rightCX + 36, y: 58, scale: 0.68, barW: 70, barY: 130 },
+            { x: rightCX,      y: 118, scale: 0.68, barW: 70, barY: 172 }
         ];
         return [
-            { x: rightCX - 46, y: 42, scale: 0.44, barW: 52, barY: 78 },
-            { x: rightCX + 46, y: 42, scale: 0.44, barW: 52, barY: 78 },
-            { x: rightCX - 46, y: 125, scale: 0.44, barW: 52, barY: 160 },
-            { x: rightCX + 46, y: 125, scale: 0.44, barW: 52, barY: 160 }
+            { x: rightCX - 36, y: 48, scale: 0.62, barW: 64, barY: 100 },
+            { x: rightCX + 36, y: 48, scale: 0.62, barW: 64, barY: 114 },
+            { x: rightCX - 36, y: 120, scale: 0.62, barW: 64, barY: 170 },
+            { x: rightCX + 36, y: 120, scale: 0.62, barW: 64, barY: 184 }
         ];
     }
 
@@ -5900,7 +5900,7 @@ class Match3Scene extends Phaser.Scene {
         const totalBlockChance = Math.min(75, tb.blockChance);
 
         alive.forEach((enemy, idx) => {
-            this.time.delayedCall(idx * 300, () => {
+            this.time.delayedCall(idx * 600, () => {
                 if (this.player.health <= 0) return;
 
                 // Block check per attack
