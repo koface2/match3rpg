@@ -1938,8 +1938,8 @@ class Match3Scene extends Phaser.Scene {
     }
 
     createCombatLog() {
-        // Positioned between HUD panels and the grid
-        const bg = this.add.rectangle(195, 230, 386, 42, 0x111111, 0.9).setOrigin(0.5);
+        // Positioned between nav buttons and the grid
+        const bg = this.add.rectangle(195, 255, 386, 42, 0x111111, 0.9).setOrigin(0.5);
         this.hudContainer.add(bg);
     }
 
@@ -1956,7 +1956,7 @@ class Match3Scene extends Phaser.Scene {
         this.combatLogTexts.forEach(t => t.destroy());
         this.combatLogTexts = [];
 
-        const logTopY = 214;
+        const logTopY = 239;
         const lineHeight = 13;
 
         this.combatLog.forEach((entry, index) => {
