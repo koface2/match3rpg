@@ -488,6 +488,7 @@ class Match3Scene extends Phaser.Scene {
         this.draggingSkillGemTile = null;
         this.skillGemWasDragged = false;
         this.armedEquipGem = null;
+        this.justDroppedSkillGem = false;
     }
 
     // --- Multi-enemy encounter helpers ---
@@ -1779,8 +1780,10 @@ class Match3Scene extends Phaser.Scene {
         if (!target) return;
 
         if (target.kind === 'active') {
+            this.justDroppedSkillGem = true;
             this.equipGemToActiveSlot(target.slotIndex, gem);
         } else if (target.kind === 'support') {
+            this.justDroppedSkillGem = true;
             this.equipGemToSupportSlot(target.slotIndex, target.socketIndex, gem);
         }
     }
@@ -4170,7 +4173,8 @@ class Match3Scene extends Phaser.Scene {
 
 
         // --- Scrollable Skill Gem Inventory ---
-        const inventoryPanel = this.add.rectangle(width / 2, 640, width - 26, 290, 0x1c1c1c, 1)
+        // Use a more neutral grey background to match the rest of the game
+        const inventoryPanel = this.add.rectangle(width / 2, 640, width - 26, 290, 0x232323, 1)
             .setStrokeStyle(1, 0x666666, 1);
         const inventoryTitle = this.add.text(width / 2, 502, 'Gem Inventory', {
             fontSize: '16px',
@@ -4239,6 +4243,11 @@ class Match3Scene extends Phaser.Scene {
                 tileBg.on('pointerup', () => {
                     if (dragMoved) {
                         dragMoved = false;
+                        // If a drag just happened, do not show popup
+                        if (this.justDroppedSkillGem) {
+                            this.justDroppedSkillGem = false;
+                            return;
+                        }
                         return;
                     }
                     const selectedGem = this.skillsInventoryGems[tileIndex];
