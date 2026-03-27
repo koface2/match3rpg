@@ -1343,12 +1343,16 @@ class Match3Scene extends Phaser.Scene {
         const height = this.sys.game.config.height;
         this.skillBarContainer = this.add.container(0, 0);
 
-        // Make main skill slots bigger and spaced
-        const iconDiameter = 138;
+        // Make main skill slots as big as possible and spaced
+        // Calculate max diameter so 3 slots fit with minimum 24px gap between each and 32px from edges
+        const minGap = 24;
+        const edgePad = 32;
+        const availableW = width - 2 * edgePad - 2 * minGap;
+        const iconDiameter = Math.min(170, Math.floor(availableW / 3));
         const iconRadius = iconDiameter / 2;
-        const barY = height - iconRadius - 38; // slightly higher for bigger icons
-        const edgePad = 80; // more padding from screen edges
-        const slotSpacing = (width - 2 * edgePad - iconDiameter * 3) / 2;
+        const slotSpacing = minGap;
+        // Place barY so slots are above the tile grid (GRID_OFFSET_Y)
+        const barY = GRID_OFFSET_Y - iconRadius - 18;
 
         this.skillSlotUI = [];
         for (let i = 0; i < 3; i++) {
