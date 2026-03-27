@@ -1350,7 +1350,7 @@ class Match3Scene extends Phaser.Scene {
         // Leave at least 24px gap above the skillbar and 24px from screen edges
         const minGap = 24;
         const edgePad = 32;
-        const bottomPad = 18;
+        const bottomPad = 48; // Increased from 18 to 48 to move skill bar up
         const iconDiameter = Math.min(170, Math.floor((width - 2 * edgePad - 2 * minGap) / 3));
         const iconRadius = iconDiameter / 2;
         const slotSpacing = minGap;
