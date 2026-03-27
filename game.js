@@ -848,7 +848,7 @@ class Match3Scene extends Phaser.Scene {
             if (!this.awaitingRewardChoice) {
                 this.awaitingRewardChoice = true;
                 this.stopAllParticleEffects();
-                this.time.delayedCall(850, () => this.showRewardScreen());
+                this.time.delayedCall(1500, () => this.showRewardScreen());
             }
             this.isSwapping = true;
         }
@@ -3161,6 +3161,7 @@ class Match3Scene extends Phaser.Scene {
 
         // Stop all in-flight particle effects so they don't overlay the reward screen
         this.stopAllParticleEffects();
+        if (this.skillChargeFxContainer) this.skillChargeFxContainer.setVisible(false);
 
         this.boardContainer.setVisible(false);
         this.hudContainer.setVisible(false);
@@ -4734,6 +4735,7 @@ class Match3Scene extends Phaser.Scene {
         this.boardContainer.setVisible(true);
         this.hudContainer.setVisible(true);
         if (this.skillBarContainer) this.skillBarContainer.setVisible(true);
+        if (this.skillChargeFxContainer) this.skillChargeFxContainer.setVisible(true);
         this.setGameBoardActive(true);
     }
 
@@ -5749,7 +5751,7 @@ class Match3Scene extends Phaser.Scene {
                 if (!this.awaitingRewardChoice) {
                     this.awaitingRewardChoice = true;
                     this.stopAllParticleEffects();
-                    this.time.delayedCall(850, () => this.showRewardScreen());
+                    this.time.delayedCall(1500, () => this.showRewardScreen());
                 }
                 this.isSwapping = true;
             }
@@ -5860,6 +5862,11 @@ class Match3Scene extends Phaser.Scene {
 
             // Check for cascading matches after new tiles fall
             this.time.delayedCall(250, () => {
+                // Skip cascades if the fight is already over
+                if (this.awaitingRewardChoice) {
+                    this.isSwapping = false;
+                    return;
+                }
                 const matchData = this.findMatchData();
                 if (matchData.matched.length > 0) {
                     this.time.delayedCall(300, () => {
