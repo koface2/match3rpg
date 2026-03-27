@@ -167,24 +167,6 @@ const ACTIVE_SKILL_GEMS = [
         scalingStat: 'ranged'
     },
     {
-        id: 'rejuvenate',
-        name: 'Rejuvenate',
-        tileEffect: 'health',
-        baseThreshold: 4,
-        mode: 'heal',
-        basePower: 22,
-        scalingStat: 'health'
-    },
-    {
-        id: 'gold-rush',
-        name: 'Gold Rush',
-        tileEffect: 'gold',
-        baseThreshold: 4,
-        mode: 'gold',
-        basePower: 16,
-        scalingStat: 'magicFind'
-    },
-    {
         id: 'duck-and-roll',
         name: 'Duck and Roll',
         tileEffect: 'ranged',
@@ -210,6 +192,24 @@ const ACTIVE_SKILL_GEMS = [
         mode: 'damage',
         basePower: 30,
         scalingStat: 'physical'
+    },
+    {
+        id: 'cloak-of-flames',
+        name: 'Cloak of Flames',
+        tileEffect: 'magic',
+        baseThreshold: 4,
+        mode: 'damage',
+        basePower: 25,
+        scalingStat: 'magic'
+    },
+    {
+        id: 'shock-and-awe',
+        name: 'Shock and Awe',
+        tileEffect: 'magic',
+        baseThreshold: 4,
+        mode: 'damage',
+        basePower: 27,
+        scalingStat: 'magic'
     }
 ];
 
@@ -272,7 +272,9 @@ const SKILL_ICON_MAP = {
     'multishot': 'skill_multishot',
     'duck-and-roll': 'skill_duckandroll',
     'energy-beam': 'skill_energybeam',
-    'reckless-attack': 'skill_recklessattack'
+    'reckless-attack': 'skill_recklessattack',
+    'cloak-of-flames': 'skill_cloakofflames',
+    'shock-and-awe': 'skill_shockandawe'
 };
 
 // ---------------------------------------------------------------------------
@@ -1900,7 +1902,7 @@ class Match3Scene extends Phaser.Scene {
                     && this.selectedSkillGem.type === gem.type
                     && this.selectedSkillGem.id === gem.id;
                 tile.tileBg.setStrokeStyle(2, isSelected ? 0xfff07a : 0x666666, 1);
-                tile.tileBg.setFillStyle(isSelected ? 0x383220 : 0x292929, 1);
+                tile.tileBg.setFillStyle(isSelected ? 0x383220 : 0x222222, 1);
             });
         }
     }
@@ -4189,7 +4191,7 @@ class Match3Scene extends Phaser.Scene {
 
         // Scrollable container for gems
         const scrollMask = this.add.graphics();
-        scrollMask.fillStyle(0xffffff, 1);
+        scrollMask.fillStyle(0x232323, 1);
         scrollMask.beginPath();
         scrollMask.fillRect(width / 2 - (width - 60) / 2, 560, width - 60, 220);
         scrollMask.closePath();
