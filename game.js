@@ -4092,41 +4092,43 @@ class Match3Scene extends Phaser.Scene {
 
         this.skillsScreenGroup.add([bg, title, subtitle, backBtn]);
 
-        const loadoutStartY = 140;
-        const rowSpacing = 112;
-        const activeX = 84;
-        const supportStartX = 184;
-        const supportGapX = 54;
+        // Make main slots much bigger and spaced
+        const loadoutStartY = 170;
+        const rowSpacing = 160;
+        const activeX = 110;
+        const supportStartX = 260;
+        const supportGapX = 68;
+        const mainRadius = 60;
         this.skillsActiveSlotUI = [];
 
         for (let slotIndex = 0; slotIndex < 3; slotIndex++) {
             const centerX = activeX;
             const centerY = loadoutStartY + slotIndex * rowSpacing;
-            const mainRadius = 36;
 
             const cardBg = this.add.circle(centerX, centerY, mainRadius, 0x202020, 1)
-                .setStrokeStyle(2, 0xffffff, 1)
+                .setStrokeStyle(3, 0xffffff, 1)
                 .setInteractive({ useHandCursor: true });
-            const cardLabel = this.add.text(centerX, centerY - 44, `Skill ${slotIndex + 1}`, {
-                fontSize: '11px',
-                color: '#d9d9d9'
+            const cardLabel = this.add.text(centerX, centerY - mainRadius - 18, `Skill ${slotIndex + 1}`, {
+                fontSize: '14px',
+                color: '#d9d9d9',
+                fontStyle: 'bold'
             }).setOrigin(0.5);
-            const iconText = this.add.text(centerX, centerY - 10, '', {
-                fontSize: '24px'
+            const iconText = this.add.text(centerX, centerY, '', {
+                fontSize: '36px'
             }).setOrigin(0.5);
-            const skillIconImage = this.add.image(centerX, centerY - 4, 'skill_cleave')
+            const skillIconImage = this.add.image(centerX, centerY, 'skill_cleave')
                 .setOrigin(0.5).setVisible(false);
-            const iconDiam = mainRadius * 2 - 8;
+            const iconDiam = mainRadius * 2 - 12;
             skillIconImage.setDisplaySize(iconDiam, iconDiam);
-            const nameText = this.add.text(centerX, centerY + 21, '', {
-                fontSize: '9px',
+            const nameText = this.add.text(centerX, centerY + mainRadius + 12, '', {
+                fontSize: '13px',
                 color: '#ffffff',
                 fontStyle: 'bold',
-                wordWrap: { width: 74, useAdvancedWrap: true },
+                wordWrap: { width: 120, useAdvancedWrap: true },
                 align: 'center'
             }).setOrigin(0.5);
-            const chargeText = this.add.text(centerX + 2, centerY + 44, '', {
-                fontSize: '10px',
+            const chargeText = this.add.text(centerX + 2, centerY + mainRadius + 32, '', {
+                fontSize: '12px',
                 color: '#cccccc'
             }).setOrigin(0.5);
 
@@ -4135,13 +4137,13 @@ class Match3Scene extends Phaser.Scene {
                 const socketX = supportStartX + socketIndex * supportGapX;
                 const socketY = centerY;
                 const connector = this.add.line(centerX, centerY, 0, 0, socketX - centerX, socketY - centerY, 0x8b8b8b, 0.75)
-                    .setLineWidth(1, 1);
-                const socketRadius = 12;
+                    .setLineWidth(2, 2);
+                const socketRadius = 18;
                 const socketBg = this.add.circle(socketX, socketY, socketRadius, 0x2f2f2f, 1)
-                    .setStrokeStyle(1, 0x808080, 1)
+                    .setStrokeStyle(2, 0x808080, 1)
                     .setInteractive({ useHandCursor: true });
                 const socketText = this.add.text(socketX, socketY, '-', {
-                    fontSize: '8px',
+                    fontSize: '12px',
                     color: '#d0d0d0'
                 }).setOrigin(0.5);
                 socketBg.on('pointerup', () => this.equipSelectedGemToSupportSlot(slotIndex, socketIndex));
@@ -4165,6 +4167,8 @@ class Match3Scene extends Phaser.Scene {
             this.skillsScreenGroup.add([cardBg, cardLabel, iconText, skillIconImage, nameText, chargeText]);
         }
 
+
+        // --- Scrollable Skill Gem Inventory ---
         const inventoryPanel = this.add.rectangle(width / 2, 640, width - 26, 290, 0x1c1c1c, 1)
             .setStrokeStyle(1, 0x666666, 1);
         const inventoryTitle = this.add.text(width / 2, 502, 'Gem Inventory', {
@@ -4176,26 +4180,33 @@ class Match3Scene extends Phaser.Scene {
             fontSize: '11px',
             color: '#bbbbbb'
         }).setOrigin(0.5);
-
         this.skillsScreenGroup.add([inventoryPanel, inventoryTitle, this.selectedGemLabel]);
+
+        // Scrollable container for gems
+        const scrollMask = this.add.graphics();
+        scrollMask.fillStyle(0xffffff, 1);
+        scrollMask.beginPath();
+        scrollMask.fillRect(width / 2 - (width - 60) / 2, 560, width - 60, 220);
+        scrollMask.closePath();
+        const gemScrollContainer = this.add.container(0, 0);
+        gemScrollContainer.setMask(new Phaser.Display.Masks.GeometryMask(this, scrollMask));
+        this.skillsScreenGroup.add([scrollMask, gemScrollContainer]);
 
         this.skillsInventoryTiles = [];
         const cols = 5;
-        const rows = 3;
         const cellW = 68;
         const cellH = 72;
         const gapX = 6;
         const gapY = 4;
-        const gridStartX = (width - (cols * cellW + (cols - 1) * gapX)) / 2;
-        const gridStartY = 540;
-
         let gemIndex = 0;
-        for (let row = 0; row < rows; row++) {
+        const totalRows = Math.ceil(this.skillsInventoryGems.length / cols);
+        for (let row = 0; row < totalRows; row++) {
             for (let col = 0; col < cols; col++) {
+                if (gemIndex >= this.skillsInventoryGems.length) break;
                 const tileIndex = gemIndex;
                 const gem = this.skillsInventoryGems[tileIndex];
-                const x = gridStartX + col * (cellW + gapX);
-                const y = gridStartY + row * (cellH + gapY);
+                const x = (width - (cols * cellW + (cols - 1) * gapX)) / 2 + col * (cellW + gapX);
+                const y = 570 + row * (cellH + gapY);
                 const centerX = x + cellW / 2;
                 const centerY = y + 27;
 
@@ -4298,10 +4309,28 @@ class Match3Scene extends Phaser.Scene {
                     homeY: centerY,
                     gem
                 });
-                this.skillsScreenGroup.add([tileBg, iconText, tileSkillIcon, nameText, typeText]);
+                gemScrollContainer.add([tileBg, iconText, tileSkillIcon, nameText, typeText]);
                 gemIndex += 1;
             }
         }
+
+        // Enable drag-to-scroll for gem inventory
+        let scrollStartY = 0;
+        let scrollDragStart = 0;
+        scrollMask.setInteractive(new Phaser.Geom.Rectangle(width / 2 - (width - 60) / 2, 560, width - 60, 220), Phaser.Geom.Rectangle.Contains);
+        scrollMask.on('pointerdown', (pointer) => {
+            scrollDragStart = pointer.worldY;
+            scrollStartY = gemScrollContainer.y;
+        });
+        scrollMask.on('pointermove', (pointer) => {
+            if (pointer.isDown) {
+                let newY = scrollStartY + (pointer.worldY - scrollDragStart);
+                // Clamp scrolling
+                const minY = Math.min(0, 560 + 220 - (totalRows * (cellH + gapY)));
+                const maxY = 0;
+                gemScrollContainer.y = Phaser.Math.Clamp(newY, minY, maxY);
+            }
+        });
 
         const gemModalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
             .setInteractive({ useHandCursor: true });
