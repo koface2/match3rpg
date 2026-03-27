@@ -401,6 +401,7 @@ class Match3Scene extends Phaser.Scene {
             talentPoints: 0
         };
         this.enemies = [];
+        this.targetEnemyIndex = 0;
         this.encounterSize = 1;
         this.playerStatsText = null;
         this.playerAvatar = null;
@@ -532,7 +533,14 @@ class Match3Scene extends Phaser.Scene {
     }
 
     getTargetEnemy() {
-        return this.enemies.find(e => e.alive) || null;
+        // Return the player-selected target if alive, otherwise fall back to first alive
+        if (this.targetEnemyIndex >= 0 && this.targetEnemyIndex < this.enemies.length
+            && this.enemies[this.targetEnemyIndex].alive) {
+            return this.enemies[this.targetEnemyIndex];
+        }
+        const fallback = this.enemies.find(e => e.alive);
+        if (fallback) this.targetEnemyIndex = this.enemies.indexOf(fallback);
+        return fallback || null;
     }
 
     allEnemiesDead() {
@@ -564,6 +572,7 @@ class Match3Scene extends Phaser.Scene {
 
     buildEnemyGroup(battleNumber, hudContainer) {
         this.destroyAllEnemyUI();
+        this.targetEnemyIndex = 0;
         const count = this.encounterSize;
         const stats = this.getEnemyGroupStats(battleNumber, count);
         const positions = this.getEnemyPositions(count);
@@ -638,10 +647,24 @@ class Match3Scene extends Phaser.Scene {
                 hudContainer.add(nameLabel);
             }
 
-            // Target marker (shown on frontmost alive enemy)
-            const marker = this.add.triangle(pos.x, pos.y - 38 * pos.scale, 0, 8, 4, 0, 8, 8, 0xff4444, 0.9).setOrigin(0.5);
+            // Target marker above enemy head
+            const markerY = pos.y - 60 * pos.scale;
+            const marker = this.add.triangle(pos.x, markerY, 0, 8, 4, 0, 8, 8, 0xff4444, 0.9).setOrigin(0.5);
             marker.setVisible(false);
             hudContainer.add(marker);
+
+            // Make enemy clickable to change target
+            const clickTarget = enemySprite || bodyContainer;
+            if (clickTarget) {
+                clickTarget.setInteractive({ useHandCursor: true });
+                const enemyIndex = i;
+                clickTarget.on('pointerup', () => {
+                    if (this.enemies[enemyIndex] && this.enemies[enemyIndex].alive) {
+                        this.targetEnemyIndex = enemyIndex;
+                        this.updateEnemyTargetMarkers();
+                    }
+                });
+            }
 
             this.enemies.push({
                 health: stats.hp,
@@ -670,7 +693,7 @@ class Match3Scene extends Phaser.Scene {
         const target = this.getTargetEnemy();
         this.enemies.forEach(e => {
             if (e.targetMarker) {
-                e.targetMarker.setVisible(e === target && this.enemies.length > 1);
+                e.targetMarker.setVisible(e === target && e.alive);
             }
         });
     }
