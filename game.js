@@ -718,11 +718,11 @@ class Match3Scene extends Phaser.Scene {
         this.anims.create({ key: 'bunnywarlock_hit', frames: this.anims.generateFrameNumbers('bunnywarlock', { start: 12, end: 17 }), frameRate: 6, repeat: 0 });
         this.anims.create({ key: 'bunnywarlock_death', frames: this.anims.generateFrameNumbers('bunnywarlock', { start: 18, end: 23 }), frameRate: 5, repeat: 0 });
 
-        // Hamster Skeleton animations
-        this.anims.create({ key: 'hamsterskeleton_idle', frames: this.anims.generateFrameNumbers('hamsterskeleton', { start: 0, end: 5 }), frameRate: 3, repeat: -1 });
-        this.anims.create({ key: 'hamsterskeleton_attack', frames: this.anims.generateFrameNumbers('hamsterskeleton', { start: 6, end: 11 }), frameRate: 7, repeat: 0 });
-        this.anims.create({ key: 'hamsterskeleton_hit', frames: this.anims.generateFrameNumbers('hamsterskeleton', { start: 12, end: 17 }), frameRate: 6, repeat: 0 });
-        this.anims.create({ key: 'hamsterskeleton_death', frames: this.anims.generateFrameNumbers('hamsterskeleton', { start: 18, end: 23 }), frameRate: 5, repeat: 0 });
+        // Hamster Skeleton animations (flipped: animate backwards)
+        this.anims.create({ key: 'hamsterskeleton_idle', frames: this.anims.generateFrameNumbers('hamsterskeleton', { start: 5, end: 0 }), frameRate: 3, repeat: -1 });
+        this.anims.create({ key: 'hamsterskeleton_attack', frames: this.anims.generateFrameNumbers('hamsterskeleton', { start: 11, end: 6 }), frameRate: 7, repeat: 0 });
+        this.anims.create({ key: 'hamsterskeleton_hit', frames: this.anims.generateFrameNumbers('hamsterskeleton', { start: 17, end: 12 }), frameRate: 6, repeat: 0 });
+        this.anims.create({ key: 'hamsterskeleton_death', frames: this.anims.generateFrameNumbers('hamsterskeleton', { start: 23, end: 18 }), frameRate: 5, repeat: 0 });
 
         this.boardContainer = this.add.container(0, 0);
         this.hudContainer = this.add.container(0, 0);
