@@ -1343,15 +1343,17 @@ class Match3Scene extends Phaser.Scene {
         const height = this.sys.game.config.height;
         this.skillBarContainer = this.add.container(0, 0);
 
-        const iconDiameter = 100;
+        // Make main skill slots bigger and spaced
+        const iconDiameter = 138;
         const iconRadius = iconDiameter / 2;
-        const barY = height - iconRadius - 30; // positioned so name + charge text fit below
-        const edgePad = 60; // padding from screen edges
-        const totalSpan = width - edgePad * 2;
+        const barY = height - iconRadius - 38; // slightly higher for bigger icons
+        const edgePad = 80; // more padding from screen edges
+        const slotSpacing = (width - 2 * edgePad - iconDiameter * 3) / 2;
 
         this.skillSlotUI = [];
         for (let i = 0; i < 3; i++) {
-            const centerX = edgePad + (totalSpan / 2) * i; // 0=left, 1=center, 2=right
+            // Center the three slots with even spacing
+            const centerX = edgePad + iconRadius + i * (iconDiameter + slotSpacing);
 
             // Skill icon image
             const skillIcon = this.add.image(centerX, barY, 'skill_cleave')
@@ -1364,7 +1366,7 @@ class Match3Scene extends Phaser.Scene {
             }).setOrigin(0.5).setVisible(false);
 
             // Invisible interactive hitbox on top
-            const bg = this.add.rectangle(centerX, barY, iconDiameter + 8, iconDiameter + 8, 0x000000, 0)
+            const bg = this.add.rectangle(centerX, barY, iconDiameter + 12, iconDiameter + 12, 0x000000, 0)
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
 
@@ -1385,7 +1387,9 @@ class Match3Scene extends Phaser.Scene {
             let pressStartTime = 0;
             let longPressTriggered = false;
 
-            bg.on('pointerdown', () => {
+            bg.on('pointerdown', (pointer) => {
+                // If a skill gem is being dragged, do not start long press
+                if (this.armedEquipGem) return;
                 pressStartTime = Date.now();
                 longPressTriggered = false;
                 const slotIndex = i;
@@ -1400,6 +1404,8 @@ class Match3Scene extends Phaser.Scene {
                     this.skillLongPressTimer.remove(false);
                     this.skillLongPressTimer = null;
                 }
+                // If a skill gem is being dragged, do not activate or show popup
+                if (this.armedEquipGem) return;
                 if (!longPressTriggered) {
                     this.activateSkillSlot(i);
                 }
