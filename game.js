@@ -509,7 +509,7 @@ class Match3Scene extends Phaser.Scene {
 
     getEnemyPositions(count) {
         const rightCX = 293;
-        if (count === 1) return [{ x: rightCX, y: 88, scale: 1.0, barW: 166, barY: 140 }];
+        if (count === 1) return [{ x: rightCX, y: 88, scale: 1.0, barW: 166, barY: 174 }];
         if (count === 2) return [
             { x: rightCX - 46, y: 68, scale: 0.58, barW: 68, barY: 116 },
             { x: rightCX + 46, y: 68, scale: 0.58, barW: 68, barY: 116 }
