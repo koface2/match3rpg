@@ -5355,12 +5355,12 @@ class Match3Scene extends Phaser.Scene {
 
         const matchData = this.findMatchData();
         if (matchData.matched.length > 0) {
-            this.time.delayedCall(800, () => {
+            this.time.delayedCall(300, () => {
                 this.clearMatches(matchData.matched, matchData.runs, matchData.lShapes);
                 this.applyGravity();
             });
         } else {
-            this.time.delayedCall(800, () => {
+            this.time.delayedCall(350, () => {
                 const temp = this.grid[y1][x1];
                 this.grid[y1][x1] = this.grid[y2][x2];
                 this.grid[y2][x2] = temp;
@@ -5805,7 +5805,7 @@ class Match3Scene extends Phaser.Scene {
                     this.tweens.add({
                         targets: sprite.rect,
                         y: toWorldY,
-                        duration: 500,
+                        duration: 250,
                         ease: 'Power2'
                     })
                 );
@@ -5813,7 +5813,7 @@ class Match3Scene extends Phaser.Scene {
         });
 
         // After existing tiles fall, re-render to add new tiles, then animate them
-        this.time.delayedCall(100, () => {
+        this.time.delayedCall(50, () => {
             // Recreate all sprites (will place new tiles at top of screen temporarily)
             const savedAnimations = this.tweens.getAllTweens();
             this.renderGrid();
@@ -5833,7 +5833,7 @@ class Match3Scene extends Phaser.Scene {
                     this.tweens.add({
                         targets: sprite.rect,
                         y: toWorldY,
-                        duration: 400,
+                        duration: 200,
                         ease: 'Power2'
                     });
                 }
@@ -5842,17 +5842,17 @@ class Match3Scene extends Phaser.Scene {
                     this.tweens.add({
                         targets: sprite.icon,
                         y: toWorldY,
-                        duration: 400,
+                        duration: 200,
                         ease: 'Power2'
                     });
                 }
             });
 
             // Check for cascading matches after new tiles fall
-            this.time.delayedCall(450, () => {
+            this.time.delayedCall(250, () => {
                 const matchData = this.findMatchData();
                 if (matchData.matched.length > 0) {
-                    this.time.delayedCall(800, () => {
+                    this.time.delayedCall(300, () => {
                         this.clearMatches(matchData.matched, matchData.runs, matchData.lShapes);
                         this.applyGravity();
                     });
