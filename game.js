@@ -730,7 +730,8 @@ class Match3Scene extends Phaser.Scene {
         this.anims.create({ key: 'orcpig_death', frames: this.anims.generateFrameNumbers('orcpig', { start: 23, end: 18 }), frameRate: 5, repeat: 0 });
 
         // Sloth Troll animations
-        this.anims.create({ key: 'slothtroll_idle', frames: this.anims.generateFrameNumbers('slothtroll', { start: 0, end: 5 }), frameRate: 3, repeat: -1 });
+        // Use only the most stable frames for subtle idle motion
+        this.anims.create({ key: 'slothtroll_idle', frames: this.anims.generateFrameNumbers('slothtroll', { start: 0, end: 3 }), frameRate: 3, repeat: -1 });
         this.anims.create({ key: 'slothtroll_attack', frames: this.anims.generateFrameNumbers('slothtroll', { start: 6, end: 11 }), frameRate: 7, repeat: 0 });
         this.anims.create({ key: 'slothtroll_hit', frames: this.anims.generateFrameNumbers('slothtroll', { start: 12, end: 17 }), frameRate: 6, repeat: 0 });
         this.anims.create({ key: 'slothtroll_death', frames: this.anims.generateFrameNumbers('slothtroll', { start: 18, end: 23 }), frameRate: 5, repeat: 0 });
