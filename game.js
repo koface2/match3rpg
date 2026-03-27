@@ -13,7 +13,7 @@ const TILE_TYPES = [
 ];
 
 const MONSTER_AVATARS = ['�️', '👹', '👺', '🧟', '👾', '🤖', '🐉', '🕷️', '🦑'];
-const MONSTER_NAMES = ['Red Squirrel', 'Pig Goblin', 'Orc Pig', 'Sloth Troll', 'Bunny Warlock'];
+const MONSTER_NAMES = ['Red Squirrel', 'Pig Goblin', 'Orc Pig', 'Sloth Troll', 'Bunny Warlock', 'Hamster Skeleton'];
 const PLAYER_AVATAR = '👸';
 
 // Body configs for procedural character rendering
@@ -36,7 +36,9 @@ const MONSTER_BODIES = [
     // Sloth Troll — sprite-based enemy (index 3)
     { head: 0x4a5a3a, headSize: 12, eyeColor: 0x66ccaa, torso: 0x3d4a2e, torsoW: 20, torsoH: 20, armColor: 0x4a5a3a, legColor: 0x2e3a22, skinColor: 0x4a5a3a, hairColor: 0x2a3a1a, hairStyle: 'none', weaponColor: 0x7a6644, shieldColor: 0, facingRight: false, spriteKey: 'slothtroll' },
     // Bunny Warlock — sprite-based enemy (index 4)
-    { head: 0x2a2a2a, headSize: 10, eyeColor: 0xcc2244, torso: 0x661133, torsoW: 15, torsoH: 16, armColor: 0x2a2a2a, legColor: 0x1a1a1a, skinColor: 0x2a2a2a, hairColor: 0x1a1a1a, hairStyle: 'none', weaponColor: 0x9933cc, shieldColor: 0, facingRight: false, spriteKey: 'bunnywarlock' }
+    { head: 0x2a2a2a, headSize: 10, eyeColor: 0xcc2244, torso: 0x661133, torsoW: 15, torsoH: 16, armColor: 0x2a2a2a, legColor: 0x1a1a1a, skinColor: 0x2a2a2a, hairColor: 0x1a1a1a, hairStyle: 'none', weaponColor: 0x9933cc, shieldColor: 0, facingRight: false, spriteKey: 'bunnywarlock' },
+    // Hamster Skeleton — sprite-based enemy (index 5)
+    { head: 0xd4c9a8, headSize: 10, eyeColor: 0x44ff66, torso: 0xc8b898, torsoW: 15, torsoH: 16, armColor: 0xd4c9a8, legColor: 0xb8a888, skinColor: 0xd4c9a8, hairColor: 0xa89878, hairStyle: 'none', weaponColor: 0x888888, shieldColor: 0, facingRight: false, spriteKey: 'hamsterskeleton' }
 ];
 
 const ITEM_RARITIES = [
@@ -587,6 +589,8 @@ class Match3Scene extends Phaser.Scene {
                 monsterIndex = 3; // Sloth Troll for the fourth battle
             } else if (battleNumber === 5 && i === 0) {
                 monsterIndex = 4; // Bunny Warlock for the fifth battle
+            } else if (battleNumber === 6 && i === 0) {
+                monsterIndex = 5; // Hamster Skeleton for the sixth battle
             } else {
                 monsterIndex = Phaser.Math.Between(0, MONSTER_BODIES.length - 1);
             }
@@ -713,6 +717,12 @@ class Match3Scene extends Phaser.Scene {
         this.anims.create({ key: 'bunnywarlock_attack', frames: this.anims.generateFrameNumbers('bunnywarlock', { start: 6, end: 11 }), frameRate: 7, repeat: 0 });
         this.anims.create({ key: 'bunnywarlock_hit', frames: this.anims.generateFrameNumbers('bunnywarlock', { start: 12, end: 17 }), frameRate: 6, repeat: 0 });
         this.anims.create({ key: 'bunnywarlock_death', frames: this.anims.generateFrameNumbers('bunnywarlock', { start: 18, end: 23 }), frameRate: 5, repeat: 0 });
+
+        // Hamster Skeleton animations
+        this.anims.create({ key: 'hamsterskeleton_idle', frames: this.anims.generateFrameNumbers('hamsterskeleton', { start: 0, end: 5 }), frameRate: 3, repeat: -1 });
+        this.anims.create({ key: 'hamsterskeleton_attack', frames: this.anims.generateFrameNumbers('hamsterskeleton', { start: 6, end: 11 }), frameRate: 7, repeat: 0 });
+        this.anims.create({ key: 'hamsterskeleton_hit', frames: this.anims.generateFrameNumbers('hamsterskeleton', { start: 12, end: 17 }), frameRate: 6, repeat: 0 });
+        this.anims.create({ key: 'hamsterskeleton_death', frames: this.anims.generateFrameNumbers('hamsterskeleton', { start: 18, end: 23 }), frameRate: 5, repeat: 0 });
 
         this.boardContainer = this.add.container(0, 0);
         this.hudContainer = this.add.container(0, 0);
@@ -6039,6 +6049,10 @@ class LoadScreen extends Phaser.Scene {
             frameHeight: 130
         });
         this.load.spritesheet('bunnywarlock', 'assets/sprites/bunnywarlock_anim.png', {
+            frameWidth: 155,
+            frameHeight: 130
+        });
+        this.load.spritesheet('hamsterskeleton', 'assets/sprites/hamsterskeleton_anim.png', {
             frameWidth: 155,
             frameHeight: 130
         });
