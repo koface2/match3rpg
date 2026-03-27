@@ -4093,12 +4093,13 @@ class Match3Scene extends Phaser.Scene {
         this.skillsScreenGroup.add([bg, title, subtitle, backBtn]);
 
         // Make main slots much bigger and spaced
+        // Resize and reposition so bottom slot doesn't collide with inventory
         const loadoutStartY = 170;
-        const rowSpacing = 160;
+        const rowSpacing = 140;
         const activeX = 110;
         const supportStartX = 260;
         const supportGapX = 68;
-        const mainRadius = 60;
+        const mainRadius = 52;
         this.skillsActiveSlotUI = [];
 
         for (let slotIndex = 0; slotIndex < 3; slotIndex++) {
@@ -4317,19 +4318,29 @@ class Match3Scene extends Phaser.Scene {
         // Enable drag-to-scroll for gem inventory
         let scrollStartY = 0;
         let scrollDragStart = 0;
+        let isScrolling = false;
         scrollMask.setInteractive(new Phaser.Geom.Rectangle(width / 2 - (width - 60) / 2, 560, width - 60, 220), Phaser.Geom.Rectangle.Contains);
         scrollMask.on('pointerdown', (pointer) => {
-            scrollDragStart = pointer.worldY;
-            scrollStartY = gemScrollContainer.y;
+            if (pointer.leftButtonDown()) {
+                isScrolling = true;
+                scrollDragStart = pointer.position.y;
+                scrollStartY = gemScrollContainer.y;
+            }
         });
         scrollMask.on('pointermove', (pointer) => {
-            if (pointer.isDown) {
-                let newY = scrollStartY + (pointer.worldY - scrollDragStart);
+            if (isScrolling && pointer.isDown) {
+                let newY = scrollStartY + (pointer.position.y - scrollDragStart);
                 // Clamp scrolling
                 const minY = Math.min(0, 560 + 220 - (totalRows * (cellH + gapY)));
                 const maxY = 0;
                 gemScrollContainer.y = Phaser.Math.Clamp(newY, minY, maxY);
             }
+        });
+        scrollMask.on('pointerup', () => {
+            isScrolling = false;
+        });
+        scrollMask.on('pointerout', () => {
+            isScrolling = false;
         });
 
         const gemModalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
