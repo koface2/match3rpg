@@ -2359,18 +2359,32 @@ class Match3Scene extends Phaser.Scene {
 
     /**
      * Roll rarity based on magic find + monster level.
-     * Higher monster level and more magic find shift weights toward rare/legendary.
+     * Magic gear starts appearing around level 5, Rare around level 10.
+     * Legendary is very rare and requires magic find to realistically obtain.
      */
     rollRarityWithMagicFind(monsterLevel, magicFind) {
         const mf = Math.max(0, magicFind);
         const ml = Math.max(1, monsterLevel);
 
-        // Monster level provides a base boost, magic find amplifies rarer drops
+        // Magic: ramps from 0 at level 1 to meaningful chance at level 5+
+        const magicBase = Math.max(0, (ml - 3) * 3);
+        const magicWeight = Math.min(40, magicBase + mf * 0.15);
+
+        // Rare: effectively 0 before level 8, ramps up from level 10+
+        const rareBase = Math.max(0, (ml - 8) * 1.5);
+        const rareWeight = Math.min(25, rareBase + mf * 0.18);
+
+        // Legendary: near-zero without magic find, tiny base chance only at very high levels
+        const legendaryBase = Math.max(0, (ml - 18) * 0.3);
+        const legendaryWeight = Math.min(8, legendaryBase + mf * 0.08);
+
+        const normalWeight = Math.max(20, 90 - magicWeight - rareWeight - legendaryWeight);
+
         const weights = {
-            Normal:    Math.max(10, 75 - ml * 1.5 - mf * 0.3),
-            Magic:     Math.min(45, 12 + ml * 1.2 + mf * 0.15),
-            Rare:      Math.min(30, Math.max(0, (ml - 4) * 1.2 + mf * 0.2)),
-            Legendary: Math.min(15, Math.max(0, (ml - 8) * 0.6 + mf * 0.1))
+            Normal:    normalWeight,
+            Magic:     magicWeight,
+            Rare:      rareWeight,
+            Legendary: legendaryWeight
         };
 
         const weightedTable = ITEM_RARITIES.map(r => ({
@@ -2482,12 +2496,16 @@ class Match3Scene extends Phaser.Scene {
     rollRarityFromScore(lootScore) {
         const s = Math.max(0, lootScore);
 
-        // Weights shift smoothly with score
+        // Weights shift with score: Magic appears ~score 20 (level 2), Rare ~score 80 (level 8)
+        const magicBase = Math.max(0, (s - 15) * 0.5);
+        const rareBase = Math.max(0, (s - 70) * 0.3);
+        const legendaryBase = Math.max(0, (s - 150) * 0.08);
+
         const weights = {
-            Normal:    Math.max(10, 75 - s * 0.6),
-            Magic:     Math.min(40, 8 + s * 0.35),
-            Rare:      Math.min(30, Math.max(0, (s - 40) * 0.35)),
-            Legendary: Math.min(15, Math.max(0, (s - 70) * 0.2))
+            Normal:    Math.max(20, 90 - magicBase - rareBase - legendaryBase),
+            Magic:     Math.min(40, magicBase),
+            Rare:      Math.min(25, rareBase),
+            Legendary: Math.min(8, legendaryBase)
         };
 
         const weightedTable = ITEM_RARITIES.map(r => ({
@@ -5898,12 +5916,13 @@ class Match3Scene extends Phaser.Scene {
                     });
                 } else {
                     this.isSwapping = false;
-                    // Enemy attacks only after player's turn is fully complete
-                    if (!this.allEnemiesDead()) {
-                        this.time.delayedCall(200, () => {
-                            this.enemyAttack();
-                        });
-                    }
+                        // Enemy attacks only after player's turn is fully complete
+                        // Add a longer delay between hero attack and enemy attack for better pacing
+                        if (!this.allEnemiesDead()) {
+                            this.time.delayedCall(700, () => {
+                                this.enemyAttack();
+                            });
+                        }
                 }
             });
         });
