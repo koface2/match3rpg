@@ -509,19 +509,19 @@ class Match3Scene extends Phaser.Scene {
         const rightCX = 293;
         if (count === 1) return [{ x: rightCX, y: 88, scale: 1.0, barW: 166, barY: 140 }];
         if (count === 2) return [
-            { x: rightCX - 38, y: 82, scale: 0.7, barW: 70, barY: 120 },
-            { x: rightCX + 38, y: 82, scale: 0.7, barW: 70, barY: 120 }
+            { x: rightCX - 46, y: 68, scale: 0.58, barW: 68, barY: 116 },
+            { x: rightCX + 46, y: 68, scale: 0.58, barW: 68, barY: 116 }
         ];
         if (count === 3) return [
-            { x: rightCX - 50, y: 82, scale: 0.58, barW: 50, barY: 116 },
-            { x: rightCX, y: 82, scale: 0.58, barW: 50, barY: 116 },
-            { x: rightCX + 50, y: 82, scale: 0.58, barW: 50, barY: 116 }
+            { x: rightCX - 46, y: 48, scale: 0.48, barW: 56, barY: 90 },
+            { x: rightCX + 46, y: 48, scale: 0.48, barW: 56, barY: 90 },
+            { x: rightCX,      y: 122, scale: 0.48, barW: 56, barY: 162 }
         ];
         return [
-            { x: rightCX - 38, y: 64, scale: 0.50, barW: 56, barY: 98 },
-            { x: rightCX + 38, y: 64, scale: 0.50, barW: 56, barY: 98 },
-            { x: rightCX - 38, y: 116, scale: 0.50, barW: 56, barY: 148 },
-            { x: rightCX + 38, y: 116, scale: 0.50, barW: 56, barY: 148 }
+            { x: rightCX - 46, y: 42, scale: 0.44, barW: 52, barY: 78 },
+            { x: rightCX + 46, y: 42, scale: 0.44, barW: 52, barY: 78 },
+            { x: rightCX - 46, y: 125, scale: 0.44, barW: 52, barY: 160 },
+            { x: rightCX + 46, y: 125, scale: 0.44, barW: 52, barY: 160 }
         ];
     }
 
