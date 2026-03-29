@@ -42,10 +42,10 @@ const MONSTER_BODIES = [
 ];
 
 const ITEM_RARITIES = [
-    { name: 'Normal', weight: 60, affixes: 0, statMultiplier: 1.0, frameColor: 0xa3a3a3, textColor: '#d0d0d0' },
-    { name: 'Magic', weight: 25, affixes: 2, statMultiplier: 1.1, frameColor: 0x5aa9ff, textColor: '#8ec5ff' },
-    { name: 'Rare', weight: 12, affixes: 4, statMultiplier: 1.25, frameColor: 0xffd166, textColor: '#ffe08f' },
-    { name: 'Legendary', weight: 3, affixes: 6, statMultiplier: 1.5, frameColor: 0xff7f11, textColor: '#ffb35c' }
+    { name: 'Normal', weight: 90, affixes: 0, statMultiplier: 1.0, frameColor: 0xa3a3a3, textColor: '#d0d0d0' },
+    { name: 'Magic', weight: 8, affixes: 2, statMultiplier: 1.1, frameColor: 0x5aa9ff, textColor: '#8ec5ff' },
+    { name: 'Rare', weight: 2, affixes: 4, statMultiplier: 1.25, frameColor: 0xffd166, textColor: '#ffe08f' },
+    { name: 'Legendary', weight: 0, affixes: 6, statMultiplier: 1.5, frameColor: 0xff7f11, textColor: '#ffb35c' }
 ];
 
 const ITEM_BASES = [
@@ -211,6 +211,16 @@ const ACTIVE_SKILL_GEMS = [
         basePower: 27,
         scalingStat: 'magic'
     }
+    ,
+    {
+        id: 'blizzard',
+        name: 'Blizzard',
+        tileEffect: 'magic',
+        baseThreshold: 5,
+        mode: 'damage',
+        basePower: 32,
+        scalingStat: 'magic'
+    }
 ];
 
 const SUPPORT_SKILL_GEMS = [
@@ -274,7 +284,8 @@ const SKILL_ICON_MAP = {
     'energy-beam': 'skill_energybeam',
     'reckless-attack': 'skill_recklessattack',
     'cloak-of-flames': 'skill_cloakofflames',
-    'shock-and-awe': 'skill_shockandawe'
+    'shock-and-awe': 'skill_shockandawe',
+    'blizzard': 'blizzard'
 };
 
 // ---------------------------------------------------------------------------
@@ -791,6 +802,11 @@ class Match3Scene extends Phaser.Scene {
             type: 'active',
             id: skill.id
         }));
+
+        // Ensure Blizzard is always present in the inventory
+        if (!activeGems.find(gem => gem.id === 'blizzard')) {
+            activeGems.push({ type: 'active', id: 'blizzard' });
+        }
 
         const supportGems = SUPPORT_SKILL_GEMS.map(gem => ({
             type: 'support',
@@ -2382,19 +2398,19 @@ class Match3Scene extends Phaser.Scene {
         const mf = Math.max(0, magicFind);
         const ml = Math.max(1, monsterLevel);
 
-        // Magic: ramps from 0 at level 1 to meaningful chance at level 5+
-        const magicBase = Math.max(0, (ml - 3) * 3);
-        const magicWeight = Math.min(40, magicBase + mf * 0.15);
+        // Magic: starts appearing at level 6, ramps up slowly
+        const magicBase = Math.max(0, (ml - 5) * 1.2);
+        const magicWeight = Math.min(20, magicBase + mf * 0.08);
 
-        // Rare: effectively 0 before level 8, ramps up from level 10+
-        const rareBase = Math.max(0, (ml - 8) * 1.5);
-        const rareWeight = Math.min(25, rareBase + mf * 0.18);
+        // Rare: starts appearing at level 12, ramps up very slowly
+        const rareBase = Math.max(0, (ml - 11) * 0.6);
+        const rareWeight = Math.min(8, rareBase + mf * 0.10);
 
-        // Legendary: near-zero without magic find, tiny base chance only at very high levels
-        const legendaryBase = Math.max(0, (ml - 18) * 0.3);
-        const legendaryWeight = Math.min(8, legendaryBase + mf * 0.08);
+        // Legendary: only possible at level 22+ or with significant magic find
+        const legendaryBase = Math.max(0, (ml - 21) * 0.15);
+        const legendaryWeight = Math.min(2, legendaryBase + mf * 0.03);
 
-        const normalWeight = Math.max(20, 90 - magicWeight - rareWeight - legendaryWeight);
+        const normalWeight = Math.max(20, 120 - magicWeight - rareWeight - legendaryWeight);
 
         const weights = {
             Normal:    normalWeight,
@@ -2512,16 +2528,16 @@ class Match3Scene extends Phaser.Scene {
     rollRarityFromScore(lootScore) {
         const s = Math.max(0, lootScore);
 
-        // Weights shift with score: Magic appears ~score 20 (level 2), Rare ~score 80 (level 8)
-        const magicBase = Math.max(0, (s - 15) * 0.5);
-        const rareBase = Math.max(0, (s - 70) * 0.3);
-        const legendaryBase = Math.max(0, (s - 150) * 0.08);
+        // Magic: starts appearing at score 55 (level 6), ramps up slowly
+        const magicBase = Math.max(0, (s - 55) * 0.18);
+        const rareBase = Math.max(0, (s - 120) * 0.08);
+        const legendaryBase = Math.max(0, (s - 210) * 0.02);
 
         const weights = {
-            Normal:    Math.max(20, 90 - magicBase - rareBase - legendaryBase),
-            Magic:     Math.min(40, magicBase),
-            Rare:      Math.min(25, rareBase),
-            Legendary: Math.min(8, legendaryBase)
+            Normal:    Math.max(20, 120 - magicBase - rareBase - legendaryBase),
+            Magic:     Math.min(20, magicBase),
+            Rare:      Math.min(8, rareBase),
+            Legendary: Math.min(2, legendaryBase)
         };
 
         const weightedTable = ITEM_RARITIES.map(r => ({
