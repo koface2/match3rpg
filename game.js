@@ -411,6 +411,7 @@ class Match3Scene extends Phaser.Scene {
                 ring2: 'None',
                 necklace: 'None'
             },
+            level: 1,
             talentPoints: 0
         };
         this.enemies = [];
@@ -3086,7 +3087,8 @@ class Match3Scene extends Phaser.Scene {
         this.playerSprite.play('warrior_idle');
         this.hudContainer.add(this.playerSprite);
         this.playerBodyContainer = this.playerSprite;  // alias for compatibility
-        this.hudContainer.add(this.add.text(leftCX, 140, 'Hero', { fontSize: '17px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
+        this.heroTitleText = this.add.text(leftCX, 140, `Hero (Lv. ${this.player.level})`, { fontSize: '17px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.hudContainer.add(this.heroTitleText);
         // --- Energy Shield bar (above HP) ---
         this.playerShieldLabel = this.add.text(14, 148, 'ES', { fontSize: '9px', color: '#66aaff' });
         this.hudContainer.add(this.playerShieldLabel);
