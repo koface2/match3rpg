@@ -515,8 +515,15 @@ class Match3Scene extends Phaser.Scene {
     }
 
     getEnemyGroupStats(battleNumber, enemyCount) {
-        const baseHP = 22 + (battleNumber - 1) * 10;
-        const baseAtk = 1 + Math.floor((battleNumber - 1) * 0.8);
+        let baseHP, baseAtk;
+        if (battleNumber <= 8) {
+            baseHP = 22 + (battleNumber - 1) * 10;
+            baseAtk = 1 + Math.floor((battleNumber - 1) * 0.8);
+        } else {
+            // After level 8, scale up more aggressively
+            baseHP = 22 + 7 * 10 + (battleNumber - 8) * 22;
+            baseAtk = 1 + Math.floor(7 * 0.8) + Math.floor((battleNumber - 8) * 2.2);
+        }
         if (enemyCount === 1) return { hp: baseHP, atk: baseAtk };
         const hpPerEnemy = Math.floor(baseHP * 0.85 / enemyCount);
         const atkPerEnemy = Math.max(1, Math.floor(baseAtk * 0.9 / enemyCount));
